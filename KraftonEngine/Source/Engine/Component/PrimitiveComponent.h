@@ -99,4 +99,8 @@ protected:
 	
 	FOctree* OctreeNode = nullptr;
 	bool bInOctreeOverflow = false;
+
+	FColor ShapeColor;
+	bool bDrawOnlyIfSelected;
 };
+
