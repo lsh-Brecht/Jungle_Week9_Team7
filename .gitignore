@@ -458,3 +458,6 @@ FodyWeavers.xsd
 
 #Rider CMake Project for Showing Dependency diagram
 CMakeLists.txt
+
+# Vcpkg installed
+/vcpkg_installed

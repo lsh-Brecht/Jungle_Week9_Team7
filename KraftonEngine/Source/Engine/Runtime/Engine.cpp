@@ -16,6 +16,7 @@
 #include "GameFramework/World.h"
 #include "GameFramework/AActor.h"
 #include "Core/TickFunction.h"
+#include "Scripting/LuaScriptSubsystem.h"
 
 DEFINE_CLASS(UEngine, UObject)
 
@@ -76,11 +77,13 @@ void UEngine::Init(FWindowsWindow* InWindow)
 	}
 
 	FLogManager::Get().Initialize();
+	FLuaScriptSubsystem::Get().Initialize();
 	FDirectoryWatcher::Get().Initialize();
 }
 
 void UEngine::Shutdown()
 {
+	FLuaScriptSubsystem::Get().Shutdown();
 	FDirectoryWatcher::Get().Shutdown();
 	FLogManager::Get().Shutdown();
 	RenderPipeline.reset();
