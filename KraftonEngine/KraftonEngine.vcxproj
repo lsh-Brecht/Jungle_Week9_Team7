@@ -392,6 +392,7 @@
     <ClCompile Include="Source\Engine\Render\Shadow\ShadowAtlasQuadTree.cpp" />
     <ClCompile Include="Source\Engine\Render\Types\FrameContext.cpp" />
     <ClCompile Include="Source\Engine\Resource\ResourceManager.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\Delegate.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp" />
@@ -606,6 +607,7 @@
     <ClInclude Include="Source\Engine\Render\Types\VertexTypes.h" />
     <ClInclude Include="Source\Engine\Render\Types\ViewTypes.h" />
     <ClInclude Include="Source\Engine\Resource\ResourceManager.h" />
+    <ClInclude Include="Source\Engine\Runtime\Delegate.h" />
     <ClInclude Include="Source\Engine\Runtime\Engine.h" />
     <ClInclude Include="Source\Engine\Runtime\EngineLoop.h" />
     <ClInclude Include="Source\Engine\Runtime\Launch.h" />
