@@ -76,6 +76,8 @@ public:
 	void RemoveActorToOctree(AActor* actor);
 	void UpdateActorInOctree(AActor* actor);
 
+	void UpdateCollision();
+
 private:
 	//TArray<AActor*> Actors;
 	ULevel* PersistentLevel;

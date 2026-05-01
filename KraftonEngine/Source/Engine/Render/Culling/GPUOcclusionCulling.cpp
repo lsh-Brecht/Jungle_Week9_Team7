@@ -374,7 +374,7 @@ void FGPUOcclusionCulling::ReadbackResults(ID3D11DeviceContext* Ctx)
 		{
 			if (vis[i] == 0)
 			{
-				uint32 id = proxies[i]->GetProxyId();
+				uint32 id = proxies[i];
 				OccludedBits[id >> 5] |= (1u << (id & 31));
 			}
 		}
@@ -404,7 +404,7 @@ void FGPUOcclusionCulling::GatherAABB(FPrimitiveSceneProxy* Proxy)
 
 	auto& curProxies = StagingProxies[WriteIndex];
 	uint32 pos = PreGatherWritePos;
-	curProxies[pos] = Proxy;
+	curProxies[pos] = Proxy->GetProxyId();
 	if (Proxy->GetProxyId() > PreGatherMaxId) PreGatherMaxId = Proxy->GetProxyId();
 	const FBoundingBox& B = Proxy->GetCachedBounds();
 	CPUAABBStaging[pos] = { B.Min.X, B.Min.Y, B.Min.Z, 0.0f,
@@ -453,7 +453,7 @@ void FGPUOcclusionCulling::DispatchOcclusionTest(
 				FPrimitiveSceneProxy* Proxy = VisibleProxies[i];
 				if (!Proxy || Proxy->HasProxyFlag(EPrimitiveProxyFlags::NeverCull)) continue;
 
-				curProxies[writePos] = Proxy;
+				curProxies[writePos] = Proxy->GetProxyId();
 				if (Proxy->GetProxyId() > maxId) maxId = Proxy->GetProxyId();
 				const FBoundingBox& B = Proxy->GetCachedBounds();
 				staging[writePos] = { B.Min.X, B.Min.Y, B.Min.Z, 0.0f,

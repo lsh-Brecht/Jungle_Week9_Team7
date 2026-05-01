@@ -2,6 +2,8 @@
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/Collision/ShapeComponent.h"
+#include "Collision/PrimitiveCollision.h"
 #include "Engine/Component/CameraComponent.h"
 #include "Render/Types/LODContext.h"
 #include <algorithm>
@@ -225,6 +227,37 @@ void UWorld::UpdateActorInOctree(AActor* Actor)
 	Partition.UpdateActor(Actor);
 }
 
+void UWorld::UpdateCollision()
+{
+	TArray<AActor*> Actors = GetActors();
+	uint32 ActorCount = static_cast<uint32>(Actors.size());
+
+	TArray<UShapeComponent*> AllCollisionComponents;
+	for (uint32 i = 0; i < ActorCount; ++i)
+	{
+		for (UActorComponent* Comp : Actors[i]->GetComponents())
+		{
+			if (UShapeComponent* colliComp = Cast<UShapeComponent>(Comp))
+			{
+				AllCollisionComponents.push_back(colliComp);
+			}
+		}
+	}
+	uint32 CollisionCount = AllCollisionComponents.size();
+	for (int i = 0; i < CollisionCount; ++i)
+	{
+		for (int j = i + 1; j < CollisionCount; ++j)
+		{
+			if (FPrimitiveCollision::Intersect(AllCollisionComponents[i], AllCollisionComponents[j]))
+			{
+				// 충돌 발생 시 처리!
+				AllCollisionComponents[i]->SetDebugShapeColor(FColor::Red());
+				AllCollisionComponents[j]->SetDebugShapeColor(FColor::Red());
+			}
+		}
+	}
+}
+
 FLODUpdateContext UWorld::PrepareLODContext()
 {
 	if (!ActiveCamera) return {};
@@ -285,6 +318,8 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 	}
 
 	Scene.GetDebugDrawQueue().Tick(DeltaTime);
+
+	UpdateCollision();
 
 	TickManager.Tick(this, DeltaTime, TickType);
 }
