@@ -58,6 +58,9 @@
     <Filter Include="Source\Engine\Component">
       <UniqueIdentifier>{22bbd7c0-73bc-1bc4-992f-be08238b1609}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Component\Collision">
+      <UniqueIdentifier>{6a9e5705-8bb9-1ff6-58b5-a12b14c8ab22}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Engine\Component\Light">
       <UniqueIdentifier>{68733902-62c6-6992-604b-99f4fd185b46}</UniqueIdentifier>
     </Filter>
@@ -145,6 +148,9 @@
     <Filter Include="Source\Engine\Runtime">
       <UniqueIdentifier>{a1bbb40a-2c30-7ca6-caf9-d2e4532b09c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Scripting">
+      <UniqueIdentifier>{c5e4373f-3fb0-f94e-18c5-e52222f04bbb}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Engine\Serialization">
       <UniqueIdentifier>{b03fb85a-4e75-0b00-08fd-bb38cdc05e3f}</UniqueIdentifier>
     </Filter>
@@ -168,9 +174,6 @@
     </Filter>
     <Filter Include="ThirdParty\SimpleJSON">
       <UniqueIdentifier>{b5b63371-405e-e009-4e4e-e3b5a25ee7bd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source\Engine\Component\Collision">
-      <UniqueIdentifier>{b85e2e56-38ec-4917-80f4-86df0e0aa215}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -290,6 +293,15 @@
     <ClCompile Include="Source\Editor\Subsystem\OverlayStatSystem.cpp">
       <Filter>Source\Editor\Subsystem</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowser.cpp">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.cpp">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.cpp">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Editor\UI\EditorConsoleWidget.cpp">
       <Filter>Source\Editor\UI</Filter>
     </ClCompile>
@@ -338,15 +350,6 @@
     <ClCompile Include="Source\Editor\UI\NotificationToast.cpp">
       <Filter>Source\Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowser.cpp">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.cpp">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.cpp">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Editor\Viewport\EditorViewportClient.cpp">
       <Filter>Source\Editor\Viewport</Filter>
     </ClCompile>
@@ -360,6 +363,9 @@
       <Filter>Source\Engine\Collision</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Collision\Octree.cpp">
+      <Filter>Source\Engine\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Collision\PrimitiveCollision.cpp">
       <Filter>Source\Engine\Collision</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Collision\RayUtils.cpp">
@@ -383,6 +389,18 @@
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\ShapeComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Component\CylindricalBillboardComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
@@ -393,24 +411,6 @@
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\HeightFogComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\MeshComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\SceneComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\SubUVComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\TextRenderComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\Light\AmbientLightComponent.cpp">
@@ -431,6 +431,9 @@
     <ClCompile Include="Source\Engine\Component\Light\SpotLightComponent.cpp">
       <Filter>Source\Engine\Component\Light</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Component\MeshComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Component\Movement\InterpToMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClCompile>
@@ -445,6 +448,21 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\SceneComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\SubUVComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\TextRenderComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Core\EngineTypes.cpp">
       <Filter>Source\Engine\Core</Filter>
@@ -479,12 +497,6 @@
     <ClCompile Include="Source\Engine\GameFramework\Level.cpp">
       <Filter>Source\Engine\GameFramework</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\GameFramework\World.cpp">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\GameFramework\Light\AmbientLightActor.cpp">
       <Filter>Source\Engine\GameFramework\Light</Filter>
     </ClCompile>
@@ -496,6 +508,12 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\GameFramework\Light\SpotLightActor.cpp">
       <Filter>Source\Engine\GameFramework\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\GameFramework\World.cpp">
+      <Filter>Source\Engine\GameFramework</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Input\InputSystem.cpp">
       <Filter>Source\Engine\Input</Filter>
@@ -743,6 +761,12 @@
     <ClCompile Include="Source\Engine\Runtime\WindowsWindow.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp">
       <Filter>Source\Engine\Serialization</Filter>
     </ClCompile>
@@ -798,19 +822,6 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\Collision\ShapeComponent.cpp">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Collision\PrimitiveCollision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -830,6 +841,21 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\Subsystem\OverlayStatSystem.h">
       <Filter>Source\Editor\Subsystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowser.h">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowserContext.h">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.h">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentItem.h">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.h">
+      <Filter>Source\Editor\UI\ContentBrowser</Filter>
     </ClInclude>
     <ClInclude Include="Source\Editor\UI\EditorConsoleWidget.h">
       <Filter>Source\Editor\UI</Filter>
@@ -879,21 +905,6 @@
     <ClInclude Include="Source\Editor\UI\NotificationToast.h">
       <Filter>Source\Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowser.h">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowserContext.h">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.h">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentItem.h">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.h">
-      <Filter>Source\Editor\UI\ContentBrowser</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h">
       <Filter>Source\Editor\Viewport</Filter>
     </ClInclude>
@@ -913,6 +924,9 @@
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Collision\Octree.h">
+      <Filter>Source\Engine\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Collision\PrimitiveCollision.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Collision\RayUtils.h">
@@ -936,6 +950,21 @@
     <ClInclude Include="Source\Engine\Component\CameraComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\CollisionTypes.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\ShapeComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Component\CylindricalBillboardComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
@@ -946,24 +975,6 @@
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\HeightFogComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\MeshComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\SceneComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\SubUVComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\TextRenderComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Light\AmbientLightComponent.h">
@@ -984,6 +995,9 @@
     <ClInclude Include="Source\Engine\Component\Light\SpotLightComponent.h">
       <Filter>Source\Engine\Component\Light</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Component\MeshComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\InterpToMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClInclude>
@@ -998,6 +1012,21 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\SceneComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\SubUVComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\TextRenderComponent.h">
+      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Core\ClassTypes.h">
       <Filter>Source\Engine\Core</Filter>
@@ -1056,15 +1085,6 @@
     <ClInclude Include="Source\Engine\GameFramework\Level.h">
       <Filter>Source\Engine\GameFramework</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\GameFramework\World.h">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\GameFramework\WorldContext.h">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\Light\AmbientLightActor.h">
       <Filter>Source\Engine\GameFramework\Light</Filter>
     </ClInclude>
@@ -1076,6 +1096,15 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\Light\SpotLightActor.h">
       <Filter>Source\Engine\GameFramework\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\GameFramework\World.h">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\GameFramework\WorldContext.h">
+      <Filter>Source\Engine\GameFramework</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Input\InputSystem.h">
       <Filter>Source\Engine\Input</Filter>
@@ -1395,6 +1424,18 @@
     <ClInclude Include="Source\Engine\Runtime\resource.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaBindings.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaHandles.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaScriptSubsystem.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\SolInclude.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\Archive.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
@@ -1467,22 +1508,11 @@
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\Collision\ShapeComponent.h">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h">
-      <Filter>Source\Engine\Component\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Collision\PrimitiveCollision.h" />
-    <ClInclude Include="Source\Engine\Component\Collision\CollisionTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VcpkgLua.props" />
   </ItemGroup>
 </Project>
