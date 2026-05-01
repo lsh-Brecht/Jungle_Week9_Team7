@@ -1571,15 +1571,18 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("Bounding Volume", &Opts.ShowFlags.bBoundingVolume);
 					ImGui::TableNextColumn();
+					ImGui::Checkbox("Collision", &Opts.ShowFlags.bCollisionShapes);
+					ImGui::TableNextColumn();
 					ImGui::Checkbox("Debug Draw", &Opts.ShowFlags.bDebugDraw);
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("Octree", &Opts.ShowFlags.bOctree);
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("Fog", &Opts.ShowFlags.bFog);
 					ImGui::TableNextColumn();
-					ImGui::Checkbox("FXAA", &Opts.ShowFlags.bFXAA);
 
 					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::Checkbox("FXAA", &Opts.ShowFlags.bFXAA);
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("Visualize2.5D", &Opts.ShowFlags.bVisualize25DCulling);
 					ImGui::TableNextColumn();

@@ -1,4 +1,4 @@
-#include "Profiling/StartupProfiler.h"
+﻿#include "Profiling/StartupProfiler.h"
 #include "Core/Log.h"
 
 void FStartupProfiler::Finish()
@@ -18,4 +18,5 @@ void FStartupProfiler::Finish()
 	}
 	UE_LOG("  %-30s : %8.1f ms", "Total", TotalMs);
 	UE_LOG("======================================");
+	UE_LOG("Coconut Engine ready");
 }

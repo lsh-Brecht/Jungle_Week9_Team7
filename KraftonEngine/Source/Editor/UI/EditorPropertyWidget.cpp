@@ -15,6 +15,7 @@
 #include "Component/Light/LightComponentBase.h"
 #include "Component/DecalComponent.h"
 #include "Component/HeightFogComponent.h"
+#include "Component/Collision/ShapeComponent.h"
 #include "Core/PropertyTypes.h"
 #include "Core/ClassTypes.h"
 #include "Resource/ResourceManager.h"
@@ -424,11 +425,8 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 	TArray<FComponentClassGroup> ComponentGroups;
 	AddComponentClassGroup(ComponentGroups, "Light", ULightComponentBase::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Movement", UMovementComponent::StaticClass());
-	//AddComponentClassGroup(ComponentGroups, "UBillboardComponent", UBillboardComponent::StaticClass());
-	//AddComponentClassGroup(ComponentGroups, "UMeshComponent", UMeshComponent::StaticClass());
+	AddComponentClassGroup(ComponentGroups, "Collision", UShapeComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Primitive", UPrimitiveComponent::StaticClass());
-	//AddComponentClassGroup(ComponentGroups, "USceneComponent", USceneComponent::StaticClass());
-	//AddComponentClassGroup(ComponentGroups, "UActorComponent", UActorComponent::StaticClass());
 
 	TArray<UClass*> OtherClasses;
 	for (UClass* Cls : ComponentClasses)

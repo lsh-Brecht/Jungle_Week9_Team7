@@ -229,6 +229,9 @@ void FEditorRenderPipeline::CollectCommands(FLevelEditorViewportClient* VC, UWor
 		if (Flags.bShowShadowFrustum)
 			Scene.SubmitShadowFrustumDebug(World, Frame);
 
+		if (Flags.bCollisionShapes)
+			Collector.CollectCollisionShapeDebug(World, Scene);
+
 		if (Flags.bOctree)
 			Collector.CollectOctreeDebug(World->GetOctree(), Scene);
 

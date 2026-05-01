@@ -1,6 +1,7 @@
 ﻿#include "RenderCollector.h"
 
 #include "Component/ActorComponent.h"
+#include "Component/Collision/ShapeComponent.h"
 #include "GameFramework/AActor.h"
 #include "Editor/EditorEngine.h"
 #include "Editor/Subsystem/OverlayStatSystem.h"
@@ -127,6 +128,34 @@ void FRenderCollector::CollectPickingBVHDebug(UWorld* World, FScene& Scene)
 	for (const FWorldPrimitivePickingBVH::FDebugAABB& DebugAABB : DebugAABBs)
 	{
 		Scene.AddDebugAABB(DebugAABB.Min, DebugAABB.Max, DebugAABB.Color);
+	}
+}
+
+void FRenderCollector::CollectCollisionShapeDebug(UWorld* World, FScene& Scene)
+{
+	if (!World) return;
+
+	for (AActor* Actor : World->GetActors())
+	{
+		if (!Actor || !Actor->IsVisible())
+		{
+			continue;
+		}
+		if (Scene.GetSelectedActors().find(Actor) != Scene.GetSelectedActors().end())
+		{
+			continue;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			const UShapeComponent* Shape = dynamic_cast<const UShapeComponent*>(Component);
+			if (!Shape || !Shape->IsVisible())
+			{
+				continue;
+			}
+
+			Shape->DrawDebugShape(Scene, Shape->GetDebugShapeColor());
+		}
 	}
 }
 

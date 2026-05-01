@@ -26,6 +26,7 @@ namespace Key
 	constexpr const char* bGizmo = "bGizmo";
 	constexpr const char* bBillboardText = "bBillboardText";
 	constexpr const char* bBoundingVolume = "bBoundingVolume";
+	constexpr const char* bCollisionShapes = "bCollisionShapes";
 	constexpr const char* bDebugDraw = "bDebugDraw";
 	constexpr const char* bOctree = "bOctree";
 	constexpr const char* bPickingBVH = "bPickingBVH";
@@ -125,6 +126,7 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 		SlotObj[Key::bGizmo] = Opts.ShowFlags.bGizmo;
 		SlotObj[Key::bBillboardText] = Opts.ShowFlags.bBillboardText;
 		SlotObj[Key::bBoundingVolume] = Opts.ShowFlags.bBoundingVolume;
+		SlotObj[Key::bCollisionShapes] = Opts.ShowFlags.bCollisionShapes;
 		SlotObj[Key::bDebugDraw] = Opts.ShowFlags.bDebugDraw;
 		SlotObj[Key::bOctree] = Opts.ShowFlags.bOctree;
 		SlotObj[Key::bPickingBVH] = Opts.ShowFlags.bPickingBVH;
@@ -288,6 +290,8 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 					Opts.ShowFlags.bBillboardText = S[Key::bBillboardText].ToBool();
 				if (S.hasKey(Key::bBoundingVolume))
 					Opts.ShowFlags.bBoundingVolume = S[Key::bBoundingVolume].ToBool();
+				if (S.hasKey(Key::bCollisionShapes))
+					Opts.ShowFlags.bCollisionShapes = S[Key::bCollisionShapes].ToBool();
 				if (S.hasKey(Key::bDebugDraw))
 					Opts.ShowFlags.bDebugDraw = S[Key::bDebugDraw].ToBool();
 				if (S.hasKey(Key::bOctree))
