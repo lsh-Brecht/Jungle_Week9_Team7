@@ -31,6 +31,7 @@ public:
 	void SetInitialSpeed(float InInitialSpeed) { InitialSpeed = InInitialSpeed; }
 	float GetInitialSpeed() const { return InitialSpeed; }
 	float GetMaxSpeed() const { return MaxSpeed; }
+	void SetMaxSpeed(float InMaxSpeed) { MaxSpeed = InMaxSpeed; }
 	FVector GetPreviewVelocity() const;
 	void StopSimulating();
 

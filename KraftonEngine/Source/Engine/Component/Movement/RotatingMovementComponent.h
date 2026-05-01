@@ -18,6 +18,33 @@ public:
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void Serialize(FArchive& Ar) override;
 
+	const FRotator& GetRotationRate() const { return RotationRate; }
+	void SetRotationRate(const FRotator& NewRate) { RotationRate = NewRate; }
+
+	bool IsRotationInLocalSpace() const { return bRotationInLocalSpace; }
+	void SetRotationInLocalSpace(bool bNewRotationInLocalSpace)
+	{
+		bRotationInLocalSpace = bNewRotationInLocalSpace;
+		bWorldPivotInitialized = false;
+		CachedWorldPivotComponent = nullptr;
+	}
+
+	void SetPivotTranslation(const FVector& NewPivotTranslation)
+	{
+		PivotTranslation = NewPivotTranslation;
+		bWorldPivotInitialized = false;
+		CachedWorldPivotComponent = nullptr;
+	}
+	const FVector& GetPivotTranslation() const { return PivotTranslation; }
+
+	void ResetWorldPivotCache()
+	{
+		bWorldPivotInitialized = false;
+		CachedWorldPivotComponent = nullptr;
+		CachedWorldPivotTranslation = FVector(0.0f, 0.0f, 0.0f);
+		CachedWorldPivotLocation = FVector(0.0f, 0.0f, 0.0f);
+	}
+
 private:
 	FRotator RotationRate = FRotator(0.0f, 90.0f, 0.0f);
 	bool bRotationInLocalSpace = false;

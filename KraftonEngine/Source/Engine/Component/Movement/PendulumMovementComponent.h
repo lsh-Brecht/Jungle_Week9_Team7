@@ -19,6 +19,24 @@ public:
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void Serialize(FArchive& Ar) override;
 
+	FVector GetAxis() const { return Axis; }
+	void SetAxis(const FVector& NewAxis) { Axis = NewAxis; }
+
+	void SetAmplitude(float NewAmplitude) { Amplitude = NewAmplitude; }
+	float GetAmplitude() const { return Amplitude; }
+
+	void SetFrequency(float NewFrequency) { Frequency = NewFrequency; }
+	float GetFrequency() const { return Frequency; }
+
+	void SetPhase(float NewPhase) { Phase = NewPhase; }
+	float GetPhase() const { return Phase; }
+
+	void SetAngleOffset(float NewAngleOffset) { AngleOffset = NewAngleOffset; }
+	float GetAngleOffset() const { return AngleOffset; }
+
+	void SetInitialRelativeRotation(const FQuat& NewRotation) { InitialRelativeRotation = NewRotation; }
+	const FQuat& GetInitialRelativeRotation() const { return InitialRelativeRotation; }
+
 private:
 	// 회전 축 (로컬 기준, 정규화됨). 기본값 Y축 = 좌우 흔들림
 	FVector Axis = FVector(0.0f, 1.0f, 0.0f);

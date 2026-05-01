@@ -16,11 +16,15 @@
 #include "Component/Collision/CapsuleComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Component/Collision/SphereComponent.h"
+#include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
+#include "Component/Movement/InterpToMovementComponent.h"
+#include "Component/Movement/RotatingMovementComponent.h"
 
 namespace
 {
-	UProjectileMovementComponent* FindProjectileMovementComponent(AActor* Actor)
+	template<typename TComponent>
+	TComponent* FindComponent(AActor* Actor)
 	{
 		if (!Actor)
 		{
@@ -29,46 +33,29 @@ namespace
 
 		for (UActorComponent* Component : Actor->GetComponents())
 		{
-			if (UProjectileMovementComponent* Movement = Cast<UProjectileMovementComponent>(Component))
+			if (TComponent* TypeComponent = Cast<TComponent>(Component))
 			{
-				return Movement;
+				return TypeComponent;
 			}
 		}
 
 		return nullptr;
 	}
 
-	UProjectileMovementComponent* EnsureProjectileMovementComponent(AActor* Actor)
+	template<typename TComponent>
+	TComponent* EnsureComponent(AActor* Actor)
 	{
 		if (!Actor)
 		{
 			return nullptr;
 		}
 
-		if (UProjectileMovementComponent* Existing = FindProjectileMovementComponent(Actor))
+		if (TComponent* Existing = FindComponent<TComponent>(Actor))
 		{
 			return Existing;
 		}
 
-		return Actor->AddComponent<UProjectileMovementComponent>();
-	}
-
-	UShapeComponent* FindShapeComponent(AActor* Actor)
-	{
-		if (!Actor)
-		{
-			return nullptr;
-		}
-
-		for (UActorComponent* Component : Actor->GetComponents())
-		{
-			if (UShapeComponent* Shape = Cast<UShapeComponent>(Component))
-			{
-				return Shape;
-			}
-		}
-
-		return nullptr;
+		return Actor->AddComponent<TComponent>();
 	}
 }
 
@@ -76,11 +63,18 @@ namespace
 void RegisterLuaBindings(sol::state& Lua)
 {
 	RegisterFVectorBinding(Lua);
+	RegisterFRotatorBinding(Lua);
 	
 	RegisterShapeComponentBinding(Lua);
 	RegisterSphereComponentBinding(Lua);
 	RegisterBoxComponentBinding(Lua);
 	RegisterCapsuleComponentBinding(Lua);
+
+	RegisterMovementComponentBinding(Lua);
+	RegisterProjectileMovementComponentBinding(Lua);
+	RegisterInterpToMovementComponentBinding(Lua);
+	RegisterPendulumMovementComponentBinding(Lua);
+	RegisterRotatingMovementComponentBinding(Lua);
 	
 	RegisterGameObjectBinding(Lua);
 	RegisterDelegateBinding(Lua);
@@ -139,6 +133,33 @@ void RegisterFVectorBinding(sol::state& Lua)
 	Lua["VectorForward"] = FVector::ForwardVector;
 }
 
+void RegisterFRotatorBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FRotator>(
+		"FRotator",
+		sol::constructors<FRotator(), FRotator(float, float, float)>(),
+
+		"pitch",
+		sol::property(
+			[](const FRotator& R) { return R.Pitch; }
+		),
+
+		"yaw",
+		sol::property(
+			[](const FRotator& R) { return R.Yaw; }
+		),
+
+		"roll",
+		sol::property(
+			[](const FRotator& R) { return R.Roll; }
+		),
+
+		"Pitch", &FRotator::Pitch,
+		"Yaw", &FRotator::Yaw,
+		"Roll", &FRotator::Roll
+	);
+}
+
 // Lua에 GameObject를 등록
 // Handle을 통해 UUID로만 접근 가능
 void RegisterGameObjectBinding(sol::state& Lua)
@@ -149,13 +170,24 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		sol::no_constructor,
 
 		"IsValid",
-		[](const FLuaGameObjectHandle& Handle) { return Handle.IsValid(); },
+		[](const FLuaGameObjectHandle& Handle)
+		{
+			return Handle.IsValid();
+		},
 
 		"IsInvalid",
-		[](const FLuaGameObjectHandle& Handle) { return !Handle.IsValid(); },
+		[](const FLuaGameObjectHandle& Handle)
+		{
+			return !Handle.IsValid();
+		},
 
 		"UUID",
-		sol::property([](const FLuaGameObjectHandle& Self) { return Self.UUID; }),
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				return Self.UUID;
+			}
+		),
 
 		"Location",
 		sol::property(
@@ -167,41 +199,14 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			[](const FLuaGameObjectHandle& Self, const FVector& Location)
 			{
 				AActor* Actor = Self.Resolve();
+
 				if (!Actor)
 				{
 					UE_LOG("[Lua] Invalid GameObject.Location Access.");
 					return;
 				}
+
 				Actor->SetActorLocation(Location);
-			}
-		),
-
-		"Velocity",
-		sol::property(
-			[](const FLuaGameObjectHandle& Self)
-			{
-				AActor* Actor = Self.Resolve();
-				UProjectileMovementComponent* Movement = FindProjectileMovementComponent(Actor);
-				return Movement ? Movement->GetVelocity() : FVector::ZeroVector;
-			},
-			[](const FLuaGameObjectHandle& Self, const FVector& Velocity)
-			{
-				AActor* Actor = Self.Resolve();
-
-				if (!Actor)
-				{
-					UE_LOG("[Lua] Invalid GameObject.Velocity Access.");
-					return;
-				}
-
-				UProjectileMovementComponent* Movement = EnsureProjectileMovementComponent(Actor);
-
-				if (!Movement)
-				{
-					UE_LOG("[Lua] Failed to create ProjectileMoveComponent");
-					return;
-				}
-				Movement->SetVelocity(Velocity);
 			}
 		),
 
@@ -212,11 +217,87 @@ void RegisterGameObjectBinding(sol::state& Lua)
 				FLuaShapeComponentHandle Handle;
 
 				AActor* Actor = Self.Resolve();
-				UShapeComponent* Shape = FindShapeComponent(Actor);
+				UShapeComponent* Shape = FindComponent<UShapeComponent>(Actor);
 
 				if (Shape)
 				{
 					Handle.UUID = Shape->GetUUID();
+				}
+
+				return Handle;
+			}
+		),
+
+		"ProjectileMovement",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				FLuaProjectileMovementComponentHandle Handle;
+
+				AActor* Actor = Self.Resolve();
+				UProjectileMovementComponent* Movement =
+				FindComponent<UProjectileMovementComponent>(Actor);
+
+				if (Movement)
+				{
+					Handle.UUID = Movement->GetUUID();
+				}
+
+				return Handle;
+			}
+		),
+
+		"InterpMovement",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				FLuaInterpToMoveComponentHandle Handle;
+
+				AActor* Actor = Self.Resolve();
+				UInterpToMovementComponent* Movement =
+				FindComponent<UInterpToMovementComponent>(Actor);
+
+				if (Movement)
+				{
+					Handle.UUID = Movement->GetUUID();
+				}
+
+				return Handle;
+			}
+		),
+
+		"PendulumMovement",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				FLuaPendulumMovementComponentHandle Handle;
+
+				AActor* Actor = Self.Resolve();
+				UPendulumMovementComponent* Movement =
+				FindComponent<UPendulumMovementComponent>(Actor);
+
+				if (Movement)
+				{
+					Handle.UUID = Movement->GetUUID();
+				}
+
+				return Handle;
+			}
+		),
+
+		"RotatingMovement",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				FLuaRotatingMovementComponentHandle Handle;
+
+				AActor* Actor = Self.Resolve();
+				URotatingMovementComponent* Movement =
+				FindComponent<URotatingMovementComponent>(Actor);
+
+				if (Movement)
+				{
+					Handle.UUID = Movement->GetUUID();
 				}
 
 				return Handle;
@@ -235,8 +316,13 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			}
 
 			const FVector Location = Actor->GetActorLocation();
-			UE_LOG("[Lua] GameObject UUID = %u, Location=(%.3f, %.3f, %.3f)",
-				Actor->GetUUID(), Location.X, Location.Y, Location.Z
+
+			UE_LOG(
+				"[Lua] GameObject UUID=%u, Location=(%.3f, %.3f, %.3f)",
+				Actor->GetUUID(),
+				Location.X,
+				Location.Y,
+				Location.Z
 			);
 		}
 	);
@@ -259,6 +345,429 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			Handle.UUID = Actor->GetUUID();
 
 			return sol::make_object(LuaView, Handle);
+		}
+	);
+}
+
+void RegisterMovementComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaMovementComponentHandle>(
+		"MovementComponent",
+
+		sol::no_constructor,
+
+		"IsValid",
+		[](const FLuaMovementComponentHandle& Handle) { return Handle.IsValid(); },
+
+		"UUID",
+		sol::property([](const FLuaMovementComponentHandle& Self) { return Self.UUID; }),
+
+		"HasValidUpdatedComponent",
+		sol::property(
+			[](const FLuaMovementComponentHandle& Self)
+			{
+				UMovementComponent* Movement = Self.Resolve();
+				return Movement && Movement->HasValidUpdatedComponent();
+			}
+		)
+	);
+}
+
+void RegisterProjectileMovementComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaProjectileMovementComponentHandle>(
+		"ProjectileMovementComponent",
+
+		sol::no_constructor,
+
+		"IsValid",
+		[](const FLuaProjectileMovementComponentHandle& Handle) { return Handle.IsValid(); },
+
+		"UUID",
+		sol::property([](const FLuaProjectileMovementComponentHandle& Self) { return Self.UUID; }),
+
+		"Velocity",
+		sol::property(
+			[](const FLuaProjectileMovementComponentHandle& Self)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetVelocity() : FVector::ZeroVector;
+			},
+			[](const FLuaProjectileMovementComponentHandle& Self, const FVector& Velocity)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid ProjectileMovementComponent.Velocity Access.");
+					return;
+				}
+				Movement->SetVelocity(Velocity);
+			}
+		),
+
+		"InitialSpeed",
+		sol::property(
+			[](const FLuaProjectileMovementComponentHandle& Self)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetInitialSpeed() : 0.0f;
+			},
+			[](const FLuaProjectileMovementComponentHandle& Self, float InitialSpeed)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid ProjectileMovementComponent.InitialSpeed Access.");
+					return;
+				}
+				Movement->SetInitialSpeed(InitialSpeed);
+			}
+		),
+
+		"MaxSpeed",
+		sol::property(
+			[](const FLuaProjectileMovementComponentHandle& Self)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetMaxSpeed() : 0.0f;
+			},
+			[](const FLuaProjectileMovementComponentHandle& Self, float MaxSpeed)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid ProjectileMovementComponent.MaxSpeed Access.");
+					return;
+				}
+				Movement->SetMaxSpeed(MaxSpeed);
+			}
+		),
+
+		"PreviewVelocity",
+		sol::property(
+			[](const FLuaProjectileMovementComponentHandle& Self)
+			{
+				UProjectileMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetPreviewVelocity() : FVector::ZeroVector;
+			}
+		),
+
+		"StopSimulating",
+		[](const FLuaProjectileMovementComponentHandle& Self)
+		{
+			UProjectileMovementComponent* Movement = Self.Resolve();
+			if (!Movement)
+			{
+				UE_LOG("[Lua] Invalid ProjectileMovementComponent.StopSimulating Access.");
+				return;
+			}
+			return Movement->StopSimulating();
+		}
+	);
+}
+void RegisterInterpToMovementComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaInterpToMoveComponentHandle>(
+		"InterpToMoveComponent",
+
+		sol::no_constructor,
+
+		"IsValid",
+		[](const FLuaInterpToMoveComponentHandle& Handle) { return Handle.IsValid(); },
+
+		"UUID",
+		sol::property([](const FLuaInterpToMoveComponentHandle& Self) { return Self.UUID; }),
+
+		"Duration",
+		sol::property(
+			[](const FLuaInterpToMoveComponentHandle& Self)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetInterpDuration() : 0.0f;
+			},
+			[](const FLuaInterpToMoveComponentHandle& Self, float Duration)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid InterpToMoveComponent.Duration Access.");
+					return;
+				}
+				Movement->SetInterpDuration(Duration);
+			}
+		),
+
+		"AutoActivate",
+		sol::property(
+			[](const FLuaInterpToMoveComponentHandle& Self)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->IsAutoActivating() : false;
+			},
+			[](const FLuaInterpToMoveComponentHandle& Self, bool AutoActivate)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid InterpToMoveComponent.AutoActivate Access.");
+					return;
+				}
+				Movement->ShouldAutoActivate(AutoActivate);
+			}
+		),
+
+		"FaceTargetDir",
+		sol::property(
+			[](const FLuaInterpToMoveComponentHandle& Self)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->IsFacingTargetDir() : false;
+			},
+			[](const FLuaInterpToMoveComponentHandle& Self, bool FaceTargetDir)
+			{
+				UInterpToMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid InterpToMoveComponent.FaceTargetDir Access.");
+					return;
+				}
+				Movement->ShouldFaceTargetDir(FaceTargetDir);
+			}
+		),
+
+		"Initiate",
+		[](const FLuaInterpToMoveComponentHandle& Self)
+		{
+			UInterpToMovementComponent* Movement = Self.Resolve();
+			if (!Movement)
+			{
+				UE_LOG("[Lua] Invalid InterpToMoveComponent.Initiate Access.");
+				return;
+			}
+			Movement->Initiate();
+		},
+
+		"Reset",
+		[](const FLuaInterpToMoveComponentHandle& Self)
+		{
+			UInterpToMovementComponent* Movement = Self.Resolve();
+			if (!Movement)
+			{
+				UE_LOG("[Lua] Invalid InterpToMoveComponent.Reset Access.");
+				return;
+			}
+			Movement->Reset();
+		},
+
+		"ResetAndHalt",
+		[](const FLuaInterpToMoveComponentHandle& Self)
+		{
+			UInterpToMovementComponent* Movement = Self.Resolve();
+			if (!Movement)
+			{
+				UE_LOG("[Lua] Invalid InterpToMoveComponent.ResetAndHalt Access.");
+				return;
+			}
+			Movement->ResetAndHalt();
+		}
+	);
+}
+void RegisterPendulumMovementComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaPendulumMovementComponentHandle>(
+		"PendulumMovementComponent",
+
+		sol::no_constructor,
+
+		"IsValid",
+		[](const FLuaPendulumMovementComponentHandle& Handle) { return Handle.IsValid(); },
+
+		"UUID",
+		sol::property([](const FLuaPendulumMovementComponentHandle& Self) { return Self.UUID; }),
+
+		"Axis",
+		sol::property(
+			[](const FLuaPendulumMovementComponentHandle& Self)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetAxis() : FVector::UpVector;
+			},
+			[](const FLuaPendulumMovementComponentHandle& Self, const FVector& Axis)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid PendulumMovementComponent.Axis Access.");
+					return;
+				}
+				Movement->SetAxis(Axis);
+			}
+		),
+
+		"Amplitude",
+		sol::property(
+			[](const FLuaPendulumMovementComponentHandle& Self)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetAmplitude() : 0.0f;
+			},
+			[](const FLuaPendulumMovementComponentHandle& Self, float Amplitude)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid PendulumMovementComponent.Amplitude Access.");
+					return;
+				}
+				Movement->SetAmplitude(Amplitude);
+			}
+		),
+
+		"Frequency",
+		sol::property(
+			[](const FLuaPendulumMovementComponentHandle& Self)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetFrequency() : 0.0f;
+			},
+			[](const FLuaPendulumMovementComponentHandle& Self, float Frequency)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid PendulumMovementComponent.Frequency Access.");
+					return;
+				}
+				Movement->SetFrequency(Frequency);
+			}
+		),
+
+		"Phase",
+		sol::property(
+			[](const FLuaPendulumMovementComponentHandle& Self)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetPhase() : 0.0f;
+			},
+			[](const FLuaPendulumMovementComponentHandle& Self, float Phase)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid PendulumMovementComponent.Phase Access.");
+					return;
+				}
+				Movement->SetPhase(Phase);
+			}
+		),
+
+		"AngleOffset",
+		sol::property(
+			[](const FLuaPendulumMovementComponentHandle& Self)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetAngleOffset() : 0.0f;
+			},
+			[](const FLuaPendulumMovementComponentHandle& Self, float AngleOffset)
+			{
+				UPendulumMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid PendulumMovementComponent.AngleOffset Access.");
+					return;
+				}
+				Movement->SetAngleOffset(AngleOffset);
+			}
+		)
+	);
+}
+void RegisterRotatingMovementComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaRotatingMovementComponentHandle>(
+		"RotatingMovementComponent",
+
+		sol::no_constructor,
+
+		"IsValid",
+		[](const FLuaRotatingMovementComponentHandle& Handle) { return Handle.IsValid(); },
+
+		"UUID",
+		sol::property([](const FLuaRotatingMovementComponentHandle& Self) { return Self.UUID; }),
+
+		"RotationRate",
+		sol::property(
+			[](const FLuaRotatingMovementComponentHandle& Self)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+
+				if (!Movement)
+				{
+					return FRotator::ZeroRotator;
+				}
+				return Movement->GetRotationRate();
+			},
+			[](const FLuaRotatingMovementComponentHandle& Self, const FRotator& RotationRate)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid RotatingMovementComponent.RotationRate Access.");
+					return;
+				}
+
+				Movement->SetRotationRate(RotationRate);
+			}
+		),
+
+		"RotationInLocalSpace",
+		sol::property(
+			[](const FLuaRotatingMovementComponentHandle& Self)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->IsRotationInLocalSpace() : false;
+			},
+			[](const FLuaRotatingMovementComponentHandle& Self, bool RotationInLocalSpace)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid RotatingMovementComponent.RotationInLocalSpace Access.");
+					return;
+				}
+				Movement->SetRotationInLocalSpace(RotationInLocalSpace);
+			}
+		),
+
+		"PivotTranslation",
+		sol::property(
+			[](const FLuaRotatingMovementComponentHandle& Self)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+				return Movement ? Movement->GetPivotTranslation() : FVector::ZeroVector;
+			},
+			[](const FLuaRotatingMovementComponentHandle& Self, const FVector& PivotTranslation)
+			{
+				URotatingMovementComponent* Movement = Self.Resolve();
+				if (!Movement)
+				{
+					UE_LOG("[Lua] Invalid RotatingMovementComponent.PivotTranslation Access.");
+					return;
+				}
+				Movement->SetPivotTranslation(PivotTranslation);
+			}
+		),
+
+		"ResetWorldPivotCache",
+		[](const FLuaRotatingMovementComponentHandle& Self)
+		{
+			URotatingMovementComponent* Movement = Self.Resolve();
+			if (!Movement)
+			{
+				UE_LOG("[Lua] Invalid RotatingMovementComponent.ResetWorldPivotCache Access.");
+				return;
+			}
+			Movement->ResetWorldPivotCache();
 		}
 	);
 }
@@ -356,6 +865,7 @@ void RegisterShapeComponentBinding(sol::state& Lua)
 	Lua["ShapeType_Sphere"] = static_cast<int>(ECollisionShapeType::Sphere);
 	Lua["ShapeType_Capsule"] = static_cast<int>(ECollisionShapeType::Capsule);
 }
+
 void RegisterBoxComponentBinding(sol::state& Lua)
 {
 	Lua.new_usertype<FLuaBoxComponentHandle>(
