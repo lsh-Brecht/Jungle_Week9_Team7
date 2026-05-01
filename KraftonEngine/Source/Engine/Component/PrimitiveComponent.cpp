@@ -84,7 +84,7 @@ void UPrimitiveComponent::MarkRenderTransformDirty()
 	if (!World) return;
 
 	World->UpdateActorInOctree(OwnerActor);
-	World->MarkWorldPrimitivePickingBVHDirty();
+	World->UpdateWorldPrimitivePickingBVH(this);
 }
 
 void UPrimitiveComponent::MarkRenderVisibilityDirty()
@@ -98,7 +98,14 @@ void UPrimitiveComponent::MarkRenderVisibilityDirty()
 
 	// 가시성 변화는 Octree 포함 여부도 좌우하므로 액터 dirty로 반영한다.
 	World->UpdateActorInOctree(OwnerActor);
-	World->MarkWorldPrimitivePickingBVHDirty();
+	if (bIsVisible)
+	{
+		World->InsertWorldPrimitivePickingBVH(this);
+	}
+	else
+	{
+		World->RemoveWorldPrimitivePickingBVH(this);
+	}
 }
 
 void UPrimitiveComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
@@ -234,6 +241,7 @@ void UPrimitiveComponent::CreateRenderState()
 
 	FScene& Scene = Owner->GetWorld()->GetScene();
 	SceneProxy = Scene.AddPrimitive(this);
+	Owner->GetWorld()->InsertWorldPrimitivePickingBVH(this);
 }
 
 void UPrimitiveComponent::DestroyRenderState()
@@ -244,7 +252,7 @@ void UPrimitiveComponent::DestroyRenderState()
 		if (UWorld* World = Owner->GetWorld())
 		{
 			World->GetPartition().RemoveSinglePrimitive(this);
-			World->MarkWorldPrimitivePickingBVHDirty();
+			World->RemoveWorldPrimitivePickingBVH(this);
 
 			if (SceneProxy)
 			{

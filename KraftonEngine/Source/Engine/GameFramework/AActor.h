@@ -41,7 +41,6 @@ public:
 		OwnedComponents.push_back(Comp);
 		bPrimitiveCacheDirty = true;
 		Comp->CreateRenderState();
-		MarkPickingDirty();
 		return Comp;
 	}
 

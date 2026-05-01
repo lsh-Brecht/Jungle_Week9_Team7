@@ -1,37 +1,27 @@
-﻿#include "Collision/WorldPrimitivePickingBVH.h"
+#include "Collision/WorldPrimitivePickingBVH.h"
 
 #include "Collision/RayUtils.h"
-#include "Collision/RayUtilsSIMD.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "GameFramework/AActor.h"
 
 #include <algorithm>
-#include <bit>
+#include <cassert>
 
-/**
- * BVH 트리를 설정합니다.
- */
 namespace
 {
-	constexpr int32 WorldBVHChildFanout = 8;		//각 노드의 최대 자식 수 (8이면 SIMD와 호응)
-	constexpr int32 WorldBVHLeafPacketSize = 8;		//각 리프 노드의 최대 프리미티브 수 (8이면 SIMD와 호응)
-	constexpr int32 WorldBVHMaxLeafSize = 16;		//Threshold, 이 기준보다 작으면 더 이상 분할하지 않고 리프로 만듭니다. 
-	constexpr int32 WorldBVHMaxTraversalStack = 512;
+	constexpr float WorldBVHFatBoundsScale = 0.15f;
+	constexpr float WorldBVHFatBoundsMinPadding = 1.0f;
 
-	float GetAxisComponent(const FVector& Vector, int32 Axis)
-	{
-		return Axis == 0 ? Vector.X : (Axis == 1 ? Vector.Y : Vector.Z);
-	}
-
-	float GetBoundsSurfaceArea(const FBoundingBox& Bounds)
-	{
-		const FVector Extent = Bounds.GetExtent();
-		const float Width = std::max(Extent.X * 2.0f, 0.0f);
-		const float Height = std::max(Extent.Y * 2.0f, 0.0f);
-		const float Depth = std::max(Extent.Z * 2.0f, 0.0f);
-		return 2.0f * ((Width * Height) + (Width * Depth) + (Height * Depth));
-	}
+	const FColor WorldBVHDepthColors[] = {
+		FColor(255,   0,   0),
+		FColor(255, 165,   0),
+		FColor(255, 255,   0),
+		FColor(0,   255,   0),
+		FColor(0,   255, 255),
+		FColor(0,     0, 255),
+	};
+	constexpr int32 WorldBVHDepthColorCount = sizeof(WorldBVHDepthColors) / sizeof(WorldBVHDepthColors[0]);
 }
 
 void FWorldPrimitivePickingBVH::MarkDirty()
@@ -39,11 +29,19 @@ void FWorldPrimitivePickingBVH::MarkDirty()
 	bDirty = true;
 }
 
+void FWorldPrimitivePickingBVH::Reset()
+{
+	Nodes.clear();
+	FreeNodeIndices.clear();
+	ObjectToLeafNode.clear();
+	PathToRootScratch.clear();
+	RootNodeIndex = INDEX_NONE;
+	bDirty = false;
+}
+
 void FWorldPrimitivePickingBVH::BuildNow(const TArray<AActor*>& Actors)
 {
-	Leaves.clear();
-	Nodes.clear();
-	PrimitivePackets.clear();
+	Reset();
 
 	for (AActor* Actor : Actors)
 	{
@@ -54,95 +52,194 @@ void FWorldPrimitivePickingBVH::BuildNow(const TArray<AActor*>& Actors)
 
 		for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 		{
-			if (!Primitive || !Primitive->IsVisible())
-			{
-				continue;
-			}
-
-			FLeaf Leaf;
-			Leaf.Primitive = Primitive;
-			Leaf.StaticMeshPrimitive = Cast<UStaticMeshComponent>(Primitive);
-			Leaf.Owner = Actor;
-			Leaf.Bounds = Primitive->GetWorldBoundingBox();
-
-			if (!Leaf.Bounds.IsValid())
-			{
-				continue;
-			}
-
-			Leaves.push_back(Leaf);
+			InsertObject(Primitive);
 		}
 	}
 
-	if (!Leaves.empty())
-	{
-		PrimitivePackets.reserve((static_cast<int32>(Leaves.size()) + WorldBVHLeafPacketSize - 1) / WorldBVHLeafPacketSize);
-		BuildRecursive(0, static_cast<int32>(Leaves.size()));
-	}
-
 	bDirty = false;
+	ValidateBVH();
 }
 
 void FWorldPrimitivePickingBVH::EnsureBuilt(const TArray<AActor*>& Actors)
 {
-	if (!bDirty)
+	if (bDirty)
+	{
+		BuildNow(Actors);
+	}
+}
+
+bool FWorldPrimitivePickingBVH::InsertObject(UPrimitiveComponent* Primitive)
+{
+	if (!Primitive || ContainsObject(Primitive))
+	{
+		return false;
+	}
+
+	AActor* Owner = Primitive->GetOwner();
+	if (!Owner || !Owner->IsVisible() || !Primitive->IsVisible())
+	{
+		return false;
+	}
+
+	const FBoundingBox Bounds = Primitive->GetWorldBoundingBox();
+	if (!Bounds.IsValid())
+	{
+		return false;
+	}
+
+	const int32 LeafNodeIndex = CreateLeafNode(Primitive, Bounds);
+	if (LeafNodeIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	InsertLeafNode(LeafNodeIndex);
+	ObjectToLeafNode[Primitive] = LeafNodeIndex;
+	bDirty = false;
+	ValidateBVH();
+	return true;
+}
+
+bool FWorldPrimitivePickingBVH::RemoveObject(UPrimitiveComponent* Primitive)
+{
+	const int32 LeafNodeIndex = FindLeafNodeIndexByObject(Primitive);
+	if (LeafNodeIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	RemoveLeafNode(LeafNodeIndex);
+	ObjectToLeafNode.erase(Primitive);
+	bDirty = false;
+	ValidateBVH();
+	return true;
+}
+
+bool FWorldPrimitivePickingBVH::UpdateObject(UPrimitiveComponent* Primitive)
+{
+	const int32 LeafNodeIndex = FindLeafNodeIndexByObject(Primitive);
+	if (LeafNodeIndex == INDEX_NONE)
+	{
+		return InsertObject(Primitive);
+	}
+
+	if (!Primitive)
+	{
+		return false;
+	}
+
+	AActor* Owner = Primitive->GetOwner();
+	if (!Owner || !Owner->IsVisible() || !Primitive->IsVisible())
+	{
+		return RemoveObject(Primitive);
+	}
+
+	const FBoundingBox NewBounds = Primitive->GetWorldBoundingBox();
+	if (!NewBounds.IsValid())
+	{
+		return RemoveObject(Primitive);
+	}
+
+	FNode& Leaf = Nodes[LeafNodeIndex];
+	if (!Leaf.FatBounds.IsContains(NewBounds))
+	{
+		RemoveObject(Primitive);
+		return InsertObject(Primitive);
+	}
+
+	Leaf.Bounds = NewBounds;
+	Leaf.Primitive = Primitive;
+	Leaf.StaticMeshPrimitive = Cast<UStaticMeshComponent>(Primitive);
+	Leaf.Owner = Owner;
+	RefitUpwards(LeafNodeIndex);
+	OptimizeAlongPath(LeafNodeIndex);
+	bDirty = false;
+	ValidateBVH();
+	return true;
+}
+
+bool FWorldPrimitivePickingBVH::ContainsObject(UPrimitiveComponent* Primitive) const
+{
+	return FindLeafNodeIndexByObject(Primitive) != INDEX_NONE;
+}
+
+void FWorldPrimitivePickingBVH::CollectDebugAABBs(TArray<FDebugAABB>& OutAABBs, bool bIncludeFatBounds) const
+{
+	if (RootNodeIndex == INDEX_NONE || !IsValidNodeIndex(RootNodeIndex, static_cast<int32>(Nodes.size())))
 	{
 		return;
 	}
 
-	BuildNow(Actors);
+	TArray<int32> Stack;
+	Stack.reserve(Nodes.size());
+	Stack.push_back(RootNodeIndex);
+
+	while (!Stack.empty())
+	{
+		const int32 NodeIndex = Stack.back();
+		Stack.pop_back();
+
+		if (!IsValidNodeIndex(NodeIndex, static_cast<int32>(Nodes.size())))
+		{
+			continue;
+		}
+
+		const FNode& Node = Nodes[NodeIndex];
+		if (!Node.Bounds.IsValid())
+		{
+			continue;
+		}
+
+		const FColor Color = Node.IsLeaf()
+			? FColor(220, 255, 220)
+			: WorldBVHDepthColors[Node.Depth % WorldBVHDepthColorCount];
+		OutAABBs.push_back({ Node.Bounds.Min, Node.Bounds.Max, Color });
+
+		if (bIncludeFatBounds && Node.IsLeaf() && Node.FatBounds.IsValid())
+		{
+			OutAABBs.push_back({ Node.FatBounds.Min, Node.FatBounds.Max, FColor(80, 180, 255) });
+		}
+
+		if (!Node.IsLeaf())
+		{
+			Stack.push_back(Node.Right);
+			Stack.push_back(Node.Left);
+		}
+	}
 }
 
-/**
- * @brief BVH 트리를 순회하며 주어진 Ray와 교차하는 가장 가까운 프리미티브를 찾습니다.
- * SIMD를 활용하여 (BVH 트리에서 자식으로 이동하며 만나는) 여러 AABB와의 교차 검사를
- * 병렬로 빠르게 수행하며, 비트 연산 기반의 최적화를 통해 유효한 충돌만 빠르게 필터링합니다.
- * 검사된 노드들은 거리에 따라 정렬되어 가장 가까운 노드부터 탐색하여
- * 불필요한 연산을 효과적으로 걷어냅니다.
- *
- * @param Ray 쏠 광선(Ray)의 원점과 방향 정보
- * @param OutHitResult 가장 가까운 교차점의 물리적 충돌 결과 (반환용)
- * @param OutActor 교차된 프리미티브를 소유한 액터 포인터 (반환용)
- * @return 교차한 액터가 있으면 true, 없으면 false를 반환합니다.
- */
 bool FWorldPrimitivePickingBVH::Raycast(const FRay& Ray, FHitResult& OutHitResult, AActor*& OutActor) const
 {
 	struct FTraversalEntry
 	{
-		int32 NodeIndex = -1;
+		int32 NodeIndex = INDEX_NONE;
 		float TMin = 0.0f;
 	};
 
 	OutHitResult = {};
 	OutActor = nullptr;
 
-	if (Nodes.empty())
+	if (RootNodeIndex == INDEX_NONE || !IsValidNodeIndex(RootNodeIndex, static_cast<int32>(Nodes.size())))
 	{
 		return false;
 	}
 
 	float RootTMin = 0.0f;
 	float RootTMax = 0.0f;
-
-	//루트 노드에 대해 AABB 검사 후 실패했다면, picking될 가능성이 없을 테니 바로 return.
-	if (!FRayUtils::IntersectRayAABB(Ray, Nodes[0].Bounds.Min, Nodes[0].Bounds.Max, RootTMin, RootTMax))
+	if (!FRayUtils::IntersectRayAABB(Ray, Nodes[RootNodeIndex].Bounds.Min, Nodes[RootNodeIndex].Bounds.Max, RootTMin, RootTMax))
 	{
 		return false;
 	}
 
-	//SIMD 최적화를 위해 Ray 정보를 미리 SIMD 레지스터에 적재해둡니다. Gather 오버헤드를 줄일 수 있습니다.
-	const FRaySIMDContext RayContext = FRayUtilsSIMD::MakeRayContext(Ray.Origin, Ray.Direction);
+	TArray<FTraversalEntry> NodeStack;
+	NodeStack.reserve(Nodes.size());
+	NodeStack.push_back({ RootNodeIndex, RootTMin });
 
-	//BVH 트리 순회. DFS 방식이나 재귀 없이 로컬 스택을 사용
-	FTraversalEntry NodeStack[WorldBVHMaxTraversalStack];
-	int32 StackSize = 0;
-	NodeStack[StackSize++] = { 0, RootTMin };
-
-	while (StackSize > 0)
+	while (!NodeStack.empty())
 	{
-		const FTraversalEntry Entry = NodeStack[--StackSize];
-		//현재 노드와의 최소 교차 거리가 이미 찾은 가장 가까운 충돌점보다 멀다면 검사를 생략합니다
-		if (Entry.TMin > OutHitResult.Distance)
+		const FTraversalEntry Entry = NodeStack.back();
+		NodeStack.pop_back();
+		if (Entry.TMin >= OutHitResult.Distance)
 		{
 			continue;
 		}
@@ -150,434 +247,657 @@ bool FWorldPrimitivePickingBVH::Raycast(const FRay& Ray, FHitResult& OutHitResul
 		const FNode& Node = Nodes[Entry.NodeIndex];
 		if (Node.IsLeaf())
 		{
-			FTraversalEntry PrimitiveEntries[WorldBVHMaxLeafSize];
-			int32 PrimitiveEntryCount = 0;
-
-			//교차 판정이 필요한 리프 노드의 프리미티브들입니다.
-			for (int32 PacketIndex = 0; PacketIndex < Node.PrimitivePacketCount; ++PacketIndex)
+			if (!Node.Primitive || !Node.Owner || !Node.Owner->IsVisible() || !Node.Primitive->IsVisible())
 			{
-				//Ray와 충돌 검사할 AABB packet들을 가져옵니다.
-				const FPrimitivePacket& Packet = PrimitivePackets[Node.FirstPrimitivePacket + PacketIndex];
-				alignas(32) float PrimitiveTMinValues[8]; //32비트 정렬
-				//리프 노드 내부에서 AABB 테스트를 SIMD로 수행하여 hit primitive 후보를 뽑아냅니다.
-				const int32 PrimitiveMask = FRayUtilsSIMD::IntersectAABB8(
-					RayContext,
-					Packet.MinX, Packet.MinY, Packet.MinZ,
-					Packet.MaxX, Packet.MaxY, Packet.MaxZ,
-					OutHitResult.Distance,
-					PrimitiveTMinValues);
-
-				// 광선과 충돌한 자식이 하나도 없다면 하위 탐색 생략
-				if (PrimitiveMask == 0)
-				{
-					continue;
-				}
-				// 월드 BVH도 메시 BVH와 동일하게, 루프를 돌지 않고 countr_zero를 사용하여 충돌한 ChildLane만 빠르게 추출
-
-				uint32 RemainingPrimitiveMask = static_cast<uint32>(PrimitiveMask) & ((1u << Packet.PrimitiveCount) - 1u);
-				// countr_zero를 통해 켜져 있는 가장 낮은 비트(Lane 인덱스)를 찾아내는 방식으로
-				// for문을 전부 순회하는 O(N) 대신 켜진 비트 수 비례대로 O(k)로 루프를 처리합니다.
-				while (RemainingPrimitiveMask != 0)
-				{
-					const uint32 Lane = std::countr_zero(RemainingPrimitiveMask);
-					PrimitiveEntries[PrimitiveEntryCount++] = { Packet.PrimitiveIndices[Lane], PrimitiveTMinValues[Lane] };
-					RemainingPrimitiveMask &= (RemainingPrimitiveMask - 1);
-				}
+				continue;
 			}
 
-			//잠재적 충돌 대상 프리미티브들을 거리 순으로 정렬합니다.
-			//가장 가까운 것을 먼저 정밀 검사해야 이후 후보들을 빠르게 쳐낼 수 있습니다.
-			if (PrimitiveEntryCount > 1)
+			FHitResult CandidateHit{};
+			bool bHit = false;
+
+			if (UStaticMeshComponent* const StaticMeshComponent = Node.StaticMeshPrimitive)
 			{
-				if (PrimitiveEntryCount == 2)
-				{
-					if (PrimitiveEntries[1].TMin < PrimitiveEntries[0].TMin)
-					{
-						std::swap(PrimitiveEntries[0], PrimitiveEntries[1]);
-					}
-				}
-				else // 삽입 정렬 수행
-				{
-					for (int32 I = 1; I < PrimitiveEntryCount; ++I)
-					{
-						FTraversalEntry Key = PrimitiveEntries[I];
-						int32 J = I - 1;
-						//가까운 것이 배열의 앞쪽 인덱스로 오도록 정렬
-						while (J >= 0 && PrimitiveEntries[J].TMin > Key.TMin)
-						{
-							PrimitiveEntries[J + 1] = PrimitiveEntries[J];
-							--J;
-						}
-						PrimitiveEntries[J + 1] = Key;
-					}
-				}
+				const FMatrix& WorldMatrix = StaticMeshComponent->GetWorldMatrix();
+				const FMatrix& WorldInverse = StaticMeshComponent->GetWorldInverseMatrix();
+				bHit = StaticMeshComponent->LineTraceStaticMeshFast(Ray, WorldMatrix, WorldInverse, CandidateHit);
+			}
+			else
+			{
+				bHit = Node.Primitive->LineTraceComponent(Ray, CandidateHit);
 			}
 
-			//정렬된 후보들을 순서대로 실제 폴리곤 단위의 정밀 충돌 검사를 시작합니다.
-			//여기서부터 narrow phase, mesh BVH입니다.
-			for (int32 EntryIndex = 0; EntryIndex < PrimitiveEntryCount; ++EntryIndex)
+			if (bHit && CandidateHit.Distance < OutHitResult.Distance)
 			{
-				if (PrimitiveEntries[EntryIndex].TMin >= OutHitResult.Distance)
-				{
-					//이미 더 가까운 hit를 찾은 뒤에는 그보다 먼 후보를 바로 버립니다.
-					//위의 pruning과는 별개입니다.
-					continue;
-				}
-
-				const FLeaf& Leaf = Leaves[PrimitiveEntries[EntryIndex].NodeIndex];
-				FHitResult CandidateHit{};
-				bool bHit = false;
-
-				// 스태틱 메시 컴포넌트인 경우 최적화된 계층적 메시 교차 검사를 호출
-				if (UStaticMeshComponent* const StaticMeshComponent = Leaf.StaticMeshPrimitive)
-				{
-					const FMatrix& WorldMatrix = StaticMeshComponent->GetWorldMatrix();
-					const FMatrix& WorldInverse = StaticMeshComponent->GetWorldInverseMatrix();
-					bHit = StaticMeshComponent->LineTraceStaticMeshFast(Ray, WorldMatrix, WorldInverse, CandidateHit);
-				}
-				else
-				{
-					bHit = Leaf.Primitive->LineTraceComponent(Ray, CandidateHit);
-				}
-
-				//현재 최고 기록보다 매시에 닿은 실제 거리가 더 짧다면 결과를 갱신합니다.
-				if (bHit && CandidateHit.Distance < OutHitResult.Distance)
-				{
-					OutHitResult = CandidateHit;
-					OutActor = Leaf.Owner;
-				}
+				OutHitResult = CandidateHit;
+				OutActor = Node.Owner;
 			}
 			continue;
 		}
 
-		alignas(32) float TMinValues[8];
-		const int32 Mask = FRayUtilsSIMD::IntersectAABB8(
-			RayContext,
-			Node.ChildMinX, Node.ChildMinY, Node.ChildMinZ,
-			Node.ChildMaxX, Node.ChildMaxY, Node.ChildMaxZ,
-			OutHitResult.Distance,
-			TMinValues);
-		if (Mask == 0)
-		{
-			continue;
-		}
+		float LeftTMin = 0.0f;
+		float LeftTMax = 0.0f;
+		float RightTMin = 0.0f;
+		float RightTMax = 0.0f;
 
-		FTraversalEntry ChildEntries[WorldBVHChildFanout];
-		int32 ChildEntryCount = 0;
+		const bool bHitLeft = IsValidNodeIndex(Node.Left, static_cast<int32>(Nodes.size())) &&
+			FRayUtils::IntersectRayAABB(Ray, Nodes[Node.Left].Bounds.Min, Nodes[Node.Left].Bounds.Max, LeftTMin, LeftTMax) &&
+			LeftTMin < OutHitResult.Distance;
+		const bool bHitRight = IsValidNodeIndex(Node.Right, static_cast<int32>(Nodes.size())) &&
+			FRayUtils::IntersectRayAABB(Ray, Nodes[Node.Right].Bounds.Min, Nodes[Node.Right].Bounds.Max, RightTMin, RightTMax) &&
+			RightTMin < OutHitResult.Distance;
 
-		// 월드 BVH도 메시 BVH와 같은 방식으로 hit child만 뽑아 정렬한다.
-		// 가까운 child를 먼저 방문해야 OutHitResult.Distance가 빨리 줄어 후속 노드를 더 많이 건너뛸 수 있다.
-		uint32 RemainingChildMask = static_cast<uint32>(Mask) & ((1u << Node.ChildCount) - 1u);
-		while (RemainingChildMask != 0)
+		if (bHitLeft && bHitRight)
 		{
-			const uint32 Lane = std::countr_zero(RemainingChildMask);
-			ChildEntries[ChildEntryCount++] = { Node.Children[Lane], TMinValues[Lane] };
-			RemainingChildMask &= (RemainingChildMask - 1);
-		}
-
-		if (ChildEntryCount == 1)
-		{
-			if (StackSize < WorldBVHMaxTraversalStack)
+			if (LeftTMin <= RightTMin)
 			{
-				NodeStack[StackSize++] = ChildEntries[0];
+				NodeStack.push_back({ Node.Right, RightTMin });
+				NodeStack.push_back({ Node.Left, LeftTMin });
 			}
-			continue;
-		}
-
-		if (ChildEntryCount == 2 && ChildEntries[0].TMin < ChildEntries[1].TMin)
-		{
-			std::swap(ChildEntries[0], ChildEntries[1]);
-		}
-		else if (ChildEntryCount > 2)
-		{
-			for (int32 I = 1; I < ChildEntryCount; ++I)
+			else
 			{
-				FTraversalEntry Key = ChildEntries[I];
-				int32 J = I - 1;
-				while (J >= 0 && ChildEntries[J].TMin < Key.TMin)
-				{
-					ChildEntries[J + 1] = ChildEntries[J];
-					--J;
-				}
-				ChildEntries[J + 1] = Key;
+				NodeStack.push_back({ Node.Left, LeftTMin });
+				NodeStack.push_back({ Node.Right, RightTMin });
 			}
 		}
-
-		for (int32 I = 0; I < ChildEntryCount && StackSize < WorldBVHMaxTraversalStack; ++I)
+		else if (bHitLeft)
 		{
-			NodeStack[StackSize++] = ChildEntries[I];
+			NodeStack.push_back({ Node.Left, LeftTMin });
+		}
+		else if (bHitRight)
+		{
+			NodeStack.push_back({ Node.Right, RightTMin });
 		}
 	}
 
 	return OutActor != nullptr;
 }
 
-int32 FWorldPrimitivePickingBVH::BuildRecursive(int32 Start, int32 End)
+int32 FWorldPrimitivePickingBVH::AllocateNode()
 {
-	const int32 NodeIndex = static_cast<int32>(Nodes.size());
-	Nodes.emplace_back();
-
-	FBoundingBox Bounds;
-	for (int32 LeafIndex = Start; LeafIndex < End; ++LeafIndex)
+	if (!FreeNodeIndices.empty())
 	{
-		const FBoundingBox& LeafBounds = Leaves[LeafIndex].Bounds;
-		Bounds.Expand(LeafBounds.Min);
-		Bounds.Expand(LeafBounds.Max);
-	}
-	Nodes[NodeIndex].Bounds = Bounds;
-
-	const int32 LeafCount = End - Start;
-	if (LeafCount <= WorldBVHMaxLeafSize)
-	{
-		Nodes[NodeIndex].FirstLeaf = Start;
-		Nodes[NodeIndex].LeafCount = LeafCount;
-		Nodes[NodeIndex].FirstPrimitivePacket = static_cast<int32>(PrimitivePackets.size());
-		Nodes[NodeIndex].PrimitivePacketCount = (LeafCount + WorldBVHLeafPacketSize - 1) / WorldBVHLeafPacketSize;
-
-		for (int32 PacketIndex = 0; PacketIndex < Nodes[NodeIndex].PrimitivePacketCount; ++PacketIndex)
-		{
-			const int32 PacketStart = Start + PacketIndex * WorldBVHLeafPacketSize;
-			const int32 PacketEnd = std::min(PacketStart + WorldBVHLeafPacketSize, End);
-
-			FPrimitivePacket Packet{};
-			Packet.PrimitiveCount = PacketEnd - PacketStart;
-
-			for (int32 LocalIndex = 0; LocalIndex < WorldBVHLeafPacketSize; ++LocalIndex)
-			{
-				if (LocalIndex < Packet.PrimitiveCount)
-				{
-					const int32 LeafIndex = PacketStart + LocalIndex;
-					const FBoundingBox& LeafBounds = Leaves[LeafIndex].Bounds;
-					Packet.PrimitiveIndices[LocalIndex] = LeafIndex;
-					Packet.MinX[LocalIndex] = LeafBounds.Min.X;
-					Packet.MinY[LocalIndex] = LeafBounds.Min.Y;
-					Packet.MinZ[LocalIndex] = LeafBounds.Min.Z;
-					Packet.MaxX[LocalIndex] = LeafBounds.Max.X;
-					Packet.MaxY[LocalIndex] = LeafBounds.Max.Y;
-					Packet.MaxZ[LocalIndex] = LeafBounds.Max.Z;
-				}
-				else
-				{
-					Packet.MinX[LocalIndex] = 1e30f;
-					Packet.MinY[LocalIndex] = 1e30f;
-					Packet.MinZ[LocalIndex] = 1e30f;
-					Packet.MaxX[LocalIndex] = -1e30f;
-					Packet.MaxY[LocalIndex] = -1e30f;
-					Packet.MaxZ[LocalIndex] = -1e30f;
-				}
-			}
-
-			PrimitivePackets.push_back(Packet);
-		}
-
+		const int32 NodeIndex = FreeNodeIndices.back();
+		FreeNodeIndices.pop_back();
+		Nodes[NodeIndex] = FNode{};
 		return NodeIndex;
 	}
 
-	float BestCost = FLT_MAX;
-	int32 BestAxis = 0;
-	bool bFoundValidAxis = false;
+	const int32 NodeIndex = static_cast<int32>(Nodes.size());
+	Nodes.emplace_back();
+	return NodeIndex;
+}
 
-	// 월드 BVH split도 triangle BVH와 동일한 bucket cost 모델을 사용한다.
-	// primitive 수가 많을수록 overlap을 줄이는 편이 SIMD AABB 테스트 수 자체를 줄이는 데 유리하다.
-	for (int32 Axis = 0; Axis < 3; ++Axis)
+void FWorldPrimitivePickingBVH::ReleaseNode(int32 NodeIndex)
+{
+	if (!IsValidNodeIndex(NodeIndex, static_cast<int32>(Nodes.size())))
 	{
-		float MinCenter = FLT_MAX;
-		float MaxCenter = -FLT_MAX;
-
-		for (int32 LeafIndex = Start; LeafIndex < End; ++LeafIndex)
-		{
-			const float Center = GetAxisComponent(Leaves[LeafIndex].Bounds.GetCenter(), Axis);
-			MinCenter = std::min(MinCenter, Center);
-			MaxCenter = std::max(MaxCenter, Center);
-		}
-
-		if (MaxCenter - MinCenter <= 1e-4f)
-		{
-			continue;
-		}
-
-		FBoundingBox BucketBounds[WorldBVHChildFanout];
-		int32 BucketCounts[WorldBVHChildFanout] = {};
-		const float Scale = static_cast<float>(WorldBVHChildFanout) / (MaxCenter - MinCenter);
-
-		for (int32 LeafIndex = Start; LeafIndex < End; ++LeafIndex)
-		{
-			const FBoundingBox& LeafBounds = Leaves[LeafIndex].Bounds;
-			const float Center = GetAxisComponent(LeafBounds.GetCenter(), Axis);
-			int32 Bucket = static_cast<int32>((Center - MinCenter) * Scale);
-			Bucket = std::clamp(Bucket, 0, WorldBVHChildFanout - 1);
-			BucketBounds[Bucket].Expand(LeafBounds.Min);
-			BucketBounds[Bucket].Expand(LeafBounds.Max);
-			BucketCounts[Bucket]++;
-		}
-
-		float AxisCost = 0.0f;
-		for (int32 Bucket = 0; Bucket < WorldBVHChildFanout; ++Bucket)
-		{
-			if (BucketCounts[Bucket] == 0)
-			{
-				continue;
-			}
-			AxisCost += GetBoundsSurfaceArea(BucketBounds[Bucket]) * static_cast<float>(BucketCounts[Bucket]);
-		}
-
-		if (AxisCost < BestCost)
-		{
-			BestCost = AxisCost;
-			BestAxis = Axis;
-			bFoundValidAxis = true;
-		}
+		return;
 	}
 
-	if (!bFoundValidAxis)
+	Nodes[NodeIndex] = FNode{};
+	FreeNodeIndices.push_back(NodeIndex);
+}
+
+int32 FWorldPrimitivePickingBVH::CreateLeafNode(UPrimitiveComponent* Primitive, const FBoundingBox& Bounds)
+{
+	if (!Primitive || !Bounds.IsValid())
 	{
-		const FBoundingBox& ReferenceBounds = Leaves[Start].Bounds;
-		const FVector Extent = ReferenceBounds.GetExtent();
-		BestAxis = (Extent.Y > Extent.X && Extent.Y >= Extent.Z) ? 1 : ((Extent.Z > Extent.X && Extent.Z > Extent.Y) ? 2 : 0);
+		return INDEX_NONE;
+	}
 
-		std::sort(
-			Leaves.begin() + Start,
-			Leaves.begin() + End,
-			[BestAxis](const FLeaf& A, const FLeaf& B)
-			{
-				return GetAxisComponent(A.Bounds.GetCenter(), BestAxis) < GetAxisComponent(B.Bounds.GetCenter(), BestAxis);
-			});
+	const int32 LeafNodeIndex = AllocateNode();
+	FNode& Leaf = Nodes[LeafNodeIndex];
+	Leaf.Bounds = Bounds;
+	Leaf.FatBounds = MakeFatBounds(Bounds);
+	Leaf.Parent = INDEX_NONE;
+	Leaf.Left = INDEX_NONE;
+	Leaf.Right = INDEX_NONE;
+	Leaf.Depth = 0;
+	Leaf.Primitive = Primitive;
+	Leaf.StaticMeshPrimitive = Cast<UStaticMeshComponent>(Primitive);
+	Leaf.Owner = Primitive->GetOwner();
+	return LeafNodeIndex;
+}
 
-		const int32 DesiredChildren = std::min<int32>(WorldBVHChildFanout, LeafCount);
-		for (int32 RangeIndex = 0; RangeIndex < DesiredChildren; ++RangeIndex)
+int32 FWorldPrimitivePickingBVH::FindBestSibling(const FBoundingBox& NewBounds) const
+{
+	if (RootNodeIndex == INDEX_NONE)
+	{
+		return INDEX_NONE;
+	}
+
+	int32 Current = RootNodeIndex;
+	while (IsValidNodeIndex(Current, static_cast<int32>(Nodes.size())) && !Nodes[Current].IsLeaf())
+	{
+		const FNode& Node = Nodes[Current];
+		if (!IsValidNodeIndex(Node.Left, static_cast<int32>(Nodes.size())) ||
+			!IsValidNodeIndex(Node.Right, static_cast<int32>(Nodes.size())))
 		{
-			const int32 RangeStart = Start + (LeafCount * RangeIndex) / DesiredChildren;
-			const int32 RangeEnd = Start + (LeafCount * (RangeIndex + 1)) / DesiredChildren;
-			if (RangeStart >= RangeEnd)
-			{
-				continue;
-			}
-
-			const int32 ChildIdx = BuildRecursive(RangeStart, RangeEnd);
-			const int32 LocalChildIdx = Nodes[NodeIndex].ChildCount;
-
-			Nodes[NodeIndex].Children[LocalChildIdx] = ChildIdx;
-
-			const FBoundingBox& ChildBounds = Nodes[ChildIdx].Bounds;
-			Nodes[NodeIndex].ChildMinX[LocalChildIdx] = ChildBounds.Min.X;
-			Nodes[NodeIndex].ChildMinY[LocalChildIdx] = ChildBounds.Min.Y;
-			Nodes[NodeIndex].ChildMinZ[LocalChildIdx] = ChildBounds.Min.Z;
-			Nodes[NodeIndex].ChildMaxX[LocalChildIdx] = ChildBounds.Max.X;
-			Nodes[NodeIndex].ChildMaxY[LocalChildIdx] = ChildBounds.Max.Y;
-			Nodes[NodeIndex].ChildMaxZ[LocalChildIdx] = ChildBounds.Max.Z;
-
-			Nodes[NodeIndex].ChildCount++;
+			return Current;
 		}
+
+		const FNode& Left = Nodes[Node.Left];
+		const FNode& Right = Nodes[Node.Right];
+		const float NodeArea = GetBoundsSurfaceArea(Node.Bounds);
+		const FBoundingBox CombinedBounds = UnionBounds(Node.Bounds, NewBounds);
+		const float CombinedArea = GetBoundsSurfaceArea(CombinedBounds);
+		const float CostHere = 2.0f * CombinedArea;
+		const float InheritanceCost = 2.0f * (CombinedArea - NodeArea);
+
+		auto ComputeDescendCost = [&](const FNode& Child) -> float
+		{
+			const FBoundingBox CombinedChildBounds = UnionBounds(Child.Bounds, NewBounds);
+			const float CombinedChildArea = GetBoundsSurfaceArea(CombinedChildBounds);
+			if (Child.IsLeaf())
+			{
+				return CombinedChildArea + InheritanceCost;
+			}
+			return (CombinedChildArea - GetBoundsSurfaceArea(Child.Bounds)) + InheritanceCost;
+		};
+
+		const float CostLeft = ComputeDescendCost(Left);
+		const float CostRight = ComputeDescendCost(Right);
+		if (CostHere <= CostLeft && CostHere <= CostRight)
+		{
+			break;
+		}
+
+		Current = (CostLeft <= CostRight) ? Node.Left : Node.Right;
+	}
+
+	return Current;
+}
+
+int32 FWorldPrimitivePickingBVH::FindLeafNodeIndexByObject(UPrimitiveComponent* Primitive) const
+{
+	if (!Primitive)
+	{
+		return INDEX_NONE;
+	}
+
+	const auto It = ObjectToLeafNode.find(Primitive);
+	if (It == ObjectToLeafNode.end())
+	{
+		return INDEX_NONE;
+	}
+
+	const int32 LeafNodeIndex = It->second;
+	if (!IsValidNodeIndex(LeafNodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return INDEX_NONE;
+	}
+
+	const FNode& Leaf = Nodes[LeafNodeIndex];
+	return Leaf.IsLeaf() && Leaf.Primitive == Primitive ? LeafNodeIndex : INDEX_NONE;
+}
+
+void FWorldPrimitivePickingBVH::InsertLeafNode(int32 LeafNodeIndex)
+{
+	if (!IsValidNodeIndex(LeafNodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return;
+	}
+
+	if (RootNodeIndex == INDEX_NONE)
+	{
+		RootNodeIndex = LeafNodeIndex;
+		Nodes[LeafNodeIndex].Parent = INDEX_NONE;
+		Nodes[LeafNodeIndex].Depth = 0;
+		return;
+	}
+
+	const int32 SiblingIndex = FindBestSibling(Nodes[LeafNodeIndex].FatBounds);
+	if (SiblingIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	const int32 OldParentIndex = Nodes[SiblingIndex].Parent;
+	const int32 NewParentIndex = AllocateNode();
+
+	FNode& NewParent = Nodes[NewParentIndex];
+	NewParent.Parent = OldParentIndex;
+	NewParent.Left = SiblingIndex;
+	NewParent.Right = LeafNodeIndex;
+	NewParent.Bounds = UnionBounds(Nodes[SiblingIndex].Bounds, Nodes[LeafNodeIndex].Bounds);
+	NewParent.FatBounds = UnionBounds(Nodes[SiblingIndex].FatBounds, Nodes[LeafNodeIndex].FatBounds);
+	NewParent.Depth = (OldParentIndex == INDEX_NONE) ? 0 : Nodes[OldParentIndex].Depth + 1;
+
+	if (OldParentIndex == INDEX_NONE)
+	{
+		RootNodeIndex = NewParentIndex;
+	}
+	else if (Nodes[OldParentIndex].Left == SiblingIndex)
+	{
+		Nodes[OldParentIndex].Left = NewParentIndex;
 	}
 	else
 	{
-		float MinCenter = FLT_MAX;
-		float MaxCenter = -FLT_MAX;
-		for (int32 LeafIndex = Start; LeafIndex < End; ++LeafIndex)
+		Nodes[OldParentIndex].Right = NewParentIndex;
+	}
+
+	Nodes[SiblingIndex].Parent = NewParentIndex;
+	Nodes[LeafNodeIndex].Parent = NewParentIndex;
+	UpdateDepthsFromNode(NewParentIndex, NewParent.Depth);
+	RefitUpwardsAfterStructuralChange(NewParentIndex);
+	OptimizeAlongPath(NewParentIndex);
+}
+
+void FWorldPrimitivePickingBVH::RemoveLeafNode(int32 LeafNodeIndex)
+{
+	if (!IsValidNodeIndex(LeafNodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return;
+	}
+
+	const int32 ParentIndex = Nodes[LeafNodeIndex].Parent;
+	if (ParentIndex == INDEX_NONE)
+	{
+		RootNodeIndex = INDEX_NONE;
+		ReleaseNode(LeafNodeIndex);
+		return;
+	}
+
+	const int32 GrandParentIndex = Nodes[ParentIndex].Parent;
+	const int32 SiblingIndex = (Nodes[ParentIndex].Left == LeafNodeIndex) ? Nodes[ParentIndex].Right : Nodes[ParentIndex].Left;
+
+	if (GrandParentIndex == INDEX_NONE)
+	{
+		RootNodeIndex = SiblingIndex;
+		Nodes[SiblingIndex].Parent = INDEX_NONE;
+		UpdateDepthsFromNode(SiblingIndex, 0);
+	}
+	else
+	{
+		if (Nodes[GrandParentIndex].Left == ParentIndex)
 		{
-			const float Center = GetAxisComponent(Leaves[LeafIndex].Bounds.GetCenter(), BestAxis);
-			MinCenter = std::min(MinCenter, Center);
-			MaxCenter = std::max(MaxCenter, Center);
-		}
-
-		const float Scale = static_cast<float>(WorldBVHChildFanout) / (MaxCenter - MinCenter);
-		auto GetBucket = [BestAxis, MinCenter, Scale](const FLeaf& Leaf)
-		{
-			const float Center = GetAxisComponent(Leaf.Bounds.GetCenter(), BestAxis);
-			int32 Bucket = static_cast<int32>((Center - MinCenter) * Scale);
-			return std::clamp(Bucket, 0, WorldBVHChildFanout - 1);
-		};
-
-		std::sort(
-			Leaves.begin() + Start,
-			Leaves.begin() + End,
-			[BestAxis, GetBucket](const FLeaf& A, const FLeaf& B)
-			{
-				const int32 BucketA = GetBucket(A);
-				const int32 BucketB = GetBucket(B);
-				if (BucketA != BucketB)
-				{
-					return BucketA < BucketB;
-				}
-				const float CenterA = GetAxisComponent(A.Bounds.GetCenter(), BestAxis);
-				const float CenterB = GetAxisComponent(B.Bounds.GetCenter(), BestAxis);
-				if (CenterA != CenterB)
-				{
-					return CenterA < CenterB;
-				}
-				return A.Owner < B.Owner;
-			});
-
-		// 한 bucket에 모두 몰린 분포에서는 cost model이 유효한 분할점을 제공하지 못한다.
-		// 이 경우 균등 분할로 fallback해 재귀가 진행되도록 보장한다.
-		if (GetBucket(Leaves[Start]) == GetBucket(Leaves[End - 1]))
-		{
-			const int32 DesiredChildren = std::min<int32>(WorldBVHChildFanout, LeafCount);
-			for (int32 RangeIndex = 0; RangeIndex < DesiredChildren; ++RangeIndex)
-			{
-				const int32 RangeStart = Start + (LeafCount * RangeIndex) / DesiredChildren;
-				const int32 RangeEnd = Start + (LeafCount * (RangeIndex + 1)) / DesiredChildren;
-				if (RangeStart >= RangeEnd)
-				{
-					continue;
-				}
-
-				const int32 ChildIdx = BuildRecursive(RangeStart, RangeEnd);
-				const int32 LocalChildIdx = Nodes[NodeIndex].ChildCount;
-
-				Nodes[NodeIndex].Children[LocalChildIdx] = ChildIdx;
-
-				const FBoundingBox& ChildBounds = Nodes[ChildIdx].Bounds;
-				Nodes[NodeIndex].ChildMinX[LocalChildIdx] = ChildBounds.Min.X;
-				Nodes[NodeIndex].ChildMinY[LocalChildIdx] = ChildBounds.Min.Y;
-				Nodes[NodeIndex].ChildMinZ[LocalChildIdx] = ChildBounds.Min.Z;
-				Nodes[NodeIndex].ChildMaxX[LocalChildIdx] = ChildBounds.Max.X;
-				Nodes[NodeIndex].ChildMaxY[LocalChildIdx] = ChildBounds.Max.Y;
-				Nodes[NodeIndex].ChildMaxZ[LocalChildIdx] = ChildBounds.Max.Z;
-
-				Nodes[NodeIndex].ChildCount++;
-			}
+			Nodes[GrandParentIndex].Left = SiblingIndex;
 		}
 		else
 		{
-		int32 RangeStart = Start;
-		while (RangeStart < End)
-		{
-			int32 RangeEnd = RangeStart + 1;
-			const int32 Bucket = GetBucket(Leaves[RangeStart]);
-			while (RangeEnd < End && GetBucket(Leaves[RangeEnd]) == Bucket)
-			{
-				++RangeEnd;
-			}
-
-			const int32 ChildIdx = BuildRecursive(RangeStart, RangeEnd);
-			const int32 LocalChildIdx = Nodes[NodeIndex].ChildCount;
-
-			Nodes[NodeIndex].Children[LocalChildIdx] = ChildIdx;
-
-			const FBoundingBox& ChildBounds = Nodes[ChildIdx].Bounds;
-			Nodes[NodeIndex].ChildMinX[LocalChildIdx] = ChildBounds.Min.X;
-			Nodes[NodeIndex].ChildMinY[LocalChildIdx] = ChildBounds.Min.Y;
-			Nodes[NodeIndex].ChildMinZ[LocalChildIdx] = ChildBounds.Min.Z;
-			Nodes[NodeIndex].ChildMaxX[LocalChildIdx] = ChildBounds.Max.X;
-			Nodes[NodeIndex].ChildMaxY[LocalChildIdx] = ChildBounds.Max.Y;
-			Nodes[NodeIndex].ChildMaxZ[LocalChildIdx] = ChildBounds.Max.Z;
-
-			Nodes[NodeIndex].ChildCount++;
-			RangeStart = RangeEnd;
+			Nodes[GrandParentIndex].Right = SiblingIndex;
 		}
-		}
+
+		Nodes[SiblingIndex].Parent = GrandParentIndex;
+		UpdateDepthsFromNode(SiblingIndex, Nodes[GrandParentIndex].Depth + 1);
 	}
 
-	for (int32 i = Nodes[NodeIndex].ChildCount; i < WorldBVHChildFanout; ++i)
+	const int32 RefitStart = Nodes[SiblingIndex].Parent;
+	ReleaseNode(LeafNodeIndex);
+	ReleaseNode(ParentIndex);
+
+	if (RefitStart != INDEX_NONE)
 	{
-		Nodes[NodeIndex].ChildMinX[i] = 1e30f;
-		Nodes[NodeIndex].ChildMinY[i] = 1e30f;
-		Nodes[NodeIndex].ChildMinZ[i] = 1e30f;
-		Nodes[NodeIndex].ChildMaxX[i] = -1e30f;
-		Nodes[NodeIndex].ChildMaxY[i] = -1e30f;
-		Nodes[NodeIndex].ChildMaxZ[i] = -1e30f;
+		RefitUpwardsAfterStructuralChange(RefitStart);
+		OptimizeAlongPath(RefitStart);
+	}
+}
+
+void FWorldPrimitivePickingBVH::RefitNode(int32 NodeIndex)
+{
+	if (!IsValidNodeIndex(NodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return;
 	}
 
-	return NodeIndex;
+	FNode& Node = Nodes[NodeIndex];
+	if (Node.IsLeaf())
+	{
+		if (Node.Primitive)
+		{
+			Node.Bounds = Node.Primitive->GetWorldBoundingBox();
+		}
+		return;
+	}
+
+	Node.Bounds = UnionBounds(Nodes[Node.Left].Bounds, Nodes[Node.Right].Bounds);
+	Node.FatBounds = UnionBounds(Nodes[Node.Left].FatBounds, Nodes[Node.Right].FatBounds);
+	Node.Primitive = nullptr;
+	Node.StaticMeshPrimitive = nullptr;
+	Node.Owner = nullptr;
+}
+
+void FWorldPrimitivePickingBVH::RefitUpwards(int32 NodeIndex)
+{
+	int32 Current = NodeIndex;
+	while (Current != INDEX_NONE)
+	{
+		RefitNode(Current);
+		Current = Nodes[Current].Parent;
+	}
+}
+
+void FWorldPrimitivePickingBVH::RefitUpwardsAfterStructuralChange(int32 NodeIndex)
+{
+	int32 Current = NodeIndex;
+	while (Current != INDEX_NONE)
+	{
+		RefitNode(Current);
+		Current = Nodes[Current].Parent;
+	}
+}
+
+void FWorldPrimitivePickingBVH::UpdateDepthsFromNode(int32 NodeIndex, int32 Depth)
+{
+	if (!IsValidNodeIndex(NodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return;
+	}
+
+	Nodes[NodeIndex].Depth = Depth;
+	if (Nodes[NodeIndex].Left != INDEX_NONE)
+	{
+		UpdateDepthsFromNode(Nodes[NodeIndex].Left, Depth + 1);
+	}
+	if (Nodes[NodeIndex].Right != INDEX_NONE)
+	{
+		UpdateDepthsFromNode(Nodes[NodeIndex].Right, Depth + 1);
+	}
+}
+
+void FWorldPrimitivePickingBVH::OptimizeAlongPath(int32 StartNodeIndex)
+{
+	PathToRootScratch.clear();
+	PathToRootScratch.reserve(32);
+
+	int32 Current = StartNodeIndex;
+	while (Current != INDEX_NONE)
+	{
+		PathToRootScratch.push_back(Current);
+		Current = Nodes[Current].Parent;
+	}
+
+	for (int32 NodeIndex : PathToRootScratch)
+	{
+		while (TryRotateNodeBest(NodeIndex))
+		{
+		}
+	}
+}
+
+FWorldPrimitivePickingBVH::FRotationCandidate FWorldPrimitivePickingBVH::EvaluateRotateWithLeftChild(int32 NodeIndex) const
+{
+	FRotationCandidate Best{};
+	const FNode& Node = Nodes[NodeIndex];
+	if (Node.IsLeaf())
+	{
+		return Best;
+	}
+
+	const int32 AIndex = Node.Left;
+	const int32 BIndex = Node.Right;
+	if (!IsValidNodeIndex(AIndex, static_cast<int32>(Nodes.size())) ||
+		!IsValidNodeIndex(BIndex, static_cast<int32>(Nodes.size())) ||
+		Nodes[AIndex].IsLeaf())
+	{
+		return Best;
+	}
+
+	const FNode& A = Nodes[AIndex];
+	const float OldCost = GetBoundsSurfaceArea(Node.Bounds) + GetBoundsSurfaceArea(A.Bounds);
+
+	auto Consider = [&](int32 GrandChildIndex, int32 OtherGrandChildIndex, bool bUseFirstGrandChild)
+	{
+		const FBoundingBox NewA = UnionBounds(Nodes[BIndex].Bounds, Nodes[OtherGrandChildIndex].Bounds);
+		const FBoundingBox NewNode = UnionBounds(NewA, Nodes[GrandChildIndex].Bounds);
+		const float NewCost = GetBoundsSurfaceArea(NewNode) + GetBoundsSurfaceArea(NewA);
+		if (!Best.bValid || NewCost < Best.NewCost)
+		{
+			Best.bValid = true;
+			Best.bRotateLeftChild = true;
+			Best.bUseFirstGrandChild = bUseFirstGrandChild;
+			Best.NodeIndex = NodeIndex;
+			Best.OldCost = OldCost;
+			Best.NewCost = NewCost;
+		}
+	};
+
+	Consider(A.Left, A.Right, true);
+	Consider(A.Right, A.Left, false);
+
+	if (Best.bValid && Best.NewCost >= Best.OldCost)
+	{
+		Best.bValid = false;
+	}
+
+	return Best;
+}
+
+FWorldPrimitivePickingBVH::FRotationCandidate FWorldPrimitivePickingBVH::EvaluateRotateWithRightChild(int32 NodeIndex) const
+{
+	FRotationCandidate Best{};
+	const FNode& Node = Nodes[NodeIndex];
+	if (Node.IsLeaf())
+	{
+		return Best;
+	}
+
+	const int32 AIndex = Node.Left;
+	const int32 BIndex = Node.Right;
+	if (!IsValidNodeIndex(AIndex, static_cast<int32>(Nodes.size())) ||
+		!IsValidNodeIndex(BIndex, static_cast<int32>(Nodes.size())) ||
+		Nodes[BIndex].IsLeaf())
+	{
+		return Best;
+	}
+
+	const FNode& B = Nodes[BIndex];
+	const float OldCost = GetBoundsSurfaceArea(Node.Bounds) + GetBoundsSurfaceArea(B.Bounds);
+
+	auto Consider = [&](int32 GrandChildIndex, int32 OtherGrandChildIndex, bool bUseFirstGrandChild)
+	{
+		const FBoundingBox NewB = UnionBounds(Nodes[AIndex].Bounds, Nodes[OtherGrandChildIndex].Bounds);
+		const FBoundingBox NewNode = UnionBounds(Nodes[GrandChildIndex].Bounds, NewB);
+		const float NewCost = GetBoundsSurfaceArea(NewNode) + GetBoundsSurfaceArea(NewB);
+		if (!Best.bValid || NewCost < Best.NewCost)
+		{
+			Best.bValid = true;
+			Best.bRotateLeftChild = false;
+			Best.bUseFirstGrandChild = bUseFirstGrandChild;
+			Best.NodeIndex = NodeIndex;
+			Best.OldCost = OldCost;
+			Best.NewCost = NewCost;
+		}
+	};
+
+	Consider(B.Left, B.Right, true);
+	Consider(B.Right, B.Left, false);
+
+	if (Best.bValid && Best.NewCost >= Best.OldCost)
+	{
+		Best.bValid = false;
+	}
+
+	return Best;
+}
+
+bool FWorldPrimitivePickingBVH::TryRotateNodeBest(int32 NodeIndex)
+{
+	if (!IsValidNodeIndex(NodeIndex, static_cast<int32>(Nodes.size())) || Nodes[NodeIndex].IsLeaf())
+	{
+		return false;
+	}
+
+	const FRotationCandidate LeftCandidate = EvaluateRotateWithLeftChild(NodeIndex);
+	const FRotationCandidate RightCandidate = EvaluateRotateWithRightChild(NodeIndex);
+	FRotationCandidate Best{};
+
+	if (LeftCandidate.bValid)
+	{
+		Best = LeftCandidate;
+	}
+	if (RightCandidate.bValid && (!Best.bValid || RightCandidate.NewCost < Best.NewCost))
+	{
+		Best = RightCandidate;
+	}
+
+	return Best.bValid && ApplyRotation(Best);
+}
+
+bool FWorldPrimitivePickingBVH::ApplyRotation(const FRotationCandidate& Candidate)
+{
+	if (!Candidate.bValid || !IsValidNodeIndex(Candidate.NodeIndex, static_cast<int32>(Nodes.size())))
+	{
+		return false;
+	}
+
+	FNode& Node = Nodes[Candidate.NodeIndex];
+	if (Candidate.bRotateLeftChild)
+	{
+		const int32 AIndex = Node.Left;
+		const int32 BIndex = Node.Right;
+		FNode& A = Nodes[AIndex];
+
+		if (Candidate.bUseFirstGrandChild)
+		{
+			Node.Right = A.Left;
+			A.Left = BIndex;
+		}
+		else
+		{
+			Node.Right = A.Right;
+			A.Right = BIndex;
+		}
+
+		Nodes[Node.Right].Parent = Candidate.NodeIndex;
+		Nodes[BIndex].Parent = AIndex;
+		A.Parent = Candidate.NodeIndex;
+		UpdateDepthsFromNode(Candidate.NodeIndex, Nodes[Candidate.NodeIndex].Depth);
+		RefitUpwards(AIndex);
+	}
+	else
+	{
+		const int32 AIndex = Node.Left;
+		const int32 BIndex = Node.Right;
+		FNode& B = Nodes[BIndex];
+
+		if (Candidate.bUseFirstGrandChild)
+		{
+			Node.Left = B.Left;
+			B.Left = AIndex;
+		}
+		else
+		{
+			Node.Left = B.Right;
+			B.Right = AIndex;
+		}
+
+		Nodes[Node.Left].Parent = Candidate.NodeIndex;
+		Nodes[AIndex].Parent = BIndex;
+		B.Parent = Candidate.NodeIndex;
+		UpdateDepthsFromNode(Candidate.NodeIndex, Nodes[Candidate.NodeIndex].Depth);
+		RefitUpwards(BIndex);
+	}
+
+	return true;
+}
+
+FBoundingBox FWorldPrimitivePickingBVH::UnionBounds(const FBoundingBox& A, const FBoundingBox& B)
+{
+	FBoundingBox Result;
+	if (A.IsValid())
+	{
+		Result.Expand(A.Min);
+		Result.Expand(A.Max);
+	}
+	if (B.IsValid())
+	{
+		Result.Expand(B.Min);
+		Result.Expand(B.Max);
+	}
+	return Result;
+}
+
+FBoundingBox FWorldPrimitivePickingBVH::MakeFatBounds(const FBoundingBox& Bounds)
+{
+	const FVector Extent = Bounds.GetExtent();
+	const FVector Padding(
+		std::max(Extent.X * WorldBVHFatBoundsScale, WorldBVHFatBoundsMinPadding),
+		std::max(Extent.Y * WorldBVHFatBoundsScale, WorldBVHFatBoundsMinPadding),
+		std::max(Extent.Z * WorldBVHFatBoundsScale, WorldBVHFatBoundsMinPadding));
+
+	return FBoundingBox(Bounds.Min - Padding, Bounds.Max + Padding);
+}
+
+float FWorldPrimitivePickingBVH::GetBoundsSurfaceArea(const FBoundingBox& Bounds)
+{
+	if (!Bounds.IsValid())
+	{
+		return 0.0f;
+	}
+
+	const FVector Extent = Bounds.GetExtent();
+	const float Width = std::max(Extent.X * 2.0f, 0.0f);
+	const float Height = std::max(Extent.Y * 2.0f, 0.0f);
+	const float Depth = std::max(Extent.Z * 2.0f, 0.0f);
+	return 2.0f * ((Width * Height) + (Width * Depth) + (Height * Depth));
+}
+
+bool FWorldPrimitivePickingBVH::IsValidNodeIndex(int32 NodeIndex, int32 NodeCount)
+{
+	return NodeIndex >= 0 && NodeIndex < NodeCount;
+}
+
+void FWorldPrimitivePickingBVH::ValidateBVH() const
+{
+#ifdef _DEBUG
+	if (RootNodeIndex == INDEX_NONE)
+	{
+		assert(ObjectToLeafNode.empty());
+		return;
+	}
+
+	assert(IsValidNodeIndex(RootNodeIndex, static_cast<int32>(Nodes.size())));
+	assert(Nodes[RootNodeIndex].Parent == INDEX_NONE);
+
+	TArray<uint8> bReachable;
+	bReachable.resize(Nodes.size(), 0u);
+
+	TArray<int32> Stack;
+	Stack.reserve(Nodes.size());
+	Stack.push_back(RootNodeIndex);
+	bReachable[RootNodeIndex] = 1u;
+
+	while (!Stack.empty())
+	{
+		const int32 NodeIndex = Stack.back();
+		Stack.pop_back();
+		const FNode& Node = Nodes[NodeIndex];
+
+		if (Node.IsLeaf())
+		{
+			assert(Node.Primitive != nullptr);
+			const auto It = ObjectToLeafNode.find(Node.Primitive);
+			assert(It != ObjectToLeafNode.end());
+			assert(It->second == NodeIndex);
+			continue;
+		}
+
+		assert(IsValidNodeIndex(Node.Left, static_cast<int32>(Nodes.size())));
+		assert(IsValidNodeIndex(Node.Right, static_cast<int32>(Nodes.size())));
+		assert(Node.Left != Node.Right);
+		assert(Nodes[Node.Left].Parent == NodeIndex);
+		assert(Nodes[Node.Right].Parent == NodeIndex);
+
+		if (!bReachable[Node.Left])
+		{
+			bReachable[Node.Left] = 1u;
+			Stack.push_back(Node.Left);
+		}
+		if (!bReachable[Node.Right])
+		{
+			bReachable[Node.Right] = 1u;
+			Stack.push_back(Node.Right);
+		}
+	}
+
+	for (const auto& Pair : ObjectToLeafNode)
+	{
+		assert(Pair.first != nullptr);
+		assert(IsValidNodeIndex(Pair.second, static_cast<int32>(Nodes.size())));
+		assert(bReachable[Pair.second]);
+		assert(Nodes[Pair.second].IsLeaf());
+		assert(Nodes[Pair.second].Primitive == Pair.first);
+	}
+#endif
 }

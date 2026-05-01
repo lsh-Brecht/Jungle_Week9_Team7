@@ -232,6 +232,9 @@ void FEditorRenderPipeline::CollectCommands(FLevelEditorViewportClient* VC, UWor
 		if (Flags.bOctree)
 			Collector.CollectOctreeDebug(World->GetOctree(), Scene);
 
+		if (Flags.bPickingBVH)
+			Collector.CollectPickingBVHDebug(World, Scene);
+
 		Collector.CollectDebugDraw(Frame, Scene);
 	}
 

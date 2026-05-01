@@ -64,11 +64,14 @@ void UWorld::DestroyActor(AActor* Actor)
 {
 	// remove and clean up
 	if (!Actor) return;
+	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
+	{
+		RemoveWorldPrimitivePickingBVH(Primitive);
+	}
 	Actor->EndPlay();
 	// Remove from actor list
 	PersistentLevel->RemoveActor(Actor);
 
-	MarkWorldPrimitivePickingBVHDirty();
 	Partition.RemoveActor(Actor);
 
 	// Mark for garbage collection
@@ -85,7 +88,10 @@ void UWorld::AddActor(AActor* Actor)
 	PersistentLevel->AddActor(Actor);
 
 	InsertActorToOctree(Actor);
-	MarkWorldPrimitivePickingBVHDirty();
+	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
+	{
+		InsertWorldPrimitivePickingBVH(Primitive);
+	}
 
 	// PIE 중 Duplicate(Ctrl+D)나 SpawnActor로 들어온 액터에도 BeginPlay를 보장.
 	if (bHasBegunPlay && !Actor->HasActorBegunPlay())
@@ -105,9 +111,48 @@ void UWorld::MarkWorldPrimitivePickingBVHDirty()
 	WorldPrimitivePickingBVH.MarkDirty();
 }
 
+void UWorld::InsertWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive)
+{
+	if (DeferredPickingBVHUpdateDepth > 0)
+	{
+		bDeferredPickingBVHDirty = true;
+		return;
+	}
+
+	WorldPrimitivePickingBVH.InsertObject(Primitive);
+}
+
+void UWorld::RemoveWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive)
+{
+	if (DeferredPickingBVHUpdateDepth > 0)
+	{
+		bDeferredPickingBVHDirty = true;
+		return;
+	}
+
+	WorldPrimitivePickingBVH.RemoveObject(Primitive);
+}
+
+void UWorld::UpdateWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive)
+{
+	if (DeferredPickingBVHUpdateDepth > 0)
+	{
+		bDeferredPickingBVHDirty = true;
+		return;
+	}
+
+	WorldPrimitivePickingBVH.UpdateObject(Primitive);
+}
+
 void UWorld::BuildWorldPrimitivePickingBVHNow() const
 {
 	WorldPrimitivePickingBVH.BuildNow(GetActors());
+}
+
+void UWorld::CollectWorldPrimitivePickingBVHDebugAABBs(TArray<FWorldPrimitivePickingBVH::FDebugAABB>& OutAABBs) const
+{
+	WorldPrimitivePickingBVH.EnsureBuilt(GetActors());
+	WorldPrimitivePickingBVH.CollectDebugAABBs(OutAABBs);
 }
 
 void UWorld::BeginDeferredPickingBVHUpdate()

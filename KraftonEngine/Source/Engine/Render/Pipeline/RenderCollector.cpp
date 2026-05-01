@@ -117,6 +117,19 @@ void FRenderCollector::CollectOctreeDebug(const FOctree* Node, FScene& Scene, ui
 	}
 }
 
+void FRenderCollector::CollectPickingBVHDebug(UWorld* World, FScene& Scene)
+{
+	if (!World) return;
+
+	TArray<FWorldPrimitivePickingBVH::FDebugAABB> DebugAABBs;
+	World->CollectWorldPrimitivePickingBVHDebugAABBs(DebugAABBs);
+
+	for (const FWorldPrimitivePickingBVH::FDebugAABB& DebugAABB : DebugAABBs)
+	{
+		Scene.AddDebugAABB(DebugAABB.Min, DebugAABB.Max, DebugAABB.Color);
+	}
+}
+
 // ============================================================
 // FilterVisibleProxies — visibility/occlusion 필터 → RenderableProxies
 // ============================================================

@@ -1483,7 +1483,10 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 			ImGui::SameLine();
 
 			static const char* ViewModeNames[] = { "Phong", "Unlit", "Gouraud", "Lambert", "Wireframe", "SceneDepth", "WorldNormal", "LightCulling" };
-			const char* CurrentViewModeName = ViewModeNames[static_cast<int32>(Opts.ViewMode)];
+			const int32 ViewModeIndex = static_cast<int32>(Opts.ViewMode);
+			const char* CurrentViewModeName = (ViewModeIndex >= 0 && ViewModeIndex < static_cast<int32>(EViewMode::Count))
+				? ViewModeNames[ViewModeIndex]
+				: ViewModeNames[static_cast<int32>(EViewMode::Lit_Phong)];
 
 			char ViewModePopupID[64];
 			snprintf(ViewModePopupID, sizeof(ViewModePopupID), "ViewModePopup_%d", SlotIndex);
@@ -1496,7 +1499,9 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 			if (ImGui::BeginPopup(ViewModePopupID))
 			{
 				ImGui::Text("View Mode");
-				int32 CurrentMode = static_cast<int32>(Opts.ViewMode);
+				int32 CurrentMode = (ViewModeIndex >= 0 && ViewModeIndex < static_cast<int32>(EViewMode::Count))
+					? ViewModeIndex
+					: static_cast<int32>(EViewMode::Lit_Phong);
 
 				if (ImGui::BeginTable("ViewModeTable", 3, ImGuiTableFlags_SizingStretchSame))
 				{
@@ -1519,14 +1524,14 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 					ImGui::RadioButton("WorldNormal", &CurrentMode, static_cast<int32>(EViewMode::WorldNormal));
 
 					ImGui::TableNextRow();
-				 ImGui::TableNextColumn();
-				 ImGui::RadioButton("LightCulling", &CurrentMode, static_cast<int32>(EViewMode::LightCulling));
-				 ImGui::TableNextColumn();
-				 ImGui::Dummy(ImVec2(0.0f, 0.0f));
-				 ImGui::TableNextColumn();
-				 ImGui::Dummy(ImVec2(0.0f, 0.0f));
+					ImGui::TableNextColumn();
+					ImGui::RadioButton("LightCulling", &CurrentMode, static_cast<int32>(EViewMode::LightCulling));
+					ImGui::TableNextColumn();
+					ImGui::Dummy(ImVec2(0.0f, 0.0f));
+					ImGui::TableNextColumn();
+					ImGui::Dummy(ImVec2(0.0f, 0.0f));
 
-				 ImGui::EndTable();
+					ImGui::EndTable();
 				}
 
 				Opts.ViewMode = static_cast<EViewMode>(CurrentMode);
@@ -1581,6 +1586,8 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 					ImGui::Checkbox("Shadows", &FProjectSettings::Get().Shadow.bEnabled);
 					ImGui::TableNextColumn();
 					ImGui::Checkbox("Shadow Frustum", &Opts.ShowFlags.bShowShadowFrustum);
+					ImGui::TableNextColumn();
+					ImGui::Checkbox("Picking BVH", &Opts.ShowFlags.bPickingBVH);
 
 					ImGui::EndTable();
 				}

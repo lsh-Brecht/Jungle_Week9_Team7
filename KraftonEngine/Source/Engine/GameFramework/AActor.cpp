@@ -54,7 +54,6 @@ UActorComponent* AActor::AddComponentByClass(UClass* Class)
 	OwnedComponents.push_back(Comp);
 	bPrimitiveCacheDirty = true;
 	Comp->CreateRenderState();
-	MarkPickingDirty();
 	return Comp;
 }
 
@@ -68,7 +67,6 @@ void AActor::RegisterComponent(UActorComponent* Comp)
 		Comp->SetOuter(this);
 		OwnedComponents.push_back(Comp);
 		bPrimitiveCacheDirty = true;
-		MarkPickingDirty();
 		Comp->CreateRenderState();
 	}
 }
@@ -100,7 +98,6 @@ void AActor::RemoveComponent(UActorComponent* Component)
 	if (it != OwnedComponents.end()) {
 		OwnedComponents.erase(it);
 		bPrimitiveCacheDirty = true;
-		MarkPickingDirty();
 	}
 
 	// RootComponent가 제거되면 nullptr로

@@ -40,7 +40,11 @@ public:
 	void DestroyActor(AActor* Actor);
 	void AddActor(AActor* Actor);
 	void MarkWorldPrimitivePickingBVHDirty();
+	void InsertWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive);
+	void RemoveWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive);
+	void UpdateWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive);
 	void BuildWorldPrimitivePickingBVHNow() const;
+	void CollectWorldPrimitivePickingBVHDebugAABBs(TArray<FWorldPrimitivePickingBVH::FDebugAABB>& OutAABBs) const;
 	void BeginDeferredPickingBVHUpdate();
 	void EndDeferredPickingBVHUpdate();
 	void WarmupPickingData() const;
