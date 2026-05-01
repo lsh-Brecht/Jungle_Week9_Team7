@@ -9,6 +9,7 @@ void RegisterLuaBindings(sol::state& Lua);
 
 void RegisterActorLifecycleBinding(sol::state& Lua);
 void RegisterActorComponentBinding(sol::state& Lua);
+void RegisterLuaScriptComponentBinding(sol::state& Lua);
 void RegisterSceneComponentBinding(sol::state& Lua);
 void RegisterPrimitiveComponentBinding(sol::state& Lua);
 void RegisterStaticMeshComponentBinding(sol::state& Lua);

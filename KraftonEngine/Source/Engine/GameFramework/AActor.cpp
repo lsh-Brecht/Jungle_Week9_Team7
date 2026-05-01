@@ -6,53 +6,11 @@
 #include "Math/Rotator.h"
 #include "GameFramework/Level.h"
 #include "GameFramework/World.h"
-#include "Engine/Runtime/Engine.h"
-#include "Scripting/LuaScriptSubsystem.h"
 #include "Serialization/Archive.h"
 
 #include <algorithm>
 
 IMPLEMENT_CLASS(AActor, UObject)
-
-namespace
-{
-	FString SanitizeScriptToken(FString Token)
-	{
-		for (char& Ch : Token)
-		{
-			if (Ch == '/' || Ch == '\\' || Ch == ' ')
-			{
-				Ch = '_';
-			}
-		}
-		return Token;
-	}
-
-	FString BuildLuaScriptName(const AActor& Actor)
-	{
-		FString SceneName = "DefaultScene";
-		if (GEngine)
-		{
-			if (FWorldContext* Context = GEngine->GetWorldContextFromWorld(Actor.GetWorld()))
-			{
-				if (!Context->ContextName.empty())
-				{
-					SceneName = Context->ContextName;
-				}
-			}
-		}
-
-		FString ActorName = Actor.GetFName().ToString();
-		if (ActorName.empty())
-		{
-			ActorName = "Actor";
-		}
-
-		SceneName = SanitizeScriptToken(SceneName);
-		ActorName = SanitizeScriptToken(ActorName);
-		return SceneName + "_" + ActorName + ".lua";
-	}
-}
 
 AActor::AActor()
 {
@@ -116,6 +74,11 @@ void AActor::RegisterComponent(UActorComponent* Comp)
 void AActor::RemoveComponent(UActorComponent* Component)
 {
 	if (!Component) return;
+
+	if (bActorHasBegunPlay)
+	{
+		Component->EndPlay();
+	}
 
 	USceneComponent* RemovedSceneComponent = Cast<USceneComponent>(Component);
 	if (RemovedSceneComponent)
@@ -231,11 +194,6 @@ void AActor::BeginPlay()
 		if (Comp) Comp->BeginPlay();
 	}
 
-	const FString ScriptName = BuildLuaScriptName(*this);
-	if (FLuaScriptSubsystem::Get().BindActor(this, ScriptName))
-	{
-		FLuaScriptSubsystem::Get().CallActorBeginPlay(this);
-	}
 }
 
 //엔진 단계에서의 틱
@@ -252,8 +210,6 @@ void AActor::EndPlay()
 {
 	if (!bActorHasBegunPlay) return;
 	bActorHasBegunPlay = false;
-	FLuaScriptSubsystem::Get().CallActorEndPlay(this);
-	FLuaScriptSubsystem::Get().UnbindActor(this);
 	PrimaryActorTick.UnRegisterTickFunction();
 
 	for (UActorComponent* Comp : OwnedComponents)
@@ -268,11 +224,7 @@ void AActor::EndPlay()
 
 void AActor::Tick(float DeltaTime)
 {
-	/*for (UActorComponent* ActorComp : OwnedComponents)
-	{
-		ActorComp->Tick(DeltaTime);
-	}*/
-	FLuaScriptSubsystem::Get().CallActorTick(this, DeltaTime);
+	(void)DeltaTime;
 }
 
 FRotator AActor::GetActorRotation() const

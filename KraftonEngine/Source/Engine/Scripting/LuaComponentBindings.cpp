@@ -11,6 +11,7 @@
 
 #include "GameFramework/AActor.h"
 #include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 #include "Component/SceneComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -23,6 +24,16 @@ namespace
 		if (Actor)
 		{
 			Handle.UUID = Actor->GetUUID();
+		}
+		return Handle;
+	}
+
+	FLuaActorComponentHandle MakeActorComponentHandle(UActorComponent* Component)
+	{
+		FLuaActorComponentHandle Handle;
+		if (Component)
+		{
+			Handle.UUID = Component->GetUUID();
 		}
 		return Handle;
 	}
@@ -133,6 +144,20 @@ void RegisterActorComponentBinding(sol::state& Lua)
 			return sol::make_object(LuaView, Handle);
 		},
 
+		"AsLuaScript",
+		[](const FLuaActorComponentHandle& Self, sol::this_state State) -> sol::object
+		{
+			sol::state_view LuaView(State);
+			ULuaScriptComponent* Script = Cast<ULuaScriptComponent>(Self.Resolve());
+			if (!Script)
+			{
+				return sol::nil;
+			}
+			FLuaScriptComponentHandle Handle;
+			Handle.UUID = Script->GetUUID();
+			return sol::make_object(LuaView, Handle);
+		},
+
 		"AsPrimitive",
 		[](const FLuaActorComponentHandle& Self, sol::this_state State) -> sol::object
 		{
@@ -159,6 +184,81 @@ void RegisterActorComponentBinding(sol::state& Lua)
 			FLuaStaticMeshComponentHandle Handle;
 			Handle.UUID = Mesh->GetUUID();
 			return sol::make_object(LuaView, Handle);
+		}
+	);
+}
+
+void RegisterLuaScriptComponentBinding(sol::state& Lua)
+{
+	Lua.new_usertype<FLuaScriptComponentHandle>(
+		"LuaScriptComponent",
+
+		sol::no_constructor,
+
+		LUA_HANDLE_COMMON(FLuaScriptComponentHandle),
+
+		"Owner",
+		sol::property(
+			[](const FLuaScriptComponentHandle& Self)
+			{
+				ULuaScriptComponent* Component = Self.Resolve();
+				return MakeGameObjectHandle(Component ? Component->GetOwner() : nullptr);
+			}
+		),
+
+		"ScriptPath",
+		sol::property(
+			[](const FLuaScriptComponentHandle& Self)
+			{
+				ULuaScriptComponent* Component = Self.Resolve();
+				return Component ? Component->GetScriptPath() : FString();
+			},
+			[](const FLuaScriptComponentHandle& Self, const FString& Path)
+			{
+				ULuaScriptComponent* Component = Self.Resolve();
+				if (!Component)
+				{
+					UE_LOG("[Lua] Invalid LuaScriptComponent.ScriptPath Access.");
+					return;
+				}
+				Component->SetScriptPath(Path);
+			}
+		),
+
+		"Reload",
+		[](const FLuaScriptComponentHandle& Self)
+		{
+			ULuaScriptComponent* Component = Self.Resolve();
+			if (!Component)
+			{
+				UE_LOG("[Lua] Invalid LuaScriptComponent.Reload Call.");
+				return false;
+			}
+			return Component->ReloadScript();
+		},
+
+		"AsComponent",
+		[](const FLuaScriptComponentHandle& Self)
+		{
+			return MakeActorComponentHandle(Self.Resolve());
+		},
+
+		"ListProperties",
+		[](const FLuaScriptComponentHandle& Self, sol::this_state State)
+		{
+			return FLuaPropertyBridge::ListProperties(State, Self.Resolve());
+		},
+
+		"GetProperty",
+		[](const FLuaScriptComponentHandle& Self, const FString& Name, sol::this_state State)
+		{
+			return FLuaPropertyBridge::GetProperty(State, Self.Resolve(), Name);
+		},
+
+		"SetProperty",
+		[](const FLuaScriptComponentHandle& Self, const FString& Name, sol::object Value)
+		{
+			return FLuaPropertyBridge::SetProperty(Self.Resolve(), Name, Value);
 		}
 	);
 }

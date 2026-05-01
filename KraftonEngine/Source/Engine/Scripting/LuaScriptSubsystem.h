@@ -10,6 +10,7 @@
 #include "Platform/DirectoryWatcher.h"
 
 class AActor;
+class ULuaScriptComponent;
 struct FLuaGameObjectHandle;
 
 class FLuaScriptSubsystem : public TSingleton<FLuaScriptSubsystem>
@@ -28,12 +29,12 @@ public:
 	bool ExecuteString(const FString& Code);
 	bool ExecuteFile(const FString& Path);
 
-	bool BindActor(AActor* Actor, const FString& ScriptPath);
-	void UnbindActor(const AActor* Actor);
-	void CallActorBeginPlay(AActor* Actor);
-	void CallActorTick(AActor* Actor, float DeltaTime);
-	void CallActorEndPlay(AActor* Actor);
-	void CallActorOverlap(AActor* Actor, AActor* OtherActor);
+	bool BindComponent(ULuaScriptComponent* Component, const FString& ScriptPath);
+	void UnbindComponent(const ULuaScriptComponent* Component);
+	void CallComponentBeginPlay(ULuaScriptComponent* Component);
+	void CallComponentTick(ULuaScriptComponent* Component, float DeltaTime);
+	void CallComponentEndPlay(ULuaScriptComponent* Component);
+	void CallComponentOverlap(ULuaScriptComponent* Component, AActor* OtherActor);
 
 private:
 	FLuaScriptSubsystem() = default;
@@ -67,9 +68,10 @@ private:
 		TMap<FString, FString>* ModulePaths = nullptr;
 	};
 
-	struct FLuaActorBinding
+	struct FLuaComponentBinding
 	{
-		uint32 ActorUUID = 0;
+		uint32 ComponentUUID = 0;
+		uint32 OwnerActorUUID = 0;
 		FString ScriptPath;
 		sol::environment Environment;
 		sol::function BeginPlay;
@@ -78,8 +80,8 @@ private:
 		sol::function OnOverlap;
 	};
 
-	FLuaActorBinding* FindActorBinding(uint32 ActorUUID);
-	const FLuaActorBinding* FindActorBinding(uint32 ActorUUID) const;
+	FLuaComponentBinding* FindComponentBinding(uint32 ComponentUUID);
+	const FLuaComponentBinding* FindComponentBinding(uint32 ComponentUUID) const;
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID);
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, float DeltaTime);
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, const FLuaGameObjectHandle& OtherActor);
@@ -99,5 +101,5 @@ private:
 	TMap<FString, TSet<FString>> IncludeDependents;
 	TMap<FString, FString> ModulePaths;
 	TArray<FLuaDependencyContext> DependencyContextStack;
-	TMap<uint32, FLuaActorBinding> ActorBindings;
+	TMap<uint32, FLuaComponentBinding> ComponentBindings;
 };

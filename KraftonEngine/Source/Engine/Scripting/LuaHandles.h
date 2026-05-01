@@ -2,6 +2,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 #include "Component/SceneComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/Collision/BoxComponent.h"
@@ -43,6 +44,22 @@ struct FLuaActorComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UActorComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaScriptComponentHandle
+{
+	uint32 UUID = 0;
+
+	ULuaScriptComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<ULuaScriptComponent>(Object);
 	}
 
 	bool IsValid() const

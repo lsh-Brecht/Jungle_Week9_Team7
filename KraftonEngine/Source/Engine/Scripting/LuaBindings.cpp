@@ -13,6 +13,7 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterActorLifecycleBinding(Lua);
 
 	RegisterActorComponentBinding(Lua);
+	RegisterLuaScriptComponentBinding(Lua);
 	RegisterSceneComponentBinding(Lua);
 	RegisterPrimitiveComponentBinding(Lua);
 	

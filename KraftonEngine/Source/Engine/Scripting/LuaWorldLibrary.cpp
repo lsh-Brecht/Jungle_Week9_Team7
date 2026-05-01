@@ -10,6 +10,7 @@
 #include "GameFramework/StaticMeshActor.h"
 
 #include "Component/SceneComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/SphereComponent.h"
@@ -428,6 +429,7 @@ namespace
 		static const FLuaAllowedComponentClass AllowedComponents[] =
 		{
 			{ "scene", USceneComponent::StaticClass(), true },
+			{ "luascript", ULuaScriptComponent::StaticClass(), true },
 			{ "staticmesh", UStaticMeshComponent::StaticClass(), true },
 			{ "shape", UShapeComponent::StaticClass(), false },
 			{ "box", UBoxComponent::StaticClass(), true },

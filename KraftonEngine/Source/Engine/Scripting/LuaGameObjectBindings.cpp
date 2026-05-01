@@ -16,6 +16,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
@@ -45,6 +46,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
@@ -162,6 +164,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 
 			return FLuaWorldLibrary::DestroyActor(Actor);
 		},
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"LuaScript",
+			FLuaScriptComponentHandle,
+			ULuaScriptComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddLuaScript",
+			FLuaScriptComponentHandle,
+			ULuaScriptComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveLuaScript",
+			ULuaScriptComponent
+		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
 			"Shape",
