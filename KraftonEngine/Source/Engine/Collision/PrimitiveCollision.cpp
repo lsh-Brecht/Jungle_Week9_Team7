@@ -14,26 +14,33 @@
 
 namespace
 {
-	constexpr float CollisionEpsilon = 1e-6f;
-
+	// 두 값 중 절대값이 더 큰 값을 반환합니다.
+	// 비균등 스케일이 적용된 도형에서 가장 크게 늘어난 축을 찾을 때 사용합니다.
 	float GetMaxAbs(float A, float B)
 	{
-		//2개 중 가장 큰 절대값을 반환합니다
 		return std::max(std::abs(A), std::abs(B));
 	}
 
+	// 세 값 중 절대값이 가장 큰 값을 반환합니다.
+	// 구처럼 모든 방향으로 동일한 반지름을 가져야 하는 도형이
+	// 비균등 스케일을 받을 때 보수적인 충돌 반지름을 구하는 데 사용합니다.
 	float GetMaxAbs(float A, float B, float C)
 	{
-		//3개 중 가장 큰 절대값을 반환합니다
 		return std::max({ std::abs(A), std::abs(B), std::abs(C) });
 	}
 
+	// 월드 스케일이 적용된 구의 충돌 반지름을 반환합니다.
+	// 구는 방향에 따른 반지름이 같아야 하므로 X/Y/Z 스케일 중 가장 큰 값을 사용해
+	// 실제 메시보다 작게 판정되지 않도록 보수적으로 계산합니다.
 	float GetScaledSphereRadius(const USphereComponent* Sphere)
 	{
 		const FVector Scale = Sphere->GetWorldScale();
 		return Sphere->GetSphereRadius() * GetMaxAbs(Scale.X, Scale.Y, Scale.Z);
 	}
 
+	// 월드 스케일이 적용된 캡슐의 반지름을 반환합니다.
+	// 이 엔진의 캡슐 중심축은 Z축이라고 가정하므로,
+	// 캡슐의 두께에 영향을 주는 X/Y 스케일 중 더 큰 값을 반지름에 적용합니다.
 	float GetScaledCapsuleRadius(const UCapsuleComponent* Capsule)
 	{
 		//캡슐은 중심축이 z니까 x,y로 반지름을 구함
@@ -41,143 +48,123 @@ namespace
 		return Capsule->GetCapsuleRadius() * GetMaxAbs(Scale.X, Scale.Y);
 	}
 
-	FVector GetMatrixAxis(const FMatrix& Matrix, int Axis)
-	{
-		return FVector(Matrix.M[Axis][0], Matrix.M[Axis][1], Matrix.M[Axis][2]);
-	}
-
-	FVector GetSafeNormalizedAxis(const FVector& Axis, const FVector& Fallback)
-	{
-		const float Length = Axis.Length();
-		if (Length <= CollisionEpsilon)
-		{
-			return Fallback;
-		}
-
-		return Axis / Length;
-	}
-
+	// BoxComponent의 월드 행렬과 로컬 Extent를 이용해 충돌용 OBB를 생성합니다.
+	// 실제 OBB 수학은 OBB.h의 FOBB에 모아 둡니다.
 	FOBB MakeBoxOBB(const UBoxComponent* Box)
 	{
-		const FMatrix& WorldMatrix = Box->GetWorldMatrix();
-		const FVector LocalExtent = Box->GetBoxExtent();
-
-		const FVector ScaledAxes[3] = {
-			GetMatrixAxis(WorldMatrix, 0),
-			GetMatrixAxis(WorldMatrix, 1),
-			GetMatrixAxis(WorldMatrix, 2)
-		};
-		const FVector FallbackAxes[3] = {
-			FVector(1.0f, 0.0f, 0.0f),
-			FVector(0.0f, 1.0f, 0.0f),
-			FVector(0.0f, 0.0f, 1.0f)
-		};
-
 		FOBB Result;
-		Result.Center = WorldMatrix.GetLocation();
-		Result.Extent = FVector(
-			LocalExtent.X * ScaledAxes[0].Length(),
-			LocalExtent.Y * ScaledAxes[1].Length(),
-			LocalExtent.Z * ScaledAxes[2].Length());
-
-		FMatrix RotationMatrix;
-		RotationMatrix.SetAxes(
-			GetSafeNormalizedAxis(ScaledAxes[0], FallbackAxes[0]),
-			GetSafeNormalizedAxis(ScaledAxes[1], FallbackAxes[1]),
-			GetSafeNormalizedAxis(ScaledAxes[2], FallbackAxes[2]));
-		Result.Rotation = RotationMatrix.ToRotator();
+		Result.UpdateAsOBB(Box->GetWorldMatrix(), Box->GetBoxExtent());
 		return Result;
 	}
 
-	void GetOBBAxes(const FOBB& OBB, FVector (&OutAxes)[3])
+	// 점에서 선분 위의 가장 가까운 점을 반환합니다.
+	// 점을 선분 방향으로 투영한 뒤, 투영 비율을 [0, 1]로 제한합니다.
+	FVector ClosestPointOnSegment(const FVector& Point, const FVector& Start, const FVector& End)
 	{
-		OutAxes[0] = OBB.Rotation.GetForwardVector().Normalized();
-		OutAxes[1] = OBB.Rotation.GetRightVector().Normalized();
-		OutAxes[2] = OBB.Rotation.GetUpVector().Normalized();
-	}
+		const FVector Segment = End - Start;
+		const float SegmentLenSq = Segment.Dot(Segment);
 
-	FVector WorldToOBBLocal(const FVector& Point, const FOBB& OBB, const FVector (&Axes)[3])
-	{
-		const FVector Delta = Point - OBB.Center;
-		return FVector(
-			Delta.Dot(Axes[0]),
-			Delta.Dot(Axes[1]),
-			Delta.Dot(Axes[2]));
-	}
-
-	FVector ClosestPointOnOBB(const FVector& Point, const FOBB& OBB)
-	{
-		FVector Axes[3];
-		GetOBBAxes(OBB, Axes);
-
-		const FVector Local = WorldToOBBLocal(Point, OBB, Axes);
-		FVector Closest = OBB.Center;
-		for (int Axis = 0; Axis < 3; ++Axis)
+		if (SegmentLenSq <= 1e-6f)
 		{
-			const float Distance = Clamp(Local.Data[Axis], -OBB.Extent.Data[Axis], OBB.Extent.Data[Axis]);
-			Closest += Axes[Axis] * Distance;
+			return Start;
 		}
 
-		return Closest;
+		float T = (Point - Start).Dot(Segment) / SegmentLenSq;
+		T = Clamp(T, 0.0f, 1.0f);
+		return Start + Segment * T;
 	}
 
-	float SegmentOBBDistSq(const FVector& Start, const FVector& End, const FOBB& OBB)
+	// 두 AABB가 서로 겹치는지 검사합니다.
+	// X/Y/Z 모든 축에서 투영 구간이 겹치면 충돌로 판정합니다.
+	// 하나의 축이라도 분리되어 있으면 충돌하지 않습니다.
+	bool IntersectAABBAABB(const FBoundingBox& A, const FBoundingBox& B)
 	{
-		FVector Axes[3];
-		GetOBBAxes(OBB, Axes);
+		return (A.Min.X <= B.Max.X && A.Max.X >= B.Min.X) &&
+			(A.Min.Y <= B.Max.Y && A.Max.Y >= B.Min.Y) &&
+			(A.Min.Z <= B.Max.Z && A.Max.Z >= B.Min.Z);
+	}
 
-		const FVector LocalStart = WorldToOBBLocal(Start, OBB, Axes);
-		const FVector LocalEnd = WorldToOBBLocal(End, OBB, Axes);
-		const FBoundingBox LocalBox(OBB.Extent * -1.0f, OBB.Extent);
+	// 두 선분 사이의 최소 거리 제곱값을 반환합니다.
+	// 각 선분 위의 가장 가까운 두 점을 매개변수 S, T로 구한 뒤 거리 제곱을 계산합니다.
+	// 캡슐-캡슐 충돌처럼 중심축끼리의 거리를 구할 때 사용할 수 있습니다.
+	float SegmentSegmentDistSq(
+		const FVector& P1, const FVector& Q1, const FVector& P2, const FVector& Q2)
+	{
+		const FVector D1 = Q1 - P1;
+		const FVector D2 = Q2 - P2;
+		const FVector R = P1 - P2;
 
-		auto PointAABBDistSq = [&LocalBox](const FVector& Point)
+		const float A = D1.Dot(D1);
+		const float E = D2.Dot(D2);
+		const float F = D2.Dot(R);
+
+		float S = 0.0f;
+		float T = 0.0f;
+
+		const float Epsilon = 1e-6f;
+
+		if (A <= Epsilon && E <= Epsilon)
 		{
-			const FVector Closest(
-				Clamp(Point.X, LocalBox.Min.X, LocalBox.Max.X),
-				Clamp(Point.Y, LocalBox.Min.Y, LocalBox.Max.Y),
-				Clamp(Point.Z, LocalBox.Min.Z, LocalBox.Max.Z));
-			return FVector::DistSquared(Point, Closest);
-		};
-
-		if (PointAABBDistSq(LocalStart) <= CollisionEpsilon || PointAABBDistSq(LocalEnd) <= CollisionEpsilon)
-		{
-			return 0.0f;
+			return R.Dot(R);
 		}
 
-		const FVector Segment = LocalEnd - LocalStart;
-		if (Segment.Dot(Segment) <= CollisionEpsilon)
+		if (A <= Epsilon)
 		{
-			return PointAABBDistSq(LocalStart);
+			S = 0.0f;
+			T = Clamp(F / E, 0.0f, 1.0f);
 		}
-
-		float Left = 0.0f;
-		float Right = 1.0f;
-		for (int Iteration = 0; Iteration < 40; ++Iteration)
+		else
 		{
-			const float T1 = Left + (Right - Left) / 3.0f;
-			const float T2 = Right - (Right - Left) / 3.0f;
-			const float D1 = PointAABBDistSq(LocalStart + Segment * T1);
-			const float D2 = PointAABBDistSq(LocalStart + Segment * T2);
-			if (D1 < D2)
+			const float C = D1.Dot(R);
+
+			if (E <= Epsilon)
 			{
-				Right = T2;
+				T = 0.0f;
+				S = Clamp(-C / A, 0.0f, 1.0f);
 			}
 			else
 			{
-				Left = T1;
+				const float B = D1.Dot(D2);
+				const float Denom = A * E - B * B;
+
+				if (Denom > Epsilon)
+				{
+					S = Clamp((B * F - C * E) / Denom, 0.0f, 1.0f);
+				}
+				else
+				{
+					S = 0.0f;
+				}
+
+				const float TNom = B * S + F;
+
+				if (TNom < 0.0f)
+				{
+					T = 0.0f;
+					S = Clamp(-C / A, 0.0f, 1.0f);
+				}
+				else if (TNom > E)
+				{
+					T = 1.0f;
+					S = Clamp((B - C) / A, 0.0f, 1.0f);
+				}
+				else
+				{
+					T = TNom / E;
+				}
 			}
 		}
 
-		const float T = (Left + Right) * 0.5f;
-		return PointAABBDistSq(LocalStart + Segment * T);
+		const FVector C1 = P1 + D1 * S;
+		const FVector C2 = P2 + D2 * T;
+		return FVector::DistSquared(C1, C2);
 	}
-
 }
 
 bool FPrimitiveCollision::IntersectBroadPhase(const UPrimitiveComponent* A, const UPrimitiveComponent* B)
 {
 	//BVH?
-	return false;
+	return IntersectAABBAABB(A->GetWorldAABB(), B->GetWorldAABB());
 }
 
 bool FPrimitiveCollision::Intersect(const UPrimitiveComponent* A, const UPrimitiveComponent* B)
@@ -256,105 +243,14 @@ bool FPrimitiveCollision::IntersectBoxBox(const UBoxComponent* A, const UBoxComp
 		return false;
 	}
 
-	return IntersectOBBOBB(MakeBoxOBB(A), MakeBoxOBB(B));
-}
-
-bool FPrimitiveCollision::IntersectOBBOBB(const FOBB& A, const FOBB& B)
-{
-	FVector AxesA[3];
-	FVector AxesB[3];
-	GetOBBAxes(A, AxesA);
-	GetOBBAxes(B, AxesB);
-
-	float R[3][3];
-	float AbsR[3][3];
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 3; ++j)
-		{
-			R[i][j] = AxesA[i].Dot(AxesB[j]);
-			AbsR[i][j] = std::abs(R[i][j]) + CollisionEpsilon;
-		}
-	}
-
-	const FVector Translation = B.Center - A.Center;
-	const FVector T(
-		Translation.Dot(AxesA[0]),
-		Translation.Dot(AxesA[1]),
-		Translation.Dot(AxesA[2]));
-
-	for (int i = 0; i < 3; ++i)
-	{
-		const float RA = A.Extent.Data[i];
-		const float RB =
-			B.Extent.X * AbsR[i][0] +
-			B.Extent.Y * AbsR[i][1] +
-			B.Extent.Z * AbsR[i][2];
-		if (std::abs(T.Data[i]) > RA + RB)
-		{
-			return false;
-		}
-	}
-
-	for (int j = 0; j < 3; ++j)
-	{
-		const float RA =
-			A.Extent.X * AbsR[0][j] +
-			A.Extent.Y * AbsR[1][j] +
-			A.Extent.Z * AbsR[2][j];
-		const float RB = B.Extent.Data[j];
-		const float Distance = std::abs(
-			T.X * R[0][j] +
-			T.Y * R[1][j] +
-			T.Z * R[2][j]);
-		if (Distance > RA + RB)
-		{
-			return false;
-		}
-	}
-
-	for (int i = 0; i < 3; ++i)
-	{
-		for (int j = 0; j < 3; ++j)
-		{
-			const float RA =
-				A.Extent.Data[(i + 1) % 3] * AbsR[(i + 2) % 3][j] +
-				A.Extent.Data[(i + 2) % 3] * AbsR[(i + 1) % 3][j];
-			const float RB =
-				B.Extent.Data[(j + 1) % 3] * AbsR[i][(j + 2) % 3] +
-				B.Extent.Data[(j + 2) % 3] * AbsR[i][(j + 1) % 3];
-			const float Distance = std::abs(
-				T.Data[(i + 2) % 3] * R[(i + 1) % 3][j] -
-				T.Data[(i + 1) % 3] * R[(i + 2) % 3][j]);
-			if (Distance > RA + RB)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-bool FPrimitiveCollision::IntersectCapsuleCapsule(const UCapsuleComponent* A, const UCapsuleComponent* B)
-{
-	FVector A0;
-	FVector A1;
-	FVector B0;
-	FVector B1;
-
-	A->GetSegmentPoints(A0, A1);
-	B->GetSegmentPoints(B0, B1);
-
-	const float RadiusSum = GetScaledCapsuleRadius(A) + GetScaledCapsuleRadius(B);
-	return SegmentSegmentDistSq(A0, A1, B0, B1) <= RadiusSum * RadiusSum;
+	return MakeBoxOBB(A).IntersectOBB(MakeBoxOBB(B));
 }
 
 bool FPrimitiveCollision::IntersectSphereBox(const USphereComponent* Sphere, const UBoxComponent* Box)
 {
 	const FVector Center = Sphere->GetWorldLocation();
 	const float Radius = GetScaledSphereRadius(Sphere);
-	const FVector Closest = ClosestPointOnOBB(Center, MakeBoxOBB(Box));
+	const FVector Closest = MakeBoxOBB(Box).ClosestPoint(Center);
 	return FVector::DistSquared(Center, Closest) <= Radius * Radius;
 }
 
@@ -381,112 +277,19 @@ bool FPrimitiveCollision::IntersectBoxCapsule(const UBoxComponent* Box, const UC
 	FVector P1;
 	Capsule->GetSegmentPoints(P0, P1);
 
-	return SegmentOBBDistSq(P0, P1, MakeBoxOBB(Box)) <= CapsuleRadius * CapsuleRadius;
+	return MakeBoxOBB(Box).SegmentDistSq(P0, P1) <= CapsuleRadius * CapsuleRadius;
 }
 
-bool FPrimitiveCollision::IntersectAABBAABB(const FBoundingBox& A, const FBoundingBox& B)
+bool FPrimitiveCollision::IntersectCapsuleCapsule(const UCapsuleComponent* A, const UCapsuleComponent* B)
 {
-	return (A.Min.X <= B.Max.X && A.Max.X >= B.Min.X) &&
-		(A.Min.Y <= B.Max.Y && A.Max.Y >= B.Min.Y) &&
-		(A.Min.Z <= B.Max.Z && A.Max.Z >= B.Min.Z);
-}
+	FVector A0;
+	FVector A1;
+	FVector B0;
+	FVector B1;
 
-FVector FPrimitiveCollision::ClosestPointOnAABB(const FVector& Point, const FBoundingBox& AABB)
-{
-	return FVector(
-		Clamp(Point.X, AABB.Min.X, AABB.Max.X),
-		Clamp(Point.Y, AABB.Min.Y, AABB.Max.Y),
-		Clamp(Point.Z, AABB.Min.Z, AABB.Max.Z)
-	);
-}
+	A->GetSegmentPoints(A0, A1);
+	B->GetSegmentPoints(B0, B1);
 
-FVector FPrimitiveCollision::ClosestPointOnSegment(const FVector& Point, const FVector& Start, const FVector& End)
-{
-	const FVector Segment = End - Start;
-	const float SegmentLenSq = Segment.Dot(Segment);
-
-	if (SegmentLenSq <= 1e-6f)
-	{
-		return Start;
-	}
-
-	float T = (Point - Start).Dot(Segment) / SegmentLenSq;
-	T = Clamp(T, 0.0f, 1.0f);
-	return Start + Segment * T;
-}
-
-float FPrimitiveCollision::SegmentSegmentDistSq(
-	const FVector& P1,
-	const FVector& Q1,
-	const FVector& P2,
-	const FVector& Q2)
-{
-	const FVector D1 = Q1 - P1;
-	const FVector D2 = Q2 - P2;
-	const FVector R = P1 - P2;
-
-	const float A = D1.Dot(D1);
-	const float E = D2.Dot(D2);
-	const float F = D2.Dot(R);
-
-	float S = 0.0f;
-	float T = 0.0f;
-
-	const float Epsilon = 1e-6f;
-
-	if (A <= Epsilon && E <= Epsilon)
-	{
-		return R.Dot(R);
-	}
-
-	if (A <= Epsilon)
-	{
-		S = 0.0f;
-		T = Clamp(F / E, 0.0f, 1.0f);
-	}
-	else
-	{
-		const float C = D1.Dot(R);
-
-		if (E <= Epsilon)
-		{
-			T = 0.0f;
-			S = Clamp(-C / A, 0.0f, 1.0f);
-		}
-		else
-		{
-			const float B = D1.Dot(D2);
-			const float Denom = A * E - B * B;
-
-			if (Denom > Epsilon)
-			{
-				S = Clamp((B * F - C * E) / Denom, 0.0f, 1.0f);
-			}
-			else
-			{
-				S = 0.0f;
-			}
-
-			const float TNom = B * S + F;
-
-			if (TNom < 0.0f)
-			{
-				T = 0.0f;
-				S = Clamp(-C / A, 0.0f, 1.0f);
-			}
-			else if (TNom > E)
-			{
-				T = 1.0f;
-				S = Clamp((B - C) / A, 0.0f, 1.0f);
-			}
-			else
-			{
-				T = TNom / E;
-			}
-		}
-	}
-
-	const FVector C1 = P1 + D1 * S;
-	const FVector C2 = P2 + D2 * T;
-	return FVector::DistSquared(C1, C2);
+	const float RadiusSum = GetScaledCapsuleRadius(A) + GetScaledCapsuleRadius(B);
+	return SegmentSegmentDistSq(A0, A1, B0, B1) <= RadiusSum * RadiusSum;
 }
