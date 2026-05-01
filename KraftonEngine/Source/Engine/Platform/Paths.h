@@ -13,6 +13,7 @@ public:
 
 	// 주요 디렉터리
 	static std::wstring ShaderDir();      // Shaders/
+	static std::wstring ScriptDir();      // LuaScripts/
 	static std::wstring AssetDir();       // Asset/
 	static std::wstring SceneDir();       // Asset/Scene/
 	static std::wstring DataDir();        // Data/

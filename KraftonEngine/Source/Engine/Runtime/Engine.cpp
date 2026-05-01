@@ -77,8 +77,8 @@ void UEngine::Init(FWindowsWindow* InWindow)
 	}
 
 	FLogManager::Get().Initialize();
-	FLuaScriptSubsystem::Get().Initialize();
 	FDirectoryWatcher::Get().Initialize();
+	FLuaScriptSubsystem::Get().Initialize();
 }
 
 void UEngine::Shutdown()

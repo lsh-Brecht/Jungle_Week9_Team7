@@ -148,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;WITH_EDITOR=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -165,7 +165,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WITH_EDITOR=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -180,7 +180,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;WITH_EDITOR=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -198,7 +198,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -216,7 +216,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -234,7 +234,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;STATS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>

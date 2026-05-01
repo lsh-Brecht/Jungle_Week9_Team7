@@ -27,6 +27,7 @@ std::wstring FPaths::RootDir()
 }
 
 std::wstring FPaths::ShaderDir()   { return RootDir() + L"Shaders\\"; }
+std::wstring FPaths::ScriptDir()   { return RootDir() + L"LuaScripts\\"; }
 std::wstring FPaths::AssetDir()    { return RootDir() + L"Asset\\"; }
 std::wstring FPaths::SceneDir()    { return RootDir() + L"Asset\\Scene\\"; }
 std::wstring FPaths::DataDir()     { return RootDir() + L"Data\\"; }
