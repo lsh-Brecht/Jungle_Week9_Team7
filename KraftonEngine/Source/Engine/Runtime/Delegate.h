@@ -42,12 +42,6 @@ public:
 		return *this;
 	}
 
-	TDelegate(TDelegate&& Other) noexcept
-		: Handlers(std::move(Other.Handlers))
-		, InstanceHandlerIDMap(std::move(Other.InstanceHandlerIDMap))
-		, NextID(Other.NextID.load())
-	{
-	}
 
 	TDelegate& operator=(TDelegate&& Other) noexcept
 	{
@@ -58,6 +52,13 @@ public:
 			NextID.store(Other.NextID.load());
 		}
 		return *this;
+	}
+
+	TDelegate(TDelegate&& Other) noexcept
+		: Handlers(std::move(Other.Handlers))
+		, InstanceHandlerIDMap(std::move(Other.InstanceHandlerIDMap))
+		, NextID(Other.NextID.load())
+	{
 	}
 
 	// instance와 상관없는 normal function 등록
