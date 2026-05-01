@@ -8,6 +8,7 @@
 #include "Platform/DirectoryWatcher.h"
 #include "GameFramework/AActor.h"
 #include "Object/Object.h"
+#include "Runtime/Engine.h"
 
 #include <algorithm>
 #include <utility>
@@ -17,6 +18,16 @@
 
 namespace
 {
+	int ResumeLuaThread(lua_State* ThreadState, int ArgCount)
+	{
+#if SOL_LUA_VERSION_I_ >= 504
+		int ResultCount = 0;
+		return lua_resume(ThreadState, nullptr, ArgCount, &ResultCount);
+#else
+		return lua_resume(ThreadState, nullptr, ArgCount);
+#endif
+	}
+
 	FString ToGenericUtf8(const std::filesystem::path& Path)
 	{
 		return FPaths::ToUtf8(Path.generic_wstring());
@@ -97,7 +108,14 @@ void FLuaScriptSubsystem::Shutdown()
 	IncludeDependents.clear();
 	ModulePaths.clear();
 	DependencyContextStack.clear();
-   ActorBindings.clear();
+	if (GEngine)
+	{
+		for (const auto& [ActorUUID, Binding] : ActorBindings)
+		{
+			GEngine->GetTaskScheduler().CancelTasks(ActorUUID);
+		}
+	}
+	ActorBindings.clear();
 	bInitialized = false;
 	UE_LOG("[Lua] Lua Scripting Shutdown.");
 }
@@ -156,7 +174,8 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 	}
 
 	sol::protected_function ScriptFunction = LoadResult;
-	sol::protected_function_result ExecResult = ScriptFunction(Env);
+	sol::set_environment(Env, ScriptFunction);
+	sol::protected_function_result ExecResult = ScriptFunction();
 	if (!ExecResult.valid())
 	{
 		sol::error Error = ExecResult;
@@ -173,7 +192,11 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 	Binding.EndPlay = Binding.Environment["EndPlay"];
 	Binding.OnOverlap = Binding.Environment["OnOverlap"];
 
-  ActorBindings.erase(Binding.ActorUUID);
+	if (GEngine)
+	{
+		GEngine->GetTaskScheduler().CancelTasks(Binding.ActorUUID);
+	}
+	ActorBindings.erase(Binding.ActorUUID);
 	ActorBindings.emplace(Binding.ActorUUID, std::move(Binding));
 	return true;
 }
@@ -185,6 +208,10 @@ void FLuaScriptSubsystem::UnbindActor(const AActor* Actor)
 		return;
 	}
 
+	if (GEngine)
+	{
+		GEngine->GetTaskScheduler().CancelTasks(Actor->GetUUID());
+	}
 	ActorBindings.erase(Actor->GetUUID());
 }
 
@@ -193,7 +220,7 @@ void FLuaScriptSubsystem::CallActorBeginPlay(AActor* Actor)
 	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
 	{
 		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-     InvokeActorFunction("BeginPlay", Binding->BeginPlay);
+		StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ActorUUID);
 	}
 }
 
@@ -202,7 +229,7 @@ void FLuaScriptSubsystem::CallActorTick(AActor* Actor, float DeltaTime)
 	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
 	{
 		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-       InvokeActorFunction("Tick", Binding->Tick, DeltaTime);
+		StartCoroutine("Tick", Binding->Tick, Binding->ActorUUID, DeltaTime);
 	}
 }
 
@@ -211,7 +238,7 @@ void FLuaScriptSubsystem::CallActorEndPlay(AActor* Actor)
 	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
 	{
 		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-       InvokeActorFunction("EndPlay", Binding->EndPlay);
+		StartCoroutine("EndPlay", Binding->EndPlay, Binding->ActorUUID);
 	}
 }
 
@@ -221,8 +248,8 @@ void FLuaScriptSubsystem::CallActorOverlap(AActor* Actor, AActor* OtherActor)
 	{
 		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
 		FLuaGameObjectHandle OtherHandle;
-        OtherHandle.UUID = OtherActor ? OtherActor->GetUUID() : 0; // Consistent tab-based indentation
-		InvokeActorFunction("OnOverlap", Binding->OnOverlap, OtherHandle);
+		OtherHandle.UUID = OtherActor ? OtherActor->GetUUID() : 0;
+		StartCoroutine("OnOverlap", Binding->OnOverlap, Binding->ActorUUID, OtherHandle);
 	}
 }
 
@@ -250,52 +277,112 @@ const FLuaScriptSubsystem::FLuaActorBinding* FLuaScriptSubsystem::FindActorBindi
 	return It != ActorBindings.end() ? &It->second : nullptr;
 }
 
-void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function)
+void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID)
 {
-    if (!Function.valid())
+	if (!Function.valid())
 	{
 		return;
 	}
 
-    sol::protected_function Protected = Function;
-	sol::protected_function_result Result = Protected();
-	if (!Result.valid())
-	{
-		sol::error Error = Result;
-		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
-	}
+	sol::thread Thread = CreateCoroutineThread(Function);
+	ResumeCoroutine(std::move(Thread), OwnerUUID, FunctionName, 0);
 }
 
-void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function, float DeltaTime)
+void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, float DeltaTime)
 {
-    if (!Function.valid())
+	if (!Function.valid())
 	{
 		return;
 	}
 
-    sol::protected_function Protected = Function;
-	sol::protected_function_result Result = Protected(DeltaTime);
-	if (!Result.valid())
-	{
-		sol::error Error = Result;
-		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
-	}
+	sol::thread Thread = CreateCoroutineThread(Function);
+	lua_pushnumber(Thread.thread_state(), static_cast<lua_Number>(DeltaTime));
+	ResumeCoroutine(std::move(Thread), OwnerUUID, FunctionName, 1);
 }
 
-void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function, const FLuaGameObjectHandle& OtherActor)
+void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, const FLuaGameObjectHandle& OtherActor)
 {
-    if (!Function.valid())
+	if (!Function.valid())
 	{
 		return;
 	}
 
-    sol::protected_function Protected = Function;
-	sol::protected_function_result Result = Protected(OtherActor);
-	if (!Result.valid())
+	sol::thread Thread = CreateCoroutineThread(Function);
+	sol::stack::push(Thread.thread_state(), OtherActor);
+	ResumeCoroutine(std::move(Thread), OwnerUUID, FunctionName, 1);
+}
+
+sol::thread FLuaScriptSubsystem::CreateCoroutineThread(const sol::function& Function)
+{
+	sol::thread Thread = sol::thread::create(Lua.lua_state());
+	lua_State* FunctionState = Function.lua_state();
+	lua_State* ThreadState = Thread.thread_state();
+
+	Function.push();
+	lua_xmove(FunctionState, ThreadState, 1);
+
+	return Thread;
+}
+
+void FLuaScriptSubsystem::ResumeCoroutine(sol::thread Thread, uint32 OwnerUUID, const FString& FunctionName, int ArgCount)
+{
+	lua_State* ThreadState = Thread.thread_state();
+	const int Status = ResumeLuaThread(ThreadState, ArgCount);
+	HandleCoroutineResult(Status, std::move(Thread), ThreadState, OwnerUUID, FunctionName);
+}
+
+void FLuaScriptSubsystem::HandleCoroutineResult(int Status, sol::thread Thread, lua_State* ThreadState, uint32 OwnerUUID, const FString& FunctionName)
+{
+	if (Status == LUA_YIELD)
 	{
-		sol::error Error = Result;
-		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
+		const float Delay = ExtractYieldDelay(ThreadState);
+		lua_settop(ThreadState, 0);
+		ScheduleCoroutineResume(Delay, std::move(Thread), OwnerUUID, FunctionName);
+		return;
 	}
+
+	if (Status != LUA_OK)
+	{
+		const char* Error = lua_tostring(ThreadState, -1);
+		UE_LOG("[Lua] Lua Actor Coroutine Error (%s): %s", FunctionName.c_str(), Error ? Error : "unknown error");
+	}
+
+	lua_settop(ThreadState, 0);
+}
+
+void FLuaScriptSubsystem::ScheduleCoroutineResume(float Delay, sol::thread Thread, uint32 OwnerUUID, const FString& FunctionName)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	GEngine->GetTaskScheduler().Schedule(Delay,
+		[this, Thread = std::move(Thread), OwnerUUID, FunctionName]() mutable
+		{
+			if (!bInitialized)
+			{
+				return;
+			}
+
+			if (OwnerUUID != 0 && !FindActorBinding(OwnerUUID))
+			{
+				return;
+			}
+
+			ResumeCoroutine(Thread, OwnerUUID, FunctionName, 0);
+		},
+		OwnerUUID);
+}
+
+float FLuaScriptSubsystem::ExtractYieldDelay(lua_State* ThreadState) const
+{
+	if (lua_gettop(ThreadState) <= 0 || !lua_isnumber(ThreadState, 1))
+	{
+		return 0.0f;
+	}
+
+	return static_cast<float>(lua_tonumber(ThreadState, 1));
 }
 
 void FLuaScriptSubsystem::OnScriptsChanged(const TSet<FString>& ChangedFiles)
@@ -387,6 +474,44 @@ void FLuaScriptSubsystem::ConfigureLuaState(sol::state& TargetLua)
 
 void FLuaScriptSubsystem::RegisterRuntimeFunctions(sol::state& TargetLua)
 {
+	TargetLua.set_function("print",
+		[](sol::variadic_args Args)
+		{
+			FString Message;
+			bool bFirst = true;
+			for (sol::object Arg : Args)
+			{
+				if (!bFirst)
+				{
+					Message += "\t";
+				}
+				bFirst = false;
+
+				switch (Arg.get_type())
+				{
+				case sol::type::nil:
+					Message += "nil";
+					break;
+				case sol::type::boolean:
+					Message += Arg.as<bool>() ? "true" : "false";
+					break;
+				case sol::type::number:
+					Message += std::to_string(Arg.as<double>());
+					break;
+				case sol::type::string:
+					Message += Arg.as<FString>();
+					break;
+				default:
+					Message += "<";
+					Message += sol::type_name(Arg.lua_state(), Arg.get_type());
+					Message += ">";
+					break;
+				}
+			}
+
+			UE_LOG("[Lua] %s", Message.c_str());
+		});
+
 	TargetLua.set_function("Include",
 		[this](const FString& Path, sol::this_state State) -> sol::object
 		{
@@ -410,6 +535,16 @@ void FLuaScriptSubsystem::RegisterRuntimeFunctions(sol::state& TargetLua)
 		{
 			return RequireModule(ModuleName, State);
 		});
+
+	TargetLua.set_function("Wait", sol::yielding([](float Seconds)
+		{
+			return Seconds;
+		}));
+
+	TargetLua.set_function("wait", sol::yielding([](float Seconds)
+		{
+			return Seconds;
+		}));
 }
 
 bool FLuaScriptSubsystem::ExecuteFileInternal(const FString& Path, bool bTrackAsEntry)
@@ -538,6 +673,14 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 		if (!ExecuteEntryScript(NewLua, Script, NewScriptIncludes, NewModulePaths))
 		{
 			return false;
+		}
+	}
+
+	if (GEngine)
+	{
+		for (const auto& [ActorUUID, Binding] : ActorBindings)
+		{
+			GEngine->GetTaskScheduler().CancelTasks(ActorUUID);
 		}
 	}
 

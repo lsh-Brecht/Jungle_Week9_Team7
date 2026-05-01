@@ -1,6 +1,8 @@
 function BeginPlay()
-    print("[BeginPlay] " .. obj.UUID)
+    print("[BeginPlay] UUID = " .. obj.UUID)
     obj:PrintLocation()
+    Wait(10.0)
+    print("After 10 seconds")
 end
 
 function EndPlay()
@@ -10,9 +12,4 @@ end
 
 function OnOverlap(OtherActor)
     OtherActor:PrintLocation()
-end
-
-function Tick(dt)
-    obj.Location = obj.Location + obj.Velocity * dt
-    obj:PrintLocation()
 end
