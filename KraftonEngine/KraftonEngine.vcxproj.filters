@@ -169,6 +169,9 @@
     <Filter Include="ThirdParty\SimpleJSON">
       <UniqueIdentifier>{b5b63371-405e-e009-4e4e-e3b5a25ee7bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Component\Collision">
+      <UniqueIdentifier>{b85e2e56-38ec-4917-80f4-86df0e0aa215}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Common\ConstantBuffers.hlsli">
@@ -795,6 +798,19 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\ShapeComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Collision\PrimitiveCollision.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1451,6 +1467,20 @@
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\ShapeComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h">
+      <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Collision\PrimitiveCollision.h" />
+    <ClInclude Include="Source\Engine\Component\Collision\CollisionTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />

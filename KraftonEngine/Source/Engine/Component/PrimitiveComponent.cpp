@@ -8,7 +8,7 @@
 #include "Render/Scene/FScene.h"
 #include "Render/Proxy/PrimitiveSceneProxy.h"
 #include "GameFramework/World.h"
-#include "Object/ObjectFactory.h"
+#include "Collision/PrimitiveCollision.h"
 
 #include <cmath>
 #include <cstring>
@@ -279,4 +279,14 @@ void UPrimitiveComponent::EnsureWorldAABBUpdated() const
 	{
 		UpdateWorldAABB();
 	}
+}
+
+ECollisionShapeType UPrimitiveComponent::GetCollisionShapeType() const
+{
+	return ECollisionShapeType::None;
+}
+ 
+FBoundingBox UPrimitiveComponent::GetWorldAABB() const
+{
+	return GetWorldBoundingBox();
 }
