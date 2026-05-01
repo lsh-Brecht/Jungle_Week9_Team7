@@ -23,12 +23,56 @@ public:
 	using FunctionType = std::function<void(Args...)>;
 	using HandlerType = TPair<uint32, FunctionType>;
 
+	TDelegate() = default;
+	TDelegate(const TDelegate& Other)
+		: Handlers(Other.Handlers)
+		, InstanceHandlerIDMap(Other.InstanceHandlerIDMap)
+		, NextID(Other.NextID.load())
+	{
+	}
+
+	TDelegate& operator=(const TDelegate& Other)
+	{
+		if (this != &Other)
+		{
+			Handlers = Other.Handlers;
+			InstanceHandlerIDMap = Other.InstanceHandlerIDMap;
+			NextID.store(Other.NextID.load());
+		}
+		return *this;
+	}
+
+	TDelegate(TDelegate&& Other) noexcept
+		: Handlers(std::move(Other.Handlers))
+		, InstanceHandlerIDMap(std::move(Other.InstanceHandlerIDMap))
+		, NextID(Other.NextID.load())
+	{
+	}
+
+	TDelegate& operator=(TDelegate&& Other) noexcept
+	{
+		if (this != &Other)
+		{
+			Handlers = std::move(Other.Handlers);
+			InstanceHandlerIDMap = std::move(Other.InstanceHandlerIDMap);
+			NextID.store(Other.NextID.load());
+		}
+		return *this;
+	}
+
 	// instance와 상관없는 normal function 등록
 	// 반환된 HandlerID를 보관해야 Remove 가능
 	uint32 Add(const FunctionType& handler)
 	{
 		uint32 NewHandlerID = NextID.fetch_add(1);
 		Handlers.push_back(HandlerType(NewHandlerID, handler));
+		return NewHandlerID;
+	}
+
+	uint32 Add(const FunctionType& handler, uint32 InstanceUUID)
+	{
+		uint32 NewHandlerID = Add(handler);
+		InstanceHandlerIDMap[InstanceUUID].push_back(NewHandlerID);
 		return NewHandlerID;
 	}
 

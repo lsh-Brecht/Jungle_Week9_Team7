@@ -1,4 +1,4 @@
-﻿#include "LuaBindings.h"
+#include "LuaBindings.h"
 
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_LUAJIT 1
@@ -11,6 +11,10 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterFRotatorBinding(Lua);
 
 	RegisterActorLifecycleBinding(Lua);
+
+	RegisterActorComponentBinding(Lua);
+	RegisterSceneComponentBinding(Lua);
+	RegisterPrimitiveComponentBinding(Lua);
 	
 	RegisterShapeComponentBinding(Lua);
 	RegisterSphereComponentBinding(Lua);

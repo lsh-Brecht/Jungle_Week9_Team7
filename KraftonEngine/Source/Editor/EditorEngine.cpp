@@ -131,6 +131,7 @@ void UEditorEngine::Tick(float DeltaTime)
 	FDirectoryWatcher::Get().ProcessChanges();
 	FNotificationManager::Get().Tick(DeltaTime);
 	InputSystem::Get().Tick();
+	TaskScheduler.Tick(DeltaTime);
 	MainPanel.Update();
 	InputSystem::Get().RefreshSnapshot();
 

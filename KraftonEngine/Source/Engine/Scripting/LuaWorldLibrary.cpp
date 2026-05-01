@@ -1,8 +1,9 @@
-﻿#include "LuaWorldLibrary.h"
+#include "LuaWorldLibrary.h"
 
 #include "Core/Log.h"
 #include "Object/Object.h"
 #include "Object/ObjectFactory.h"
+#include "Object/UClass.h"
 #include "Runtime/Engine.h"
 
 #include "GameFramework/World.h"
@@ -10,7 +11,14 @@
 
 #include "Component/SceneComponent.h"
 #include "Component/Collision/ShapeComponent.h"
+#include "Component/Collision/BoxComponent.h"
+#include "Component/Collision/SphereComponent.h"
+#include "Component/Collision/CapsuleComponent.h"
 #include "Component/Movement/MovementComponent.h"
+#include "Component/Movement/ProjectileMovementComponent.h"
+#include "Component/Movement/InterpToMovementComponent.h"
+#include "Component/Movement/PendulumMovementComponent.h"
+#include "Component/Movement/RotatingMovementComponent.h"
 #include "Component/StaticMeshComponent.h"
 
 #include "Mesh/ObjManager.h"
@@ -20,6 +28,17 @@
 #include "Materials/MaterialManager.h"
 
 #include <d3d11.h>
+#include <cctype>
+#include <algorithm>
+
+namespace
+{
+	struct FLuaAllowedComponentClass;
+
+	FString NormalizeLuaTypeName(FString Name);
+	bool IsAllowedLuaActorClassName(const FString& ClassName);
+	const FLuaAllowedComponentClass* FindAllowedLuaComponentClass(const FString& TypeName);
+}
 
 UWorld* FLuaWorldLibrary::GetActiveWorld()
 {
@@ -39,8 +58,15 @@ UWorld* FLuaWorldLibrary::GetActiveWorld()
 
 	return World;
 }
+
 AActor* FLuaWorldLibrary::SpawnActorByClassName(const FString& ClassName, const FVector& Location)
 {
+	if (!IsAllowedLuaActorClassName(ClassName))
+	{
+		UE_LOG("[LuaSecurity] SpawnActor blocked: class is not allowed from Lua. ClassName = %s", ClassName.c_str());
+		return nullptr;
+	}
+
 	UWorld* World = GetActiveWorld();
 
 	if (!World)
@@ -95,6 +121,7 @@ AActor* FLuaWorldLibrary::SpawnStaticMeshActor(const FString& StaticMeshPath, co
 
 	return Actor;
 }
+
 bool FLuaWorldLibrary::DestroyActor(AActor* Actor)
 {
 	if (!Actor)
@@ -119,6 +146,7 @@ bool FLuaWorldLibrary::DestroyActor(AActor* Actor)
 
 	return true;
 }
+
 bool FLuaWorldLibrary::RemoveComponent(AActor* Actor, UActorComponent* Component)
 {
 	if (!Actor || !Component)
@@ -135,6 +163,7 @@ bool FLuaWorldLibrary::RemoveComponent(AActor* Actor, UActorComponent* Component
 	Actor->RemoveComponent(Component);
 	return true;
 }
+
 bool FLuaWorldLibrary::RemoveShape(AActor* Actor)
 {
 	if (!Actor)
@@ -159,6 +188,7 @@ bool FLuaWorldLibrary::RemoveShape(AActor* Actor)
 
 	return bRemoved;
 }
+
 UStaticMeshComponent* FLuaWorldLibrary::GetOrAddStaticMeshComponent(AActor* Actor)
 {
 	if (!Actor)
@@ -187,6 +217,7 @@ UStaticMeshComponent* FLuaWorldLibrary::GetOrAddStaticMeshComponent(AActor* Acto
 
 	return MeshComponent;
 }
+
 bool FLuaWorldLibrary::SetStaticMesh(UStaticMeshComponent* MeshComponent, const FString& StaticMeshPath)
 {
 	if (!MeshComponent)
@@ -317,11 +348,206 @@ bool FLuaWorldLibrary::SetMaterialVector4Parameter(UStaticMeshComponent* MeshCom
 	return true;
 }
 
+namespace
+{
+	struct FLuaAllowedComponentClass
+	{
+		const char* NormalizedName;
+		UClass* Class;
+		bool bCanCreate;
+	};
+
+	FString NormalizeLuaTypeName(FString Name)
+	{
+		Name.erase(
+			std::remove_if(
+				Name.begin(),
+				Name.end(),
+				[](unsigned char C)
+				{
+					return std::isspace(C) || C == '_' || C == '-';
+				}
+			),
+			Name.end()
+		);
+
+		std::transform(
+			Name.begin(),
+			Name.end(),
+			Name.begin(),
+			[](unsigned char C)
+			{
+				return static_cast<char>(std::tolower(C));
+			}
+		);
+
+		if (!Name.empty() && Name[0] == 'u')
+		{
+			Name.erase(Name.begin());
+		}
+
+		const FString ComponentSuffix = "component";
+		if (Name.size() >= ComponentSuffix.size() &&
+			Name.compare(Name.size() - ComponentSuffix.size(), ComponentSuffix.size(), ComponentSuffix) == 0)
+		{
+			Name.erase(Name.size() - ComponentSuffix.size());
+		}
+
+		return Name;
+	}
+
+	bool IsAllowedLuaActorClassName(const FString& ClassName)
+	{
+		const FString NormalizedClassName = NormalizeLuaTypeName(ClassName);
+
+		static const char* AllowedActorClassNames[] =
+		{
+			"actor",
+			"aactor",
+			"staticmeshactor",
+			"astaticmeshactor",
+			"luaactor",
+			"aluaactor"
+		};
+
+		for (const char* AllowedName : AllowedActorClassNames)
+		{
+			if (NormalizedClassName == AllowedName)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const FLuaAllowedComponentClass* FindAllowedLuaComponentClass(const FString& TypeName)
+	{
+		const FString NormalizedTypeName = NormalizeLuaTypeName(TypeName);
+
+		static const FLuaAllowedComponentClass AllowedComponents[] =
+		{
+			{ "scene", USceneComponent::StaticClass(), true },
+			{ "staticmesh", UStaticMeshComponent::StaticClass(), true },
+			{ "shape", UShapeComponent::StaticClass(), false },
+			{ "box", UBoxComponent::StaticClass(), true },
+			{ "sphere", USphereComponent::StaticClass(), true },
+			{ "capsule", UCapsuleComponent::StaticClass(), true },
+			{ "movement", UMovementComponent::StaticClass(), false },
+			{ "projectilemovement", UProjectileMovementComponent::StaticClass(), true },
+			{ "interptomovement", UInterpToMovementComponent::StaticClass(), true },
+			{ "pendulummovement", UPendulumMovementComponent::StaticClass(), true },
+			{ "rotatingmovement", URotatingMovementComponent::StaticClass(), true }
+		};
+
+		for (const FLuaAllowedComponentClass& Entry : AllowedComponents)
+		{
+			if (NormalizedTypeName == Entry.NormalizedName)
+			{
+				return &Entry;
+			}
+		}
+
+		return nullptr;
+	}
+}
+
+UActorComponent* FLuaWorldLibrary::FindComponentByTypeName(AActor* Actor, const FString& TypeName)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+
+	const FLuaAllowedComponentClass* AllowedClass = FindAllowedLuaComponentClass(TypeName);
+	if (!AllowedClass || !AllowedClass->Class)
+	{
+		UE_LOG("[LuaSecurity] FindComponent blocked: component type is not allowed from Lua. type = %s", TypeName.c_str());
+		return nullptr;
+	}
+
+	UClass* TargetClass = AllowedClass->Class;
+
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		if (!Component || !Component->GetClass())
+		{
+			continue;
+		}
+
+		if (Component->GetClass()->IsA(TargetClass))
+		{
+			return Component;
+		}
+	}
+
+	return nullptr;
+}
+
+UActorComponent* FLuaWorldLibrary::GetOrAddComponentByTypeName(AActor* Actor, const FString& TypeName)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+
+	if (UActorComponent* Existing = FindComponentByTypeName(Actor, TypeName))
+	{
+		return Existing;
+	}
+
+	const FLuaAllowedComponentClass* AllowedClass = FindAllowedLuaComponentClass(TypeName);
+	if (!AllowedClass || !AllowedClass->Class || !AllowedClass->bCanCreate)
+	{
+		UE_LOG("[LuaSecurity] GetOrAddComponent blocked: component type is not creatable from Lua. type = %s", TypeName.c_str());
+		return nullptr;
+	}
+
+	UClass* ComponentClass = AllowedClass->Class;
+
+	EnsureRootComponent(Actor);
+
+	UActorComponent* Component = Actor->AddComponentByClass(ComponentClass);
+	if (!Component)
+	{
+		UE_LOG("[Lua] GetOrAddComponent failed: add failed. type = %s", TypeName.c_str());
+		return nullptr;
+	}
+
+	PostComponentAdded(Actor, Component);
+	return Component;
+}
+
+bool FLuaWorldLibrary::RemoveComponentByTypeName(AActor* Actor, const FString& TypeName)
+{
+	if (!Actor)
+	{
+		return false;
+	}
+
+	UActorComponent* Component = FindComponentByTypeName(Actor, TypeName);
+	if (!Component)
+	{
+		return false;
+	}
+
+	return RemoveComponent(Actor, Component);
+}
+
 void FLuaWorldLibrary::PostComponentAdded(AActor* Actor, UActorComponent* Component)
 {
 	if (!Actor || !Component)
 	{
 		return;
+	}
+
+	if (USceneComponent* Scene = Cast<USceneComponent>(Component))
+	{
+		USceneComponent* Root = Actor->GetRootComponent();
+		if (Root && Scene != Root && !Scene->GetParent())
+		{
+			Scene->AttachToComponent(Root);
+		}
 	}
 
 	if (Actor->HasActorBegunPlay())

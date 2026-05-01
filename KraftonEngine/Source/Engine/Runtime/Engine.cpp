@@ -83,6 +83,7 @@ void UEngine::Init(FWindowsWindow* InWindow)
 
 void UEngine::Shutdown()
 {
+	TaskScheduler.Clear();
 	FLuaScriptSubsystem::Get().Shutdown();
 	FDirectoryWatcher::Get().Shutdown();
 	FLogManager::Get().Shutdown();
@@ -111,6 +112,7 @@ void UEngine::Tick(float DeltaTime)
 	FDirectoryWatcher::Get().ProcessChanges();
 	FNotificationManager::Get().Tick(DeltaTime);
 	InputSystem::Get().Tick();
+	TaskScheduler.Tick(DeltaTime);
 	WorldTick(DeltaTime);
 	Render(DeltaTime);
 }

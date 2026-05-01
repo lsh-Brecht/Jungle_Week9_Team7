@@ -1,4 +1,4 @@
-﻿// LuaMathBindings.cpp
+// LuaMathBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -109,17 +109,20 @@ void RegisterFRotatorBinding(sol::state& Lua)
 
 		"pitch",
 		sol::property(
-			[](const FRotator& R) { return R.Pitch; }
+			[](const FRotator& R) { return R.Pitch; },
+			[](FRotator& R, float Value) { R.Pitch = Value; }
 		),
 
 		"yaw",
 		sol::property(
-			[](const FRotator& R) { return R.Yaw; }
+			[](const FRotator& R) { return R.Yaw; },
+			[](FRotator& R, float Value) { R.Yaw = Value; }
 		),
 
 		"roll",
 		sol::property(
-			[](const FRotator& R) { return R.Roll; }
+			[](const FRotator& R) { return R.Roll; },
+			[](FRotator& R, float Value) { R.Roll = Value; }
 		),
 
 		"Pitch", &FRotator::Pitch,

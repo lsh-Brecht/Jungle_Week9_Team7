@@ -5,6 +5,7 @@
 #include "GameFramework/WorldContext.h"
 #include "Render/Pipeline/Renderer.h"
 #include "Render/Pipeline/IRenderPipeline.h"
+#include "Runtime/TaskScheduler.h"
 
 #include <memory>
 
@@ -52,6 +53,7 @@ public:
 	FTimer* GetTimer() const { return Timer; }
 
 	FRenderer& GetRenderer() { return Renderer; }
+	FTaskScheduler& GetTaskScheduler() { return TaskScheduler; }
 
 	// Game Viewport Client — PIE/Standalone 용
 	void SetGameViewportClient(UGameViewportClient* InClient) { GameViewportClient = InClient; }
@@ -74,6 +76,7 @@ protected:
 	UGameViewportClient* GameViewportClient = nullptr;
 
 	FRenderer Renderer;
+	FTaskScheduler TaskScheduler;
 
 private:
 	std::unique_ptr<IRenderPipeline> RenderPipeline;

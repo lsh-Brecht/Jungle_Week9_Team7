@@ -406,14 +406,17 @@
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsApplication.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsWindow.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaActorLifecycleBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaDelegateBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaGameObjectBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
@@ -638,12 +641,14 @@
     <ClInclude Include="Source\Engine\Runtime\Engine.h" />
     <ClInclude Include="Source\Engine\Runtime\EngineLoop.h" />
     <ClInclude Include="Source\Engine\Runtime\Launch.h" />
+    <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h" />
     <ClInclude Include="Source\Engine\Runtime\WindowsApplication.h" />
     <ClInclude Include="Source\Engine\Runtime\WindowsWindow.h" />
     <ClInclude Include="Source\Engine\Runtime\resource.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaBindingHelper.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaBindings.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaHandles.h" />
+    <ClInclude Include="Source\Engine\Scripting\LuaPropertyBridge.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaScriptSubsystem.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaWorldLibrary.h" />
     <ClInclude Include="Source\Engine\Scripting\SolInclude.h" />
@@ -876,6 +881,7 @@
     <ResourceCompile Include="KraftonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="LuaScripts\template.lua" />
     <None Include="VcpkgLua.props" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

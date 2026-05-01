@@ -761,6 +761,9 @@
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Runtime\WindowsApplication.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
@@ -773,6 +776,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaDelegateBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -783,6 +789,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp">
@@ -1451,6 +1460,9 @@
     <ClInclude Include="Source\Engine\Runtime\Launch.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Runtime\WindowsApplication.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
@@ -1467,6 +1479,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Scripting\LuaHandles.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaPropertyBridge.h">
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Scripting\LuaScriptSubsystem.h">
