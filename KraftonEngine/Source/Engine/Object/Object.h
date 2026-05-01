@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Profiling/MemoryStats.h"
 #include "Object/FName.h"
@@ -12,19 +12,19 @@ class FArchive;
 // ---------------------------------------------------------------------------
 
 #define DECLARE_CLASS(ClassName, ParentClass)                               \
-    using Super = ParentClass;                                             \
+    using Super = ParentClass;                                              \
     static UClass StaticClassInstance;                                      \
-    static FClassRegistrar s_Registrar;                                    \
+    static FClassRegistrar s_Registrar;                                     \
     static UClass* StaticClass() { return &StaticClassInstance; }           \
     UClass* GetClass() const override { return StaticClass(); }
 
 #define DEFINE_CLASS_WITH_FLAGS(ClassName, ParentClass, FlagsValue)         \
     UClass ClassName::StaticClassInstance(                                  \
-        #ClassName,                                                        \
+        #ClassName,                                                         \
         &ParentClass::StaticClassInstance,                                  \
-        sizeof(ClassName),                                                 \
-        FlagsValue                                                         \
-    );                                                                     \
+        sizeof(ClassName),                                                  \
+        FlagsValue                                                          \
+    );                                                                      \
     FClassRegistrar ClassName::s_Registrar(&ClassName::StaticClassInstance);
 
 #define DEFINE_CLASS(ClassName, ParentClass)                                \
