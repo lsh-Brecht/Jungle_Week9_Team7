@@ -1,4 +1,4 @@
-﻿#include "LuaScriptSubsystem.h"
+#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -164,6 +164,8 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 	sol::state_view LuaView(Lua);
 	sol::environment Env(LuaView, sol::create, LuaView.globals());
 	AssignGameObjectHandle(Env, "obj", Actor);
+	Env["_ownerUUID"] = Actor->GetUUID();
+	Env["_accessLevel"] = "ActorLocal";
 
 	sol::load_result LoadResult = LuaView.load_file(AbsolutePath);
 	if (!LoadResult.valid())
