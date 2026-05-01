@@ -1,12 +1,16 @@
 ﻿#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
+#include "LuaHandles.h"
 #include "Core/Log.h"
 #include "Core/Notification.h"
 #include "Platform/Paths.h"
 #include "Platform/DirectoryWatcher.h"
+#include "GameFramework/AActor.h"
+#include "Object/Object.h"
 
 #include <algorithm>
+#include <utility>
 #include <cwctype>
 #include <filesystem>
 #include <fstream>
@@ -37,6 +41,19 @@ namespace
 		std::transform(Extension.begin(), Extension.end(), Extension.begin(),
 			[](wchar_t Ch) { return static_cast<wchar_t>(std::towlower(Ch)); });
 		return Extension == L".lua";
+	}
+
+	void AssignGameObjectHandle(sol::environment& Environment, const char* Name, const AActor* Actor)
+	{
+		if (!Actor)
+		{
+			Environment[Name] = sol::nil;
+			return;
+		}
+
+		FLuaGameObjectHandle Handle;
+		Handle.UUID = Actor->GetUUID();
+		Environment[Name] = Handle;
 	}
 }
 
@@ -80,6 +97,7 @@ void FLuaScriptSubsystem::Shutdown()
 	IncludeDependents.clear();
 	ModulePaths.clear();
 	DependencyContextStack.clear();
+   ActorBindings.clear();
 	bInitialized = false;
 	UE_LOG("[Lua] Lua Scripting Shutdown.");
 }
@@ -110,6 +128,104 @@ bool FLuaScriptSubsystem::ExecuteFile(const FString& Path)
 	return ExecuteFileInternal(Path, true);
 }
 
+bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
+{
+	if (!bInitialized || !Actor)
+	{
+		return false;
+	}
+
+	const FString NormalizedPath = ResolveScriptPath(ScriptPath);
+	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
+
+	if (!std::filesystem::exists(FPaths::ToWide(AbsolutePath)))
+	{
+		return false;
+	}
+	 
+	sol::state_view LuaView(Lua);
+	sol::environment Env(LuaView, sol::create, LuaView.globals());
+	AssignGameObjectHandle(Env, "obj", Actor);
+
+	sol::load_result LoadResult = LuaView.load_file(AbsolutePath);
+	if (!LoadResult.valid())
+	{
+		sol::error Error = LoadResult;
+		UE_LOG("[Lua] Lua File Compile Error (%s): %s", NormalizedPath.c_str(), Error.what());
+		return false;
+	}
+
+	sol::protected_function ScriptFunction = LoadResult;
+	sol::protected_function_result ExecResult = ScriptFunction(Env);
+	if (!ExecResult.valid())
+	{
+		sol::error Error = ExecResult;
+		UE_LOG("[Lua] Lua File Execution Error (%s): %s", NormalizedPath.c_str(), Error.what());
+		return false;
+	}
+
+	FLuaActorBinding Binding;
+	Binding.ActorUUID = Actor->GetUUID();
+	Binding.ScriptPath = NormalizedPath;
+	Binding.Environment = std::move(Env);
+	Binding.BeginPlay = Binding.Environment["BeginPlay"];
+	Binding.Tick = Binding.Environment["Tick"];
+	Binding.EndPlay = Binding.Environment["EndPlay"];
+	Binding.OnOverlap = Binding.Environment["OnOverlap"];
+
+  ActorBindings.erase(Binding.ActorUUID);
+	ActorBindings.emplace(Binding.ActorUUID, std::move(Binding));
+	return true;
+}
+
+void FLuaScriptSubsystem::UnbindActor(const AActor* Actor)
+{
+	if (!Actor)
+	{
+		return;
+	}
+
+	ActorBindings.erase(Actor->GetUUID());
+}
+
+void FLuaScriptSubsystem::CallActorBeginPlay(AActor* Actor)
+{
+	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	{
+		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
+     InvokeActorFunction("BeginPlay", Binding->BeginPlay);
+	}
+}
+
+void FLuaScriptSubsystem::CallActorTick(AActor* Actor, float DeltaTime)
+{
+	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	{
+		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
+       InvokeActorFunction("Tick", Binding->Tick, DeltaTime);
+	}
+}
+
+void FLuaScriptSubsystem::CallActorEndPlay(AActor* Actor)
+{
+	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	{
+		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
+       InvokeActorFunction("EndPlay", Binding->EndPlay);
+	}
+}
+
+void FLuaScriptSubsystem::CallActorOverlap(AActor* Actor, AActor* OtherActor)
+{
+	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	{
+		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
+		FLuaGameObjectHandle OtherHandle;
+        OtherHandle.UUID = OtherActor ? OtherActor->GetUUID() : 0; // Consistent tab-based indentation
+		InvokeActorFunction("OnOverlap", Binding->OnOverlap, OtherHandle);
+	}
+}
+
 void FLuaScriptSubsystem::RegisterScriptDirectoryWatcher(const FString& ScriptSubDirectory)
 {
 	const std::wstring WatchDirectory = FPaths::Combine(FPaths::ScriptDir(), FPaths::ToWide(ScriptSubDirectory));
@@ -118,6 +234,67 @@ void FLuaScriptSubsystem::RegisterScriptDirectoryWatcher(const FString& ScriptSu
 	{
 		WatchSubs.push_back(FDirectoryWatcher::Get().Subscribe(WatchID,
 			[this](const TSet<FString>& Files) { OnScriptsChanged(Files); }));
+	}
+
+}
+
+FLuaScriptSubsystem::FLuaActorBinding* FLuaScriptSubsystem::FindActorBinding(uint32 ActorUUID)
+{
+	auto It = ActorBindings.find(ActorUUID);
+	return It != ActorBindings.end() ? &It->second : nullptr;
+}
+
+const FLuaScriptSubsystem::FLuaActorBinding* FLuaScriptSubsystem::FindActorBinding(uint32 ActorUUID) const
+{
+	auto It = ActorBindings.find(ActorUUID);
+	return It != ActorBindings.end() ? &It->second : nullptr;
+}
+
+void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function)
+{
+    if (!Function.valid())
+	{
+		return;
+	}
+
+    sol::protected_function Protected = Function;
+	sol::protected_function_result Result = Protected();
+	if (!Result.valid())
+	{
+		sol::error Error = Result;
+		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
+	}
+}
+
+void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function, float DeltaTime)
+{
+    if (!Function.valid())
+	{
+		return;
+	}
+
+    sol::protected_function Protected = Function;
+	sol::protected_function_result Result = Protected(DeltaTime);
+	if (!Result.valid())
+	{
+		sol::error Error = Result;
+		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
+	}
+}
+
+void FLuaScriptSubsystem::InvokeActorFunction(const char* FunctionName, const sol::function& Function, const FLuaGameObjectHandle& OtherActor)
+{
+    if (!Function.valid())
+	{
+		return;
+	}
+
+    sol::protected_function Protected = Function;
+	sol::protected_function_result Result = Protected(OtherActor);
+	if (!Result.valid())
+	{
+		sol::error Error = Result;
+		UE_LOG("[Lua] Lua Actor Function Error (%s): %s", FunctionName, Error.what());
 	}
 }
 
@@ -347,8 +524,14 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 		}
 	}
 
-	TMap<FString, TSet<FString>> NewScriptIncludes;
+ TMap<FString, TSet<FString>> NewScriptIncludes;
 	TMap<FString, FString> NewModulePaths;
+	TArray<std::pair<uint32, FString>> ActorBindingsToRestore;
+	ActorBindingsToRestore.reserve(ActorBindings.size());
+	for (const auto& [ActorUUID, Binding] : ActorBindings)
+	{
+		ActorBindingsToRestore.emplace_back(ActorUUID, Binding.ScriptPath);
+	}
 
 	for (const FString& Script : NewLoadedScriptOrder)
 	{
@@ -364,6 +547,16 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 	ScriptIncludes = std::move(NewScriptIncludes);
 	ModulePaths = std::move(NewModulePaths);
 	RebuildIncludeDependents();
+
+	ActorBindings.clear();
+	for (const auto& [ActorUUID, ScriptPath] : ActorBindingsToRestore)
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(ActorUUID);
+		if (AActor* Actor = Cast<AActor>(Object))
+		{
+			BindActor(Actor, ScriptPath);
+		}
+	}
 
 	return true;
 }

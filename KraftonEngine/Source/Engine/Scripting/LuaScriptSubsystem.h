@@ -9,6 +9,9 @@
 #include "Core/Singleton.h"
 #include "Platform/DirectoryWatcher.h"
 
+class AActor;
+struct FLuaGameObjectHandle;
+
 class FLuaScriptSubsystem : public TSingleton<FLuaScriptSubsystem>
 {
 	friend class TSingleton<FLuaScriptSubsystem>;
@@ -24,6 +27,13 @@ public:
 
 	bool ExecuteString(const FString& Code);
 	bool ExecuteFile(const FString& Path);
+
+	bool BindActor(AActor* Actor, const FString& ScriptPath);
+	void UnbindActor(const AActor* Actor);
+	void CallActorBeginPlay(AActor* Actor);
+	void CallActorTick(AActor* Actor, float DeltaTime);
+	void CallActorEndPlay(AActor* Actor);
+	void CallActorOverlap(AActor* Actor, AActor* OtherActor);
 
 private:
 	FLuaScriptSubsystem() = default;
@@ -57,6 +67,23 @@ private:
 		TMap<FString, FString>* ModulePaths = nullptr;
 	};
 
+	struct FLuaActorBinding
+	{
+		uint32 ActorUUID = 0;
+		FString ScriptPath;
+		sol::environment Environment;
+		sol::function BeginPlay;
+		sol::function Tick;
+		sol::function EndPlay;
+		sol::function OnOverlap;
+	};
+
+	FLuaActorBinding* FindActorBinding(uint32 ActorUUID);
+	const FLuaActorBinding* FindActorBinding(uint32 ActorUUID) const;
+  void InvokeActorFunction(const char* FunctionName, const sol::function& Function);
+	void InvokeActorFunction(const char* FunctionName, const sol::function& Function, float DeltaTime);
+	void InvokeActorFunction(const char* FunctionName, const sol::function& Function, const FLuaGameObjectHandle& OtherActor);
+
 private:
 	sol::state Lua;
 	bool bInitialized = false;
@@ -67,4 +94,5 @@ private:
 	TMap<FString, TSet<FString>> IncludeDependents;
 	TMap<FString, FString> ModulePaths;
 	TArray<FLuaDependencyContext> DependencyContextStack;
+	TMap<uint32, FLuaActorBinding> ActorBindings;
 };
