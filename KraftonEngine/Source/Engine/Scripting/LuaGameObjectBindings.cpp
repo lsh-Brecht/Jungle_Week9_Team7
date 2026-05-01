@@ -26,6 +26,7 @@
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/InterpToMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
+#include "Component/HopMovementComponent.h"
 
 #ifndef LUA_ENABLE_DEBUG_UUID_LOOKUP
 #define LUA_ENABLE_DEBUG_UUID_LOOKUP 0
@@ -188,6 +189,12 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			URotatingMovementComponent
 		),
 
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"HopMovement",
+			FLuaHopMovementComponentHandle,
+			UHopMovementComponent
+		),
+
 		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
 			"GetOrAddProjectileMovement",
 			FLuaProjectileMovementComponentHandle,
@@ -212,6 +219,12 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			URotatingMovementComponent
 		),
 
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddHopMovement",
+			FLuaHopMovementComponentHandle,
+			UHopMovementComponent
+		),
+
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveProjectileMovement",
 			UProjectileMovementComponent
@@ -230,6 +243,11 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveRotatingMovement",
 			URotatingMovementComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveHopMovement",
+			UHopMovementComponent
 		),
 
 		LUA_GAMEOBJECT_SET_SHAPE_METHOD(

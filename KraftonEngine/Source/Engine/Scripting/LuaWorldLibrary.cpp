@@ -20,6 +20,7 @@
 #include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/HopMovementComponent.h"
 
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
@@ -437,7 +438,8 @@ namespace
 			{ "projectilemovement", UProjectileMovementComponent::StaticClass(), true },
 			{ "interptomovement", UInterpToMovementComponent::StaticClass(), true },
 			{ "pendulummovement", UPendulumMovementComponent::StaticClass(), true },
-			{ "rotatingmovement", URotatingMovementComponent::StaticClass(), true }
+			{ "rotatingmovement",URotatingMovementComponent::StaticClass(),true },
+			{ "hopmovement",UHopMovementComponent::StaticClass(),true },
 		};
 
 		for (const FLuaAllowedComponentClass& Entry : AllowedComponents)
