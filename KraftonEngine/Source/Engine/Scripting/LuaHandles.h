@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Component/StaticMeshComponent.h"
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
 #include "Component/Collision/ShapeComponent.h"
@@ -169,6 +170,22 @@ struct FLuaCapsuleComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UCapsuleComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaStaticMeshComponentHandle
+{
+	uint32 UUID = 0;
+
+	UStaticMeshComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UStaticMeshComponent>(Object);
 	}
 
 	bool IsValid() const

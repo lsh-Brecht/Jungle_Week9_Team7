@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Core/Log.h"
+#include "LuaWorldLibrary.h"
 
 // Handle 타입에 공통으로 필요한 Lua 멤버를 등록
 // HANDLE_TYPE: FLuaGameObjectHandle, FLuaBoxComponentHandle처럼 UUID와 IsValid()를 가진 Lua Handle 타입
@@ -76,7 +77,7 @@
 		{ \
 			HANDLE_TYPE Handle; \
 			AActor* Actor = Self.Resolve(); \
-			COMPONENT_TYPE* Component = FindComponent<COMPONENT_TYPE>(Actor); \
+			COMPONENT_TYPE* Component = FLuaWorldLibrary::FindComponent<COMPONENT_TYPE>(Actor); \
 			if (Component) \
 			{ \
 				Handle.UUID = Component->GetUUID(); \
@@ -137,3 +138,60 @@
 			return true; \
 		} \
 	)
+
+// GameObject에서 컴포넌트를 찾고, 없으면 추가하는 메서드 등록
+// METHOD_NAME: Lua 메서드 이름, HANDLE_TYPE: 반환할 Lua Handle, COMPONENT_TYPE: 실제 C++ 컴포넌트 타입
+#define LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(METHOD_NAME, HANDLE_TYPE, COMPONENT_TYPE) \
+	METHOD_NAME, \
+	[](const FLuaGameObjectHandle& Self) \
+	{ \
+		HANDLE_TYPE Handle; \
+		AActor* Actor = Self.Resolve(); \
+		if (!Actor) \
+		{ \
+			UE_LOG("[Lua] Invalid GameObject." METHOD_NAME " Call."); \
+			return Handle; \
+		} \
+		COMPONENT_TYPE* Component = FLuaWorldLibrary::GetOrAddComponent<COMPONENT_TYPE>(Actor); \
+		if (Component) \
+		{ \
+			Handle.UUID = Component->GetUUID(); \
+		} \
+		return Handle; \
+	}
+
+// GameObject에서 특정 컴포넌트를 제거하는 메서드 등록
+// METHOD_NAME: Lua 메서드 이름, COMPONENT_TYPE: 제거할 실제 C++ 컴포넌트 타입
+#define LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(METHOD_NAME, COMPONENT_TYPE) \
+	METHOD_NAME, \
+	[](const FLuaGameObjectHandle& Self) \
+	{ \
+		AActor* Actor = Self.Resolve(); \
+		if (!Actor) \
+		{ \
+			UE_LOG("[Lua] Invalid GameObject." METHOD_NAME " Call."); \
+			return false; \
+		} \
+		return FLuaWorldLibrary::RemoveComponent<COMPONENT_TYPE>(Actor); \
+	}
+
+// GameObject의 대표 Shape를 특정 Shape 타입으로 교체하는 메서드 등록
+// METHOD_NAME: Lua 메서드 이름, HANDLE_TYPE: 반환할 Shape Handle, SHAPE_TYPE: 생성할 Shape 컴포넌트 타입
+#define LUA_GAMEOBJECT_SET_SHAPE_METHOD(METHOD_NAME, HANDLE_TYPE, SHAPE_TYPE) \
+	METHOD_NAME, \
+	[](const FLuaGameObjectHandle& Self) \
+	{ \
+		HANDLE_TYPE Handle; \
+		AActor* Actor = Self.Resolve(); \
+		if (!Actor) \
+		{ \
+			UE_LOG("[Lua] Invalid GameObject." METHOD_NAME " Call."); \
+			return Handle; \
+		} \
+		SHAPE_TYPE* Shape = FLuaWorldLibrary::SetExclusiveShape<SHAPE_TYPE>(Actor); \
+		if (Shape) \
+		{ \
+			Handle.UUID = Shape->GetUUID(); \
+		} \
+		return Handle; \
+	}

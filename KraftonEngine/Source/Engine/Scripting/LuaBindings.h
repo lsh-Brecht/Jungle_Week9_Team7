@@ -7,7 +7,11 @@ namespace sol
 
 void RegisterLuaBindings(sol::state& Lua);
 
+void RegisterActorLifecycleBinding(sol::state& Lua);
+void RegisterStaticMeshComponentBinding(sol::state& Lua);
+
 void RegisterFVectorBinding(sol::state& Lua);
+void RegisterFVector4Binding(sol::state& Lua);
 void RegisterFRotatorBinding(sol::state& Lua);
 void RegisterGameObjectBinding(sol::state& Lua);
 
