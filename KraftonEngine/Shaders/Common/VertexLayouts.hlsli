@@ -5,12 +5,13 @@
 // VS Input Layouts — C++ VertexTypes.h 와 1:1 대응
 // ============================================================
 
-// FVertex (Position + Color)
+// FVertex (Position + Color + SubID)
 // 사용: Primitive, Editor, Gizmo, Outline, Line
 struct VS_Input_PC
 {
     float3 position : POSITION;
     float4 color    : COLOR;
+    int    subID    : SUBID;
 };
 
 // FVertexPNCT (Position + Normal + Color + TexCoord)
@@ -55,6 +56,14 @@ struct PS_Input_Color
 {
     float4 position : SV_POSITION;
     float4 color    : COLOR;
+};
+
+// SV_POSITION + Color + SubID (Gizmo)
+struct PS_Input_Gizmo
+{
+    float4 position : SV_POSITION;
+    float4 color    : COLOR;
+    nointerpolation int subID : SUBID;
 };
 
 // SV_POSITION + TexCoord

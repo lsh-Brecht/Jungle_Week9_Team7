@@ -576,7 +576,7 @@ void FEditorViewportClient::TickInteraction(float DeltaTime)
 
 			if (Gizmo->IsHolding())
 			{
-				Gizmo->UpdateDrag(Ray);
+				Gizmo->UpdateDrag(Ray, Camera->GetForwardVector(), Camera->GetRightVector(), Camera->GetUpVector());
 			}
 		}
 	}

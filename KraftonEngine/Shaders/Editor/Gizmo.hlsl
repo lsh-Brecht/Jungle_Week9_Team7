@@ -22,20 +22,21 @@ uint GetAxisFromColor(float3 color)
     return 0;
 }
 
-PS_Input_Color VS(VS_Input_PC input)
+PS_Input_Gizmo VS(VS_Input_PC input)
 {
-    PS_Input_Color output;
+    PS_Input_Gizmo output;
     output.position = ApplyMVP(input.position);
     output.color = input.color * GizmoColorTint;
+    output.subID = input.subID;
     return output;
 }
 
-float4 PS(PS_Input_Color input) : SV_TARGET
+float4 PS(PS_Input_Gizmo input) : SV_TARGET
 {
-    uint axis = GetAxisFromColor(input.color.rgb);
+    uint axis = (uint)input.subID;
 
-    // AxisMask 기반 축 숨김
-    if (!(AxisMask & (1u << axis)))
+    // AxisMask 기반 축 숨김 (X, Y, Z 축만 해당. Center(3)은 항상 표시되거나 예외 처리)
+    if (axis < 3 && !(AxisMask & (1u << axis)))
     {
         discard;
     }

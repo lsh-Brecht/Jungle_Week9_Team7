@@ -45,7 +45,7 @@ public:
 	// ViewportType + GizmoMode → AxisMask 계산 (Proxy에서도 사용)
 	static uint32 ComputeAxisMask(ELevelViewportType ViewportType, EGizmoMode Mode);
 	void UpdateHoveredAxis(int Index);
-	void UpdateDrag(const FRay& Ray);
+	void UpdateDrag(const FRay& Ray, const FVector& CameraForward, const FVector& CameraRight, const FVector& CameraUp);
 	void DragEnd();
 
 	void SetTargetLocation(FVector NewLocation);
@@ -87,17 +87,21 @@ public:
 private:
 	bool IntersectRayAxis(const FRay& Ray, FVector AxisEnd, float AxisScale, float& OutRayT);
 	bool IntersectRayRotationHandle(const FRay& Ray, int32 Axis, float& OutRayT) const;
+	bool IntersectRaySphere(const FRay& Ray, const FVector& Center, float SphereRadius, float& OutRayT) const;
 
 	//Control Target Method
 	void HandleDrag(float DragAmount);
 	float ApplySnapToDragAmount(float DragAmount);
 	void ResetSnapAccumulation();
+	void ApplyWorldTranslationDelta(const FVector& WorldDelta);
 	void TranslateTarget(float DragAmount);
 	void RotateTarget(float DragAmount);
 	void ScaleTarget(float DragAmount);
 
 	void UpdateLinearDrag(const FRay& Ray);
 	void UpdateAngularDrag(const FRay& Ray);
+	void UpdateScreenSpaceTranslation(const FRay& Ray, const FVector& CameraForward);
+	void UpdateUniformScale(const FRay& Ray, const FVector& CameraForward, const FVector& CameraRight, const FVector& CameraUp);
 
 private:
 	USceneComponent* TargetComponent = nullptr;

@@ -258,6 +258,9 @@ void FMeshBufferManager::CreateScaleGizmo()
 		float boxSizeHalf = BoxSize;
 		AddBox(dirs[i] * LineLength, FVector(boxSizeHalf, boxSizeHalf, boxSizeHalf), colors[i], i);
 	}
+
+	// Center Sphere for Uniform Scale
+	AddSphereToMeshData(Data, 0.12f, FVector4(1.0f, 1.0f, 1.0f, 1.0f), 3);
 }
 
 void FMeshBufferManager::CreateQuad()
@@ -341,6 +344,41 @@ void FMeshBufferManager::CreateTranslationGizmo()
 			indices.push_back(curr + 1); indices.push_back(next + 1); indices.push_back(next + 2);
 			indices.push_back(curr + 2); indices.push_back(next + 2); indices.push_back(tipIndex);
 			indices.push_back(baseCenterIndex); indices.push_back(next + 2); indices.push_back(curr + 2);
+		}
+	}
+
+	// Center Sphere for Screen-Space Translation
+	AddSphereToMeshData(Data, 0.12f, FVector4(1.0f, 1.0f, 1.0f, 1.0f), 3);
+}
+
+void FMeshBufferManager::AddSphereToMeshData(FMeshData& Data, float Radius, const FVector4& Color, int SubID, int Slices, int Stacks)
+{
+	uint32 StartVertexIdx = (uint32)Data.Vertices.size();
+	for (int i = 0; i <= Stacks; ++i) {
+		float pi = 3.141592f * (float)i / Stacks;
+		for (int j = 0; j <= Slices; ++j) {
+			float theta = 2.0f * 3.141592f * (float)j / Slices;
+
+			float x = Radius * sin(pi) * cos(theta);
+			float y = Radius * sin(pi) * sin(theta);
+			float z = Radius * cos(pi);
+
+			Data.Vertices.push_back({ {x, y, z}, Color, SubID });
+		}
+	}
+
+	for (int i = 0; i < Stacks; ++i) {
+		for (int j = 0; j < Slices; ++j) {
+			uint32 first = StartVertexIdx + i * (Slices + 1) + j;
+			uint32 second = first + Slices + 1;
+
+			Data.Indices.push_back(first);
+			Data.Indices.push_back(second);
+			Data.Indices.push_back(first + 1);
+
+			Data.Indices.push_back(second);
+			Data.Indices.push_back(second + 1);
+			Data.Indices.push_back(first + 1);
 		}
 	}
 }

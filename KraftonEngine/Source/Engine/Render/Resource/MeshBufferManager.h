@@ -31,6 +31,8 @@ private:
 	void CreateQuad();
 	void CreateTexturedQuad();
 
+	void AddSphereToMeshData(FMeshData& Data, float Radius, const FVector4& Color, int SubID, int Slices = 12, int Stacks = 12);
+
 	// CPU 메시 데이터
 	TMap<EMeshShape, FMeshData> MeshDataMap;
 	TMap<EMeshShape, TMeshData<FVertexPNCT>> PNCTMeshDataMap;

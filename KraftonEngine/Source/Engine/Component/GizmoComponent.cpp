@@ -185,6 +185,39 @@ bool UGizmoComponent::IntersectRayRotationHandle(const FRay& Ray, int32 Axis, fl
 	return false;
 }
 
+bool UGizmoComponent::IntersectRaySphere(const FRay& Ray, const FVector& Center, float SphereRadius, float& OutRayT) const
+{
+	const FVector OriginToCenter = Ray.Origin - Center;
+	const float A = Ray.Direction.Dot(Ray.Direction);
+	const float B = 2.0f * OriginToCenter.Dot(Ray.Direction);
+	const float C = OriginToCenter.Dot(OriginToCenter) - SphereRadius * SphereRadius;
+	const float Discriminant = B * B - 4.0f * A * C;
+
+	if (A <= FMath::Epsilon || Discriminant < 0.0f)
+	{
+		return false;
+	}
+
+	const float SqrtDiscriminant = std::sqrt(Discriminant);
+	const float InvDenominator = 1.0f / (2.0f * A);
+	const float T0 = (-B - SqrtDiscriminant) * InvDenominator;
+	const float T1 = (-B + SqrtDiscriminant) * InvDenominator;
+
+	if (T0 >= 0.0f)
+	{
+		OutRayT = T0;
+		return true;
+	}
+
+	if (T1 >= 0.0f)
+	{
+		OutRayT = T1;
+		return true;
+	}
+
+	return false;
+}
+
 void UGizmoComponent::HandleDrag(float DragAmount)
 {
 	// Snap is applied on the accumulated drag so mouse deltas do not jitter between steps.
@@ -252,13 +285,11 @@ void UGizmoComponent::ResetSnapAccumulation()
 	LastAppliedSnappedDragAmount = 0.0f;
 }
 
-void UGizmoComponent::TranslateTarget(float DragAmount)
+void UGizmoComponent::ApplyWorldTranslationDelta(const FVector& WorldDelta)
 {
 	if (!TargetComponent) return;
 
-	FVector ConstrainedDelta = GetVectorForAxis(SelectedAxis) * DragAmount;
-
-	AddWorldOffset(ConstrainedDelta);
+	AddWorldOffset(WorldDelta);
 
 	AActor* Owner = TargetComponent->GetOwner();
 	bool bIsRoot = (Owner && Owner->GetRootComponent() == TargetComponent);
@@ -268,14 +299,20 @@ void UGizmoComponent::TranslateTarget(float DragAmount)
 	{
 		for (AActor* Actor : *AllSelectedActors)
 		{
-			if (Actor) Actor->AddActorWorldOffset(ConstrainedDelta);
+			if (Actor) Actor->AddActorWorldOffset(WorldDelta);
 		}
 	}
 	else
 	{
 		// 자식 컴포넌트인 경우, 부모는 두고 자신과 자신의 자식들만 이동시킨다.
-		TargetComponent->AddWorldOffset(ConstrainedDelta);
+		TargetComponent->AddWorldOffset(WorldDelta);
 	}
+}
+
+void UGizmoComponent::TranslateTarget(float DragAmount)
+{
+	const FVector ConstrainedDelta = GetVectorForAxis(SelectedAxis) * DragAmount;
+	ApplyWorldTranslationDelta(ConstrainedDelta);
 }
 
 void UGizmoComponent::RotateTarget(float DragAmount)
@@ -358,7 +395,15 @@ void UGizmoComponent::ScaleTarget(float DragAmount)
 			case 0: NewScale.X += ScaleDelta; break;
 			case 1: NewScale.Y += ScaleDelta; break;
 			case 2: NewScale.Z += ScaleDelta; break;
+			case 3:
+				NewScale.X += ScaleDelta;
+				NewScale.Y += ScaleDelta;
+				NewScale.Z += ScaleDelta;
+				break;
 			}
+			if (NewScale.X < 0.001f) NewScale.X = 0.001f;
+			if (NewScale.Y < 0.001f) NewScale.Y = 0.001f;
+			if (NewScale.Z < 0.001f) NewScale.Z = 0.001f;
 			Component->SetRelativeScale(NewScale);
 		};
 
@@ -421,6 +466,28 @@ bool UGizmoComponent::LineTraceComponent(const FRay& Ray, FHitResult& OutHitResu
 	float BestRayT = FLT_MAX;
 	int32 BestAxis = -1;
 	const FVector GizmoLocation = GetWorldLocation();
+
+	if (CurMode == EGizmoMode::Translate || CurMode == EGizmoMode::Scale)
+	{
+		const FVector WorldScale = GetWorldScale();
+		float CenterScale = WorldScale.X;
+		if (WorldScale.Y > CenterScale) CenterScale = WorldScale.Y;
+		if (WorldScale.Z > CenterScale) CenterScale = WorldScale.Z;
+
+		float CenterRayT = 0.0f;
+		constexpr float CenterSphereRadius = 0.12f;
+		if (IntersectRaySphere(Ray, GizmoLocation, CenterSphereRadius * CenterScale, CenterRayT))
+		{
+			OutHitResult.bHit = true;
+			OutHitResult.Distance = CenterRayT;
+			OutHitResult.HitComponent = this;
+			if (!IsHolding())
+			{
+				SelectedAxis = 3;
+			}
+			return true;
+		}
+	}
 
 	for (int32 Axis = 0; Axis < 3; ++Axis)
 	{
@@ -589,7 +656,7 @@ void UGizmoComponent::UpdateHoveredAxis(int Index)
 			uint32 HitAxis = MeshData->Vertices[VertexIndex].SubID;
 
 			// 마스크에 의해 숨겨진 축은 선택 불가
-			if (AxisMask & (1u << HitAxis))
+			if (HitAxis == 3 || (AxisMask & (1u << HitAxis)))
 			{
 				SelectedAxis = HitAxis;
 			}
@@ -601,7 +668,60 @@ void UGizmoComponent::UpdateHoveredAxis(int Index)
 	}
 }
 
-void UGizmoComponent::UpdateDrag(const FRay& Ray)
+void UGizmoComponent::UpdateScreenSpaceTranslation(const FRay& Ray, const FVector& CameraForward)
+{
+	const FVector PlaneNormal = CameraForward.Normalized();
+	const float Denom = Ray.Direction.Dot(PlaneNormal);
+	if (std::abs(Denom) < 1e-6f) return;
+
+	const float DistanceToPlane = (GetWorldLocation() - Ray.Origin).Dot(PlaneNormal) / Denom;
+	if (DistanceToPlane < 0.0f) return;
+
+	const FVector CurrentIntersectionLocation = Ray.Origin + (Ray.Direction * DistanceToPlane);
+
+	if (bIsFirstFrameOfDrag)
+	{
+		LastIntersectionLocation = CurrentIntersectionLocation;
+		bIsFirstFrameOfDrag = false;
+		return;
+	}
+
+	const FVector WorldDelta = CurrentIntersectionLocation - LastIntersectionLocation;
+	ApplyWorldTranslationDelta(WorldDelta);
+	UpdateGizmoTransform();
+
+	LastIntersectionLocation = CurrentIntersectionLocation;
+}
+
+void UGizmoComponent::UpdateUniformScale(const FRay& Ray, const FVector& CameraForward, const FVector& CameraRight, const FVector& CameraUp)
+{
+	const FVector PlaneNormal = CameraForward.Normalized();
+	const float Denom = Ray.Direction.Dot(PlaneNormal);
+	if (std::abs(Denom) < 1e-6f) return;
+
+	const float DistanceToPlane = (GetWorldLocation() - Ray.Origin).Dot(PlaneNormal) / Denom;
+	if (DistanceToPlane < 0.0f) return;
+
+	const FVector CurrentIntersectionLocation = Ray.Origin + (Ray.Direction * DistanceToPlane);
+
+	if (bIsFirstFrameOfDrag)
+	{
+		LastIntersectionLocation = CurrentIntersectionLocation;
+		bIsFirstFrameOfDrag = false;
+		return;
+	}
+
+	const FVector FullDelta = CurrentIntersectionLocation - LastIntersectionLocation;
+	FVector ScaleGestureDirection = CameraRight + CameraUp;
+	ScaleGestureDirection.Normalize();
+
+	const float DragAmount = FullDelta.Dot(ScaleGestureDirection);
+	HandleDrag(DragAmount);
+
+	LastIntersectionLocation = CurrentIntersectionLocation;
+}
+
+void UGizmoComponent::UpdateDrag(const FRay& Ray, const FVector& CameraForward, const FVector& CameraRight, const FVector& CameraUp)
 {
 	if (IsHolding() == false || IsActive() == false)
 	{
@@ -610,6 +730,19 @@ void UGizmoComponent::UpdateDrag(const FRay& Ray)
 
 	if (SelectedAxis == -1 || TargetComponent == nullptr)
 	{
+		return;
+	}
+
+	if (SelectedAxis == 3)
+	{
+		if (CurMode == EGizmoMode::Translate)
+		{
+			UpdateScreenSpaceTranslation(Ray, CameraForward);
+		}
+		else if (CurMode == EGizmoMode::Scale)
+		{
+			UpdateUniformScale(Ray, CameraForward, CameraRight, CameraUp);
+		}
 		return;
 	}
 
