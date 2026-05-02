@@ -88,8 +88,16 @@ namespace
 		const AActor* Owner = Component ? Component->GetOwner() : nullptr;
 		AssignGameObjectHandle(Environment, "owner", Owner);
 		AssignGameObjectHandle(Environment, "obj", Owner);
-		Environment["_ownerUUID"] = Owner ? Owner->GetUUID() : 0;
-		Environment["_accessLevel"] = Owner ? "ActorLocal" : sol::nil;
+		if (Owner)
+		{
+			Environment["_ownerUUID"] = Owner->GetUUID();
+			Environment["_accessLevel"] = "ActorLocal";
+		}
+		else
+		{
+			Environment["_ownerUUID"] = 0;
+			Environment["_accessLevel"] = sol::nil;
+		}
 	}
 }
 
