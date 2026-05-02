@@ -38,7 +38,7 @@ void FWorldCollisionBVH::BuildNow(const TArray<AActor*>& Actors)
 
 	for (AActor* Actor : Actors)
 	{
-		if (!Actor)
+		if (!Actor || Actor->IsPooledActorInactive() || !Actor->IsActorCollisionEnabled())
 		{
 			continue;
 		}

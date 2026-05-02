@@ -5,6 +5,7 @@
 #include "Object/ObjectFactory.h"
 #include "Object/UClass.h"
 #include "Runtime/Engine.h"
+#include "Runtime/ObjectPoolSystem.h"
 
 #include "GameFramework/World.h"
 #include "GameFramework/StaticMeshActor.h"
@@ -47,6 +48,7 @@ namespace
 	FString GetPathStem(const FString& Value);
 	bool LuaScriptMatchesIdentifier(const ULuaScriptComponent* Component, const FString& ScriptIdentifier);
 	bool IsAllowedLuaActorClassName(const FString& ClassName);
+	UClass* FindRegisteredClassByName(const FString& ClassName);
 	const FLuaAllowedComponentClass* FindAllowedLuaComponentClass(const FString& TypeName);
 }
 
@@ -107,6 +109,73 @@ AActor* FLuaWorldLibrary::SpawnActorByClassName(const FString& ClassName, const 
 	World->AddActor(Actor);
 
 	return Actor;
+}
+
+AActor* FLuaWorldLibrary::AcquireActorByClassName(const FString& ClassName, const FVector& Location, const FRotator& Rotation)
+{
+	if (!IsAllowedLuaActorClassName(ClassName))
+	{
+		UE_LOG("[LuaSecurity] AcquireActor blocked: class is not allowed from Lua. ClassName = %s", ClassName.c_str());
+		return nullptr;
+	}
+
+	UWorld* World = GetActiveWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	UClass* ActorClass = FindRegisteredClassByName(ClassName);
+	if (!ActorClass || !ActorClass->IsA(AActor::StaticClass()))
+	{
+		UE_LOG("[Lua] AcquireActor failed: unknown actor class name = %s", ClassName.c_str());
+		return nullptr;
+	}
+
+	AActor* Actor = FObjectPoolSystem::Get().AcquireActor<AActor>(World, ActorClass, Location, Rotation);
+	if (!Actor)
+	{
+		return nullptr;
+	}
+
+	EnsureRootComponent(Actor);
+	Actor->SetActorLocation(Location);
+	Actor->SetActorRotation(Rotation);
+	return Actor;
+}
+
+bool FLuaWorldLibrary::ReleaseActorToPool(AActor* Actor)
+{
+	if (!Actor)
+	{
+		return false;
+	}
+
+	return FObjectPoolSystem::Get().ReleaseActor(Actor);
+}
+
+int32 FLuaWorldLibrary::WarmUpActorPool(const FString& ClassName, int32 Count)
+{
+	if (!IsAllowedLuaActorClassName(ClassName))
+	{
+		UE_LOG("[LuaSecurity] WarmUpActorPool blocked: class is not allowed from Lua. ClassName = %s", ClassName.c_str());
+		return 0;
+	}
+
+	UWorld* World = GetActiveWorld();
+	if (!World)
+	{
+		return 0;
+	}
+
+	UClass* ActorClass = FindRegisteredClassByName(ClassName);
+	if (!ActorClass || !ActorClass->IsA(AActor::StaticClass()))
+	{
+		UE_LOG("[Lua] WarmUpActorPool failed: unknown actor class name = %s", ClassName.c_str());
+		return 0;
+	}
+
+	return FObjectPoolSystem::Get().WarmUp(World, ActorClass, Count);
 }
 
 AActor* FLuaWorldLibrary::SpawnStaticMeshActor(const FString& StaticMeshPath, const FVector& Location)
@@ -516,6 +585,25 @@ namespace
 		}
 
 		return false;
+	}
+
+	UClass* FindRegisteredClassByName(const FString& ClassName)
+	{
+		const FString NormalizedClassName = NormalizeLuaTypeName(ClassName);
+		for (UClass* Class : UClass::GetAllClasses())
+		{
+			if (!Class)
+			{
+				continue;
+			}
+
+			if (ClassName == Class->GetName() || NormalizedClassName == NormalizeLuaTypeName(Class->GetName()))
+			{
+				return Class;
+			}
+		}
+
+		return nullptr;
 	}
 
 	const FLuaAllowedComponentClass* FindAllowedLuaComponentClass(const FString& TypeName)

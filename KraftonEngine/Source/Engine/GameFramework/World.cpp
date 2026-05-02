@@ -1,37 +1,18 @@
-#include "GameFramework/World.h"
+﻿#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
-#include "Component/Script/LuaScriptComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Collision/PrimitiveCollision.h"
 #include "Engine/Component/CameraComponent.h"
 #include "Render/Types/LODContext.h"
 #include "Scripting/LuaScriptSubsystem.h"
+#include "Runtime/ObjectPoolSystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Component/ActorComponent.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
-
-namespace
-{
-	void DispatchLuaOverlap(AActor* Actor, AActor* OtherActor)
-	{
-		if (!Actor || !OtherActor)
-		{
-			return;
-		}
-
-		for (UActorComponent* Component : Actor->GetComponents())
-		{
-			if (ULuaScriptComponent* LuaScript = Cast<ULuaScriptComponent>(Component))
-			{
-				FLuaScriptSubsystem::Get().CallComponentOverlap(LuaScript, OtherActor);
-			}
-		}
-	}
-}
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -92,7 +73,8 @@ void UWorld::DestroyActor(AActor* Actor)
 
 	// 다른 시스템이 이 Actor/Pawn/Camera를 가리키고 있으면 파괴 전에 먼저 끊는다.
 	CleanupActorReferences(Actor);
-
+	FObjectPoolSystem::Get().ForgetActor(Actor);
+	Actor->SetPooledActorState(false, false);
 	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 	{
 		RemoveWorldPrimitivePickingBVH(Primitive);
@@ -109,9 +91,23 @@ void UWorld::DestroyActor(AActor* Actor)
 	}
 
 	Actor->EndPlay();
+	// Remove from actor list
 	PersistentLevel->RemoveActor(Actor);
+
 	Partition.RemoveActor(Actor);
+
+	// Mark for garbage collection
 	UObjectManager::Get().DestroyObject(Actor);
+}
+
+bool UWorld::ReleaseActor(AActor* Actor)
+{
+	return FObjectPoolSystem::Get().ReleaseActor(Actor);
+}
+
+int32 UWorld::WarmUpActorPool(UClass* Class, int32 Count)
+{
+	return FObjectPoolSystem::Get().WarmUp(this, Class, Count);
 }
 
 void UWorld::AddActor(AActor* Actor)
@@ -139,7 +135,7 @@ void UWorld::AddActor(AActor* Actor)
 	}
 
 	// PIE 중 Duplicate(Ctrl+D)나 SpawnActor로 들어온 액터에도 BeginPlay를 보장.
-	if (bHasBegunPlay && !Actor->HasActorBegunPlay())
+	if (bHasBegunPlay && !Actor->HasActorBegunPlay() && !Actor->IsPooledActorInactive())
 	{
 		Actor->BeginPlay();
 	}
@@ -202,33 +198,33 @@ void UWorld::CollectWorldPrimitivePickingBVHDebugAABBs(TArray<FWorldPrimitivePic
 
 void UWorld::MarkWorldCollisionBVHDirty()
 {
-	WorldCollisionBVH.MarkDirty();
+	WorldCollisionSystem.MarkDirty();
 }
 
 void UWorld::InsertWorldCollisionBVH(UPrimitiveComponent* Primitive)
 {
-	WorldCollisionBVH.InsertObject(Primitive);
+	WorldCollisionSystem.InsertObject(Primitive);
 }
 
 void UWorld::RemoveWorldCollisionBVH(UPrimitiveComponent* Primitive)
 {
-	WorldCollisionBVH.RemoveObject(Primitive);
+	WorldCollisionSystem.RemoveObject(Primitive);
 }
 
 void UWorld::UpdateWorldCollisionBVH(UPrimitiveComponent* Primitive)
 {
-	WorldCollisionBVH.UpdateObject(Primitive);
+	WorldCollisionSystem.UpdateObject(Primitive);
 }
 
 void UWorld::BuildWorldCollisionBVHNow() const
 {
-	WorldCollisionBVH.BuildNow(GetActors());
+	WorldCollisionSystem.BuildNow(GetActors());
 }
 
 void UWorld::CollectWorldCollisionBVHDebugAABBs(TArray<FWorldCollisionBVH::FDebugAABB>& OutAABBs) const
 {
-	WorldCollisionBVH.EnsureBuilt(GetActors());
-	WorldCollisionBVH.CollectDebugAABBs(OutAABBs);
+	WorldCollisionSystem.EnsureBuilt(GetActors());
+	WorldCollisionSystem.CollectDebugAABBs(OutAABBs);
 }
 
 void UWorld::BeginDeferredPickingBVHUpdate()
@@ -303,9 +299,14 @@ void UWorld::UpdateActorInOctree(AActor* Actor)
 
 void UWorld::UpdateCollision()
 {
+	WorldCollisionSystem.UpdateCollision();
+}
+
+void UWorld::ApplyCollisionDebugVisualization()
+{
 	for (AActor* Actor : GetActors())
 	{
-		if (!Actor) continue;
+		if (!Actor || Actor->IsPooledActorInactive() || !Actor->IsActorCollisionEnabled()) continue;
 		for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 		{
 			if (UShapeComponent* ShapeComp = Cast<UShapeComponent>(Primitive))
@@ -315,57 +316,16 @@ void UWorld::UpdateCollision()
 		}
 	}
 
-	WorldCollisionBVH.EnsureBuilt(GetActors());
-
-	TArray<FWorldCollisionBVH::FOverlapCandidatePair> PotentialPairs;
-	WorldCollisionBVH.GeneratePotentialPairs(PotentialPairs);
-
-	TSet<uint64> DispatchedActorPairs;
-	TArray<TPair<uint32, uint32>> ActorPairsToDispatch;
-	for (const FWorldCollisionBVH::FOverlapCandidatePair& Pair : PotentialPairs)
+	for (const FOverlapPairKey& Pair : WorldCollisionSystem.GetCurrentOverlaps())
 	{
-		if (FPrimitiveCollision::Intersect(Pair.A, Pair.B))
+		if (UShapeComponent* ShapeA = Cast<UShapeComponent>(Pair.ComponentA))
 		{
-			if (UShapeComponent* ShapeA = Cast<UShapeComponent>(Pair.A))
-			{
-				ShapeA->SetDebugShapeColor(FColor::Red());
-			}
-			if (UShapeComponent* ShapeB = Cast<UShapeComponent>(Pair.B))
-			{
-				ShapeB->SetDebugShapeColor(FColor::Red());
-			}
-
-			AActor* ActorA = Pair.A ? Pair.A->GetOwner() : nullptr;
-			AActor* ActorB = Pair.B ? Pair.B->GetOwner() : nullptr;
-			if (ActorA && ActorB && ActorA != ActorB)
-			{
-				uint32 UUIDA = ActorA->GetUUID();
-				uint32 UUIDB = ActorB->GetUUID();
-				if (UUIDB < UUIDA)
-				{
-					std::swap(UUIDA, UUIDB);
-				}
-
-				const uint64 PairKey = (static_cast<uint64>(UUIDA) << 32) | UUIDB;
-				if (DispatchedActorPairs.insert(PairKey).second)
-				{
-					ActorPairsToDispatch.push_back({ UUIDA, UUIDB });
-				}
-			}
+			ShapeA->SetDebugShapeColor(FColor::Red());
 		}
-	}
-
-	for (const auto& [UUIDA, UUIDB] : ActorPairsToDispatch)
-	{
-		AActor* ActorA = Cast<AActor>(UObjectManager::Get().FindByUUID(UUIDA));
-		AActor* ActorB = Cast<AActor>(UObjectManager::Get().FindByUUID(UUIDB));
-		if (!ActorA || !ActorB)
+		if (UShapeComponent* ShapeB = Cast<UShapeComponent>(Pair.ComponentB))
 		{
-			continue;
+			ShapeB->SetDebugShapeColor(FColor::Red());
 		}
-
-		DispatchLuaOverlap(ActorA, ActorB);
-		DispatchLuaOverlap(ActorB, ActorA);
 	}
 }
 
@@ -431,9 +391,11 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 
 	Scene.GetDebugDrawQueue().Tick(DeltaTime);
 
+	TickManager.Tick(this, DeltaTime, TickType);
+
 	UpdateCollision();
 
-	TickManager.Tick(this, DeltaTime, TickType);
+	ApplyCollisionDebugVisualization();
 }
 
 void UWorld::SetActiveCamera(UCameraComponent* InCamera)
@@ -714,6 +676,8 @@ void UWorld::EndPlay()
 	{
 		return;
 	}
+
+	FObjectPoolSystem::Get().ClearWorld(this);
 
 	PersistentLevel->EndPlay();
 

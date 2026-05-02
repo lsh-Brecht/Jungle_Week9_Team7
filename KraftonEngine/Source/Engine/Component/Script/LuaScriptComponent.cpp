@@ -30,6 +30,16 @@ void ULuaScriptComponent::EndPlay()
 	Super::EndPlay();
 }
 
+void ULuaScriptComponent::OnSpawnFromPool()
+{
+	FLuaScriptSubsystem::Get().CallComponentSpawnFromPool(this);
+}
+
+void ULuaScriptComponent::OnReturnToPool()
+{
+	FLuaScriptSubsystem::Get().CallComponentReturnToPool(this);
+}
+
 void ULuaScriptComponent::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);

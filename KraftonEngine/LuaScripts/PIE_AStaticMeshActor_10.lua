@@ -2,8 +2,12 @@ function BeginPlay()
     print("[BeginPlay] UUID = " .. obj.UUID)
     obj:PrintLocation()
     
-    WarmUpActorPool("AStaticMeshActor", 100)
-
+    local projectile = obj:GetOrAddProjectileMovement()
+    projectile.InitialSpeed = 10.0
+    projectile.MaxSpeed = 100.0
+    
+    Wait(10.0)
+    print("After 10 seconds")
 end
 
 function EndPlay()

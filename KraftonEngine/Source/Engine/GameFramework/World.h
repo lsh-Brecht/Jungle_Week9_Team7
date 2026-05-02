@@ -2,6 +2,7 @@
 #include "Object/Object.h"
 #include "Core/RayTypes.h"
 #include "Core/CollisionTypes.h"
+#include "Collision/WorldCollisionSystem.h"
 #include "Collision/WorldCollisionBVH.h"
 #include "Collision/WorldPrimitivePickingBVH.h"
 #include "GameFramework/AActor.h"
@@ -10,6 +11,7 @@
 #include "GameFramework/WorldContext.h"
 #include "Render/Scene/FScene.h"
 #include "Render/Types/LODContext.h"
+#include "Runtime/ObjectPoolSystem.h"
 #include <Collision/Octree.h>
 #include <Collision/SpatialPartition.h>
 
@@ -41,6 +43,12 @@ public:
 	// Actor lifecycle
 	template<typename T>
 	T* SpawnActor();
+	template<typename T>
+	T* AcquireActor(const FVector& Location, const FRotator& Rotation);
+	template<typename T>
+	T* AcquireActor(UClass* Class, const FVector& Location, const FRotator& Rotation);
+	bool ReleaseActor(AActor* Actor);
+	int32 WarmUpActorPool(UClass* Class, int32 Count);
 	void DestroyActor(AActor* Actor);
 	void AddActor(AActor* Actor);
 	void MarkWorldPrimitivePickingBVHDirty();
@@ -107,6 +115,7 @@ public:
 	void UpdateActorInOctree(AActor* actor);
 
 	void UpdateCollision();
+	void ApplyCollisionDebugVisualization();
 
 private:
 	//TArray<AActor*> Actors;
@@ -120,7 +129,7 @@ private:
 	bool bHasBegunPlay = false;
 	bool bHasLastFullLODUpdateCameraPos = false;
 	mutable FWorldPrimitivePickingBVH WorldPrimitivePickingBVH;
-	mutable FWorldCollisionBVH WorldCollisionBVH;
+	mutable FWorldCollisionSystem WorldCollisionSystem{this};
 	int32 DeferredPickingBVHUpdateDepth = 0;
 	bool bDeferredPickingBVHDirty = false;
 	uint32 VisibleProxyBuildFrame = 0;
@@ -139,4 +148,16 @@ inline T* UWorld::SpawnActor()
 	T* Actor = UObjectManager::Get().CreateObject<T>(PersistentLevel);
 	AddActor(Actor); // BeginPlay 트리거는 AddActor 내부에서 bHasBegunPlay 가드로 처리
 	return Actor;
+}
+
+template<typename T>
+inline T* UWorld::AcquireActor(const FVector& Location, const FRotator& Rotation)
+{
+	return FObjectPoolSystem::Get().AcquireActor<T>(this, T::StaticClass(), Location, Rotation);
+}
+
+template<typename T>
+inline T* UWorld::AcquireActor(UClass* Class, const FVector& Location, const FRotator& Rotation)
+{
+	return FObjectPoolSystem::Get().AcquireActor<T>(this, Class, Location, Rotation);
 }

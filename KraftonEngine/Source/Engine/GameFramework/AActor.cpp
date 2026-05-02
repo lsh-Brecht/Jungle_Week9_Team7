@@ -188,6 +188,55 @@ void AActor::SetVisible(bool Visible)
 	}
 }
 
+void AActor::SetActorHiddenInGame(bool bHidden)
+{
+	SetVisible(!bHidden);
+}
+
+void AActor::SetActorEnableCollision(bool bEnabled)
+{
+	if (bActorCollisionEnabled == bEnabled)
+	{
+		return;
+	}
+
+	bActorCollisionEnabled = bEnabled;
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (UPrimitiveComponent* Prim : GetPrimitiveComponents())
+	{
+		if (!Prim || Prim->GetCollisionShapeType() == ECollisionShapeType::None)
+		{
+			continue;
+		}
+
+		if (bActorCollisionEnabled)
+		{
+			World->InsertWorldCollisionBVH(Prim);
+		}
+		else
+		{
+			World->RemoveWorldCollisionBVH(Prim);
+		}
+	}
+}
+
+void AActor::SetActorTickEnabled(bool bEnabled)
+{
+	PrimaryActorTick.SetTickEnabled(bEnabled);
+}
+
+void AActor::SetPooledActorState(bool bPooled, bool bInactive)
+{
+	bIsPooledActor = bPooled;
+	bIsPooledActorInactive = bPooled && bInactive;
+}
+
 void AActor::MarkPickingDirty()
 {
 	if (UWorld* World = GetWorld())

@@ -88,6 +88,15 @@ public:
 
 	bool IsVisible() const { return bVisible; }
 	void SetVisible(bool Visible);
+	void SetActorHiddenInGame(bool bHidden);
+	void SetActorEnableCollision(bool bEnabled);
+	bool IsActorCollisionEnabled() const { return bActorCollisionEnabled; }
+	void SetActorTickEnabled(bool bEnabled);
+	bool IsActorTickEnabled() const { return PrimaryActorTick.bTickEnabled; }
+
+	bool IsPooledActor() const { return bIsPooledActor; }
+	bool IsPooledActorInactive() const { return bIsPooledActor && bIsPooledActorInactive; }
+	void SetPooledActorState(bool bPooled, bool bInactive);
 
 	// Tick 필요 여부 — false면 Tick 호출 자체를 건너뜀 (StaticMesh 등)
 	bool bNeedsTick = true;
@@ -120,4 +129,7 @@ protected:
 	mutable bool bPrimitiveCacheDirty = true;
 	bool bQueuedForPartitionUpdate = false;
 	bool bActorHasBegunPlay = false;
+	bool bActorCollisionEnabled = true;
+	bool bIsPooledActor = false;
+	bool bIsPooledActorInactive = false;
 };

@@ -245,6 +245,8 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 	Binding.BeginPlay = Binding.Environment["BeginPlay"];
 	Binding.Tick = Binding.Environment["Tick"];
 	Binding.EndPlay = Binding.Environment["EndPlay"];
+	Binding.OnSpawnFromPool = Binding.Environment["OnSpawnFromPool"];
+	Binding.OnReturnToPool = Binding.Environment["OnReturnToPool"];
 	Binding.OnOverlap = Binding.Environment["OnOverlap"];
 
 	if (GEngine)
@@ -294,6 +296,24 @@ void FLuaScriptSubsystem::CallComponentEndPlay(ULuaScriptComponent* Component)
 	{
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("EndPlay", Binding->EndPlay, Binding->ComponentUUID);
+	}
+}
+
+void FLuaScriptSubsystem::CallComponentSpawnFromPool(ULuaScriptComponent* Component)
+{
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
+	{
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		StartCoroutine("OnSpawnFromPool", Binding->OnSpawnFromPool, Binding->ComponentUUID);
+	}
+}
+
+void FLuaScriptSubsystem::CallComponentReturnToPool(ULuaScriptComponent* Component)
+{
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
+	{
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		StartCoroutine("OnReturnToPool", Binding->OnReturnToPool, Binding->ComponentUUID);
 	}
 }
 

@@ -161,6 +161,20 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			return FLuaWorldLibrary::DestroyActor(Actor);
 		},
 
+		"ReleaseToPool",
+		[](const FLuaGameObjectHandle& Self)
+		{
+			AActor* Actor = Self.Resolve();
+
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.ReleaseToPool Call.");
+				return false;
+			}
+
+			return FLuaWorldLibrary::ReleaseActorToPool(Actor);
+		},
+
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
 			"LuaScript",
 			FLuaScriptComponentHandle,
