@@ -1,8 +1,12 @@
-#include "Viewport/GameViewportClient.h"
+﻿#include "Viewport/GameViewportClient.h"
 
 #include "Component/CameraComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/World.h"
 #include "Engine/Input/InputSystem.h"
 #include "Math/MathUtils.h"
+#include "Object/Object.h"
 
 #include <windows.h>
 
@@ -18,6 +22,7 @@ void UGameViewportClient::OnBeginPIE(UCameraComponent* InitialTarget, FViewport*
 void UGameViewportClient::OnEndPIE()
 {
 	SetPossessed(false);
+	SetPlayerController(nullptr);
 	UnPossess();
 	ResetInputState();
 	bHasCursorClipRect = false;
@@ -71,6 +76,16 @@ void UGameViewportClient::SetPossessed(bool bPossessed)
 	ResetInputState();
 }
 
+void UGameViewportClient::SetPlayerController(APlayerController* InController)
+{
+	if (PlayerController == InController)
+	{
+		return;
+	}
+	PlayerController = InController;
+	ResetInputState();
+}
+
 void UGameViewportClient::Possess(UCameraComponent* TargetCamera)
 {
 	if (PossessedCamera == TargetCamera)
@@ -88,6 +103,18 @@ void UGameViewportClient::UnPossess()
 	SetCursorCaptured(false);
 	InputSystem::Get().SetUseRawMouse(false);
 	ResetInputState();
+}
+
+UCameraComponent* UGameViewportClient::GetPossessedTarget() const
+{
+	if (PlayerController && IsAliveObject(PlayerController))
+	{
+		if (UCameraComponent* Camera = PlayerController->ResolveViewCamera())
+		{
+			return Camera;
+		}
+	}
+	return IsAliveObject(PossessedCamera) ? PossessedCamera : nullptr;
 }
 
 void UGameViewportClient::ResetInputState()
@@ -150,8 +177,8 @@ bool UGameViewportClient::ApplyMovementInput(float DeltaTime, const FInputSystem
 			MoveInput = MoveInput.Normalized();
 
 			UCameraComponent* TargetCamera = GetPossessedTarget();
-			FVector FlatForward = TargetCamera->GetForwardVector();
-			FVector FlatRight = TargetCamera->GetRightVector();
+			FVector FlatForward = TargetCamera ? TargetCamera->GetForwardVector() : FVector(1, 0, 0);
+			FVector FlatRight = TargetCamera ? TargetCamera->GetRightVector() : FVector(0, 1, 0);
 			FlatForward.Z = 0.0f;
 			FlatRight.Z = 0.0f;
 			if (!FlatForward.IsNearlyZero())
@@ -167,8 +194,23 @@ bool UGameViewportClient::ApplyMovementInput(float DeltaTime, const FInputSystem
 			const float SpeedBoost = Snapshot.IsDown(VK_SHIFT) ? InputSettings.SprintMultiplier : 1.0f;
 			const FVector WorldDelta = (FlatForward * MoveInput.X + FlatRight * MoveInput.Y + FVector::UpVector * MoveInput.Z)
 				* (InputSettings.MoveSpeed * SpeedBoost * SafeDeltaTime);
-			TargetCamera->SetWorldLocation(TargetCamera->GetWorldLocation() + WorldDelta);
-			return true;
+
+			APlayerController* SafeController = IsAliveObject(PlayerController) ? PlayerController : nullptr;
+			if (SafeController)
+			{
+				if (APawn* Pawn = SafeController->GetPawn())
+				{
+					Pawn->AddMovementInput(WorldDelta, WorldDelta.Length());
+					Pawn->AddActorWorldOffset(Pawn->ConsumeMovementInputVector());
+					return true;
+				}
+			}
+
+			if (TargetCamera)
+			{
+				TargetCamera->SetWorldLocation(TargetCamera->GetWorldLocation() + WorldDelta);
+				return true;
+			}
 		}
 	}
 
@@ -187,13 +229,34 @@ bool UGameViewportClient::ApplyLookInput(const FInputSystemSnapshot& Snapshot)
 	if (!Snapshot.bGuiUsingMouse && (Snapshot.MouseDeltaX != 0 || Snapshot.MouseDeltaY != 0))
 	{
 		UCameraComponent* TargetCamera = GetPossessedTarget();
-		FRotator Rotation = TargetCamera->GetRelativeRotation();
+		if (!TargetCamera)
+		{
+			return false;
+		}
+
+		APlayerController* SafeController = IsAliveObject(PlayerController) ? PlayerController : nullptr;
+		FRotator Rotation = SafeController ? SafeController->GetControlRotation() : TargetCamera->GetRelativeRotation();
 		Rotation.Yaw += static_cast<float>(Snapshot.MouseDeltaX) * InputSettings.LookSensitivity;
 		Rotation.Pitch = Clamp(
 			Rotation.Pitch + static_cast<float>(Snapshot.MouseDeltaY) * InputSettings.LookSensitivity,
 			InputSettings.MinPitch,
 			InputSettings.MaxPitch);
 		Rotation.Roll = 0.0f;
+
+		if (SafeController)
+		{
+			SafeController->SetControlRotation(Rotation);
+			if (APawn* Pawn = SafeController->GetPawn())
+			{
+				Pawn->SetActorRotation(FVector(0.0f, Rotation.Yaw, 0.0f));
+				if (UCameraComponent* PawnCamera = Pawn->FindPawnCamera())
+				{
+					PawnCamera->SetRelativeRotation(FRotator(Rotation.Pitch, 0.0f, 0.0f));
+					return true;
+				}
+			}
+		}
+
 		TargetCamera->SetRelativeRotation(Rotation);
 		return true;
 	}

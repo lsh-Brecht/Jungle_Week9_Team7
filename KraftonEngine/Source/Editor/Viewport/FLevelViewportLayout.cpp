@@ -7,6 +7,10 @@
 #include "Editor/Selection/SelectionManager.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Engine/Input/InputSystem.h"
+#include "GameFramework/AActor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Component/SceneComponent.h"
 #include "GameFramework/DecalActor.h"
 #include "GameFramework/HeightFogActor.h"
 #include "GameFramework/Light/AmbientLightActor.h"
@@ -1834,6 +1838,7 @@ void FLevelViewportLayout::RenderViewportPlaceActorPopup()
 			}
 		};
 
+		PlaceActorMenuItem("Empty Actor", EViewportPlaceActorType::EmptyActor);
 		PlaceActorMenuItem("Cube", EViewportPlaceActorType::Cube);
 		PlaceActorMenuItem("Sphere", EViewportPlaceActorType::Sphere);
 		PlaceActorMenuItem("Cylinder", EViewportPlaceActorType::Cylinder);
@@ -1843,6 +1848,9 @@ void FLevelViewportLayout::RenderViewportPlaceActorPopup()
 		PlaceActorMenuItem("Directional Light", EViewportPlaceActorType::DirectionalLight);
 		PlaceActorMenuItem("Point Light", EViewportPlaceActorType::PointLight);
 		PlaceActorMenuItem("Spot Light", EViewportPlaceActorType::SpotLight);
+		PlaceActorMenuItem("Camera", EViewportPlaceActorType::Camera);
+		PlaceActorMenuItem("Pawn", EViewportPlaceActorType::Pawn);
+		PlaceActorMenuItem("PlayerController", EViewportPlaceActorType::PlayerController);
 
 		ImGui::EndMenu();
 	}
@@ -2030,6 +2038,63 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 			Actor->InitDefaultComponents();
 			SpawnedActor = Actor;
 			SpawnLocation.Z += 1.0f;
+		}
+		break;
+	}
+
+	case EViewportPlaceActorType::Camera:
+	{
+		AActor* Actor = World->SpawnActor<AActor>();
+		if (Actor)
+		{
+			UCameraComponent* Camera = Actor->AddComponent<UCameraComponent>();
+			if (Camera)
+			{
+				Actor->SetRootComponent(Camera);
+				Camera->SetWorldLocation(SpawnLocation);
+				Camera->LookAt(SpawnLocation + FVector(1.0f, 0.0f, 0.0f));
+				World->SetActiveCamera(Camera);
+				World->SetViewCamera(Camera);
+			}
+			SpawnedActor = Actor;
+		}
+		break;
+	}
+	case EViewportPlaceActorType::EmptyActor:
+	{
+		SpawnedActor = World->SpawnActor<AActor>();
+		if (SpawnedActor)
+		{
+			USceneComponent* Root = SpawnedActor->AddComponent<USceneComponent>();
+			if (Root) SpawnedActor->SetRootComponent(Root);
+		}
+		break;
+	}
+	case EViewportPlaceActorType::Pawn:
+	{
+		APawn* Actor = World->SpawnActor<APawn>();
+		if (Actor)
+		{
+			if (!Actor->GetRootComponent())
+			{
+				USceneComponent* Root = Actor->AddComponent<USceneComponent>();
+				if (Root) Actor->SetRootComponent(Root);
+			}
+			SpawnedActor = Actor;
+		}
+		break;
+	}
+	case EViewportPlaceActorType::PlayerController:
+	{
+		APlayerController* Actor = World->SpawnActor<APlayerController>();
+		if (Actor)
+		{
+			if (!Actor->GetRootComponent())
+			{
+				USceneComponent* Root = Actor->AddComponent<USceneComponent>();
+				if (Root) Actor->SetRootComponent(Root);
+			}
+			SpawnedActor = Actor;
 		}
 		break;
 	}

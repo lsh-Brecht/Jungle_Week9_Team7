@@ -13,6 +13,7 @@ void RegisterLuaScriptComponentBinding(sol::state& Lua);
 void RegisterSceneComponentBinding(sol::state& Lua);
 void RegisterPrimitiveComponentBinding(sol::state& Lua);
 void RegisterStaticMeshComponentBinding(sol::state& Lua);
+void RegisterCameraComponentBinding(sol::state& Lua);
 
 void RegisterFVectorBinding(sol::state& Lua);
 void RegisterFVector4Binding(sol::state& Lua);
@@ -30,5 +31,10 @@ void RegisterShapeComponentBinding(sol::state& Lua);
 void RegisterBoxComponentBinding(sol::state& Lua);
 void RegisterSphereComponentBinding(sol::state& Lua);
 void RegisterCapsuleComponentBinding(sol::state& Lua);
+
+void RegisterPawnBinding(sol::state& Lua);
+void RegisterPlayerControllerBinding(sol::state& Lua);
+void RegisterWorldExtendedBinding(sol::state& Lua);
+void RegisterInputBinding(sol::state& Lua);
 
 void RegisterDelegateBinding(sol::state& Lua);

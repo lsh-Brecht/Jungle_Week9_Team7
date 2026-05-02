@@ -15,6 +15,9 @@
 
 class UCameraComponent;
 class UPrimitiveComponent;
+class UActorComponent;
+class APawn;
+class APlayerController;
 
 class UWorld : public UObject {
 public:
@@ -60,7 +63,7 @@ public:
 	const TArray<AActor*>& GetActors() const { return PersistentLevel->GetActors(); }
 
 	// LOD 컨텍스트를 FFrameContext에 전달 (Collect 단계에서 LOD 인라인 갱신용)
-	FLODUpdateContext PrepareLODContext();
+	FLODUpdateContext PrepareLODContext(const UCameraComponent* Camera = nullptr);
 
 	void InitWorld();      // Set up the world before gameplay begins
 	void BeginPlay();      // Triggers BeginPlay on all actors
@@ -70,8 +73,28 @@ public:
 	bool HasBegunPlay() const { return bHasBegunPlay; }
 
 	// Active Camera — EditorViewportClient 또는 PlayerController가 세팅
-	void SetActiveCamera(UCameraComponent* InCamera) { ActiveCamera = InCamera; }
-	UCameraComponent* GetActiveCamera() const { return ActiveCamera; }
+	void SetActiveCamera(UCameraComponent* InCamera);
+	UCameraComponent* GetActiveCamera() const;
+
+	// ViewCamera — CameraManager가 매 프레임 결정한 렌더 카메라
+	void SetViewCamera(UCameraComponent* InCamera);
+	UCameraComponent* GetViewCamera() const;
+
+	// Gameplay camera / possession helpers. PIE와 Standalone 모두 같은 규칙을 쓰기 위한 공통 경로.
+	bool IsActorInWorld(const AActor* Actor) const;
+	bool IsComponentInWorld(const UActorComponent* Component) const;
+	void CleanupActorReferences(AActor* Actor);
+	void CleanupComponentReferences(UActorComponent* Component);
+	UCameraComponent* FindFirstCamera() const;
+	APawn* FindFirstPawn() const;
+	APlayerController* FindOrCreatePlayerController();
+	void AutoWirePlayerController(APlayerController* PreferredController = nullptr);
+	UCameraComponent* ResolveGameplayViewCamera(APlayerController* PreferredController = nullptr) const;
+
+	// PlayerController 관리
+	APlayerController* CreatePlayerController();
+	APlayerController* GetPlayerController(int32 Index = 0) const;
+	const TArray<APlayerController*>& GetPlayerControllers() const { return PlayerControllers; }
 
 	// FScene — 렌더 프록시 관리자
 	FScene& GetScene() { return Scene; }
@@ -90,7 +113,9 @@ private:
 	ULevel* PersistentLevel;
 
 	UCameraComponent* ActiveCamera = nullptr;
+	UCameraComponent* ViewCamera = nullptr;
 	UCameraComponent* LastLODUpdateCamera = nullptr;
+	TArray<APlayerController*> PlayerControllers;
 	EWorldType WorldType = EWorldType::Editor;
 	bool bHasBegunPlay = false;
 	bool bHasLastFullLODUpdateCameraPos = false;

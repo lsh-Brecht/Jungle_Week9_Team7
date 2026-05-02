@@ -1,11 +1,9 @@
-#include "GameClient/GameClientViewport.h"
+﻿#include "GameClient/GameClientViewport.h"
 
 #include "GameClient/GameClientEngine.h"
 #include "Component/CameraComponent.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Runtime/WindowsWindow.h"
-#include "GameFramework/AActor.h"
-#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Render/Pipeline/Renderer.h"
 #include "Viewport/GameViewportClient.h"
@@ -18,11 +16,6 @@ bool FGameClientViewport::Initialize(
 {
 	Engine = InEngine;
 	if (!Engine || !Window)
-	{
-		return false;
-	}
-
-	if (!CreateCamera())
 	{
 		return false;
 	}
@@ -40,39 +33,7 @@ bool FGameClientViewport::Initialize(
 	Viewport->SetClient(ViewportClient);
 	ViewportClient->SetViewport(Viewport);
 	ViewportClient->SetOwnerWindow(Window->GetHWND());
-	ViewportClient->SetDrivingCamera(Camera);
 	SetInputEnabled(true);
-
-	if (UWorld* World = Engine->GetWorld())
-	{
-		World->SetActiveCamera(Camera);
-	}
-
-	return true;
-}
-
-bool FGameClientViewport::CreateCamera()
-{
-	UWorld* World = Engine ? Engine->GetWorld() : nullptr;
-	if (!World)
-	{
-		return false;
-	}
-
-	AActor* CameraActor = World->SpawnActor<AActor>();
-	if (!CameraActor)
-	{
-		return false;
-	}
-
-	Camera = CameraActor->AddComponent<UCameraComponent>();
-	if (!Camera)
-	{
-		return false;
-	}
-
-	CameraActor->SetRootComponent(Camera);
-	World->SetActiveCamera(Camera);
 
 	return true;
 }
@@ -96,32 +57,31 @@ bool FGameClientViewport::CreateViewportClient(FWindowsWindow* Window)
 	return ViewportClient != nullptr;
 }
 
-void FGameClientViewport::Tick(float DeltaTime)
+void FGameClientViewport::BindDebugCamera(UCameraComponent* DebugCamera)
+{
+	if (ViewportClient)
+	{
+		ViewportClient->SetDrivingCamera(DebugCamera);
+		ViewportClient->SetPossessed(bInputEnabled);
+	}
+}
+
+void FGameClientViewport::BindPlayerController(APlayerController* PlayerController)
+{
+	if (ViewportClient)
+	{
+		ViewportClient->SetPlayerController(PlayerController);
+	}
+}
+
+void FGameClientViewport::Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot)
 {
 	if (!bInputEnabled || !ViewportClient)
 	{
 		return;
 	}
 
-	const FInputSystemSnapshot Snapshot = InputSystem::Get().MakeSnapshot();
 	ViewportClient->Tick(DeltaTime, Snapshot);
-}
-
-bool FGameClientViewport::RebuildCameraForCurrentWorld()
-{
-	Camera = nullptr;
-	if (!CreateCamera())
-	{
-		return false;
-	}
-
-	if (ViewportClient)
-	{
-		ViewportClient->SetDrivingCamera(Camera);
-		ViewportClient->SetPossessed(bInputEnabled);
-	}
-
-	return true;
 }
 
 void FGameClientViewport::ReleaseWorldBinding()
@@ -129,9 +89,9 @@ void FGameClientViewport::ReleaseWorldBinding()
 	if (ViewportClient)
 	{
 		ViewportClient->SetPossessed(false);
+		ViewportClient->SetPlayerController(nullptr);
 		ViewportClient->SetDrivingCamera(nullptr);
 	}
-	Camera = nullptr;
 }
 
 void FGameClientViewport::SetInputEnabled(bool bEnabled)
@@ -172,6 +132,5 @@ void FGameClientViewport::Shutdown()
 		Viewport = nullptr;
 	}
 
-	Camera = nullptr;
 	Engine = nullptr;
 }

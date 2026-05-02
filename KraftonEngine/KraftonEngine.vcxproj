@@ -365,6 +365,8 @@
     <ClCompile Include="Source\Engine\GameFramework\Light\DirectionalLightActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\Light\PointLightActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\Light\SpotLightActor.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\Pawn.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\PlayerController.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\World.cpp" />
     <ClCompile Include="Source\Engine\Input\InputSystem.cpp" />
@@ -453,15 +455,20 @@
     <ClCompile Include="Source\Engine\Runtime\WindowsWindow.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaActorLifecycleBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaCameraComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaDelegateBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaGameObjectBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaInputLibrary.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp" />
@@ -470,6 +477,7 @@
     <ClCompile Include="Source\Engine\Viewport\GameViewportClient.cpp" />
     <ClCompile Include="Source\Engine\Viewport\Viewport.cpp" />
     <ClCompile Include="Source\Engine\Viewport\ViewportClient.cpp" />
+    <ClCompile Include="Source\GameClient\GameCameraManager.cpp" />
     <ClCompile Include="Source\GameClient\GameClientEngine.cpp" />
     <ClCompile Include="Source\GameClient\GameClientOverlay.cpp" />
     <ClCompile Include="Source\GameClient\GameClientRenderPipeline.cpp" />
@@ -585,6 +593,8 @@
     <ClInclude Include="Source\Engine\GameFramework\Light\DirectionalLightActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\Light\PointLightActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\Light\SpotLightActor.h" />
+    <ClInclude Include="Source\Engine\GameFramework\Pawn.h" />
+    <ClInclude Include="Source\Engine\GameFramework\PlayerController.h" />
     <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\World.h" />
     <ClInclude Include="Source\Engine\GameFramework\WorldContext.h" />
@@ -700,6 +710,7 @@
     <ClInclude Include="Source\Engine\Scripting\LuaBindingHelper.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaBindings.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaHandles.h" />
+    <ClInclude Include="Source\Engine\Scripting\LuaInputLibrary.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaPropertyBridge.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaScriptSubsystem.h" />
     <ClInclude Include="Source\Engine\Scripting\LuaWorldLibrary.h" />
@@ -715,6 +726,7 @@
     <ClInclude Include="Source\Engine\Viewport\GameViewportClient.h" />
     <ClInclude Include="Source\Engine\Viewport\Viewport.h" />
     <ClInclude Include="Source\Engine\Viewport\ViewportClient.h" />
+    <ClInclude Include="Source\GameClient\GameCameraManager.h" />
     <ClInclude Include="Source\GameClient\GameClientEngine.h" />
     <ClInclude Include="Source\GameClient\GameClientOverlay.h" />
     <ClInclude Include="Source\GameClient\GameClientRenderPipeline.h" />

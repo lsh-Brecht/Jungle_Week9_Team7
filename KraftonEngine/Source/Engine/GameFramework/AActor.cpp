@@ -97,6 +97,11 @@ void AActor::RemoveComponent(UActorComponent* Component)
 {
 	if (!Component) return;
 
+	if (UWorld* World = GetWorld())
+	{
+		World->CleanupComponentReferences(Component);
+	}
+
 	if (bActorHasBegunPlay)
 	{
 		Component->EndPlay();

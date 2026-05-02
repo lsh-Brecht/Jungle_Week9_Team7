@@ -16,6 +16,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
+#include "Component/CameraComponent.h"
 #include "Component/Script/LuaScriptComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
@@ -219,6 +220,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveLuaScript",
 			ULuaScriptComponent
+		),
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"Camera",
+			FLuaCameraComponentHandle,
+			UCameraComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddCamera",
+			FLuaCameraComponentHandle,
+			UCameraComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveCamera",
+			UCameraComponent
 		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(

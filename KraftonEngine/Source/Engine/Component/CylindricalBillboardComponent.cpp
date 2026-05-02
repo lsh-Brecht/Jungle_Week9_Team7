@@ -1,4 +1,4 @@
-#include "Component/CylindricalBillboardComponent.h"
+﻿#include "Component/CylindricalBillboardComponent.h"
 #include "GameFramework/World.h"
 #include "Component/CameraComponent.h"
 #include "Render/Proxy/CylindricalBillboardSceneProxy.h"
@@ -30,7 +30,7 @@ void UCylindricalBillboardComponent::TickComponent(float DeltaTime, ELevelTick T
 {
 	if (!GetOwner() || !GetOwner()->GetWorld()) return;
 
-	const UCameraComponent* ActiveCamera = GetOwner()->GetWorld()->GetActiveCamera();
+	const UCameraComponent* ActiveCamera = GetOwner()->GetWorld()->GetViewCamera();
 	if (!ActiveCamera) return;
 
 	CachedWorldMatrix = ComputeBillboardMatrix(ActiveCamera->GetForwardVector());

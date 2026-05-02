@@ -25,6 +25,7 @@ UWorld* FEditorViewportClient::GetWorld() const
 #include "Editor/Selection/SelectionManager.h"
 #include "Editor/EditorEngine.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/PlayerController.h"
 #include "Viewport/GameViewportClient.h"
 #include "ImGui/imgui.h"
 #include "Component/Light/LightComponentBase.h"
@@ -162,9 +163,21 @@ void FEditorViewportClient::Tick(float DeltaTime)
 			{
 				if (UGameViewportClient* GameViewportClient = EditorEngine->GetGameViewportClient())
 				{
-					GameViewportClient->SetDrivingCamera(Camera);
+					UWorld* World = EditorEngine->GetWorld();
+					APlayerController* Controller = World ? World->FindOrCreatePlayerController() : nullptr;
+					if (World)
+					{
+						World->AutoWirePlayerController(Controller);
+					}
+					UCameraComponent* GameplayCamera = World ? World->ResolveGameplayViewCamera(Controller) : nullptr;
+					GameViewportClient->SetPlayerController(Controller);
+					GameViewportClient->SetDrivingCamera(GameplayCamera ? GameplayCamera : Camera);
 					GameViewportClient->SetViewport(Viewport);
 					GameViewportClient->ProcessPIEInput(InputSnapshot, DeltaTime);
+					if (World)
+					{
+						World->SetViewCamera(World->ResolveGameplayViewCamera(Controller));
+					}
 				}
 				return;
 			}

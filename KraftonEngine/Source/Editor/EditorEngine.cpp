@@ -17,6 +17,7 @@
 #include "Core/ProjectSettings.h"
 #include "Input/InputSystem.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/MaterialManager.h"
 #include "Engine/Platform/Paths.h"
 #include <filesystem>
@@ -289,14 +290,19 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		Pipeline->OnSceneCleared();
 	}
 
-	// 5) 활성 뷰포트 카메라를 PIE 월드의 ActiveCamera로 설정 —
-	//    LOD 갱신 등에서 ActiveCamera를 참조하므로 설정 필요.
-	if (FLevelEditorViewportClient* ActiveVC = ViewportLayout.GetActiveViewport())
+	// 5) PIE의 카메라는 에디터 뷰포트 카메라가 아니라 PIE World 안의 CameraComponent를 우선 사용한다.
+	//    에디터 뷰포트 카메라를 ActiveCamera로 넣으면 Pawn/Controller/ViewTarget이 전부 우회되어
+	//    카메라를 추가해도 플레이 화면에 아무 반응이 없는 문제가 생긴다.
+	PIEWorld->AutoWirePlayerController();
+	if (UCameraComponent* GameplayCamera = PIEWorld->ResolveGameplayViewCamera())
 	{
-		if (UCameraComponent* VCCamera = ActiveVC->GetCamera())
-		{
-			PIEWorld->SetActiveCamera(VCCamera);
-		}
+		PIEWorld->SetActiveCamera(GameplayCamera);
+		PIEWorld->SetViewCamera(GameplayCamera);
+	}
+	else if (FLevelEditorViewportClient* ActiveVC = ViewportLayout.GetActiveViewport())
+	{
+		PIEWorld->SetActiveCamera(ActiveVC->GetCamera());
+		PIEWorld->SetViewCamera(ActiveVC->GetCamera());
 	}
 
 	// 6) Selection을 PIE 월드 기준으로 재바인딩 — 에디터 액터를 가리킨 채로 두면
@@ -316,14 +322,20 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		{
 			PIEViewportClient->SetOwnerWindow(Window->GetHWND());
 		}
-		UCameraComponent* InitialTargetCamera = PIEWorld->GetActiveCamera();
+		APlayerController* PIEController = PIEWorld->FindOrCreatePlayerController();
+		PIEWorld->AutoWirePlayerController(PIEController);
+		UCameraComponent* InitialTargetCamera = PIEWorld->ResolveGameplayViewCamera(PIEController);
 		FViewport* InitialViewport = nullptr;
 		if (FLevelEditorViewportClient* ActiveVC = ViewportLayout.GetActiveViewport())
 		{
-			InitialTargetCamera = ActiveVC->GetCamera() ? ActiveVC->GetCamera() : InitialTargetCamera;
+			if (!InitialTargetCamera)
+			{
+				InitialTargetCamera = ActiveVC->GetCamera();
+			}
 			InitialViewport = ActiveVC->GetViewport();
 			PIEViewportClient->SetCursorClipRect(ActiveVC->GetViewportScreenRect());
 		}
+		PIEViewportClient->SetPlayerController(PIEController);
 		PIEViewportClient->OnBeginPIE(InitialTargetCamera, InitialViewport);
 	}
 	EnterPIEPossessedMode();
@@ -475,18 +487,25 @@ void UEditorEngine::SyncGameViewportPIEControlState(bool bPossessedMode)
 		PIEViewportClient->SetOwnerWindow(Window->GetHWND());
 	}
 
+	UWorld* World = GetWorld();
+	APlayerController* Controller = World ? World->FindOrCreatePlayerController() : nullptr;
+	if (World)
+	{
+		World->AutoWirePlayerController(Controller);
+	}
+	UCameraComponent* Camera = World ? World->ResolveGameplayViewCamera(Controller) : nullptr;
+	PIEViewportClient->SetPlayerController(Controller);
+
 	if (FLevelEditorViewportClient* ActiveVC = ViewportLayout.GetActiveViewport())
 	{
-		PIEViewportClient->Possess(ActiveVC->GetCamera());
+		if (!Camera)
+		{
+			Camera = ActiveVC->GetCamera();
+		}
 		PIEViewportClient->SetViewport(ActiveVC->GetViewport());
 		PIEViewportClient->SetCursorClipRect(ActiveVC->GetViewportScreenRect());
-		return;
 	}
-
-	if (UWorld* World = GetWorld())
-	{
-		PIEViewportClient->Possess(World->GetActiveCamera());
-	}
+	PIEViewportClient->Possess(Camera);
 }
 
 // ─── 기존 메서드 ──────────────────────────────────────────

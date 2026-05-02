@@ -96,7 +96,7 @@ void UBillboardComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	if (!GetOwner() || !GetOwner()->GetWorld()) return;
 
-	const UCameraComponent* ActiveCamera = GetOwner()->GetWorld()->GetActiveCamera();
+	const UCameraComponent* ActiveCamera = GetOwner()->GetWorld()->GetViewCamera();
 	if (!ActiveCamera) return;
 
 	FVector WorldLocation = GetWorldLocation();

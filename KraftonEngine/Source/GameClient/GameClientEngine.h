@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Runtime/Engine.h"
+#include "GameClient/GameCameraManager.h"
 #include "GameClient/GameClientOverlay.h"
 #include "GameClient/GameClientSession.h"
 #include "GameClient/GameClientSettings.h"
@@ -28,6 +29,9 @@ public:
 	FGameClientViewport& GetGameViewport() { return GameViewport; }
 	const FGameClientViewport& GetGameViewport() const { return GameViewport; }
 
+	FGameCameraManager& GetCameraManager() { return CameraManager; }
+	const FGameCameraManager& GetCameraManager() const { return CameraManager; }
+
 	FGameClientOverlay& GetOverlay() { return Overlay; }
 
 	void RenderOverlay(float DeltaTime);
@@ -42,10 +46,12 @@ private:
 	void TickInGame(float DeltaTime);
 	void ProcessPendingCommands();
 	bool RestartGame();
+	void InitCameraManager();
 
 private:
 	FGameClientSettings Settings;
 	FGameClientSession Session;
+	FGameCameraManager CameraManager;
 	FGameClientViewport GameViewport;
 	FGameClientOverlay Overlay;
 	bool bPauseMenuOpen = false;

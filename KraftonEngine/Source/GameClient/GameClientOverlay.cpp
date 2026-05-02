@@ -1,12 +1,17 @@
-#include "GameClient/GameClientOverlay.h"
+﻿#include "GameClient/GameClientOverlay.h"
 
 #include "GameClient/GameClientEngine.h"
 #include "GameClient/GameClientViewport.h"
+#include "GameClient/GameCameraManager.h"
+#include "Component/CameraComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/Paths.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "GameFramework/World.h"
 #include "Render/Pipeline/Renderer.h"
+#include "Object/Object.h"
 #include "SimpleJSON/json.hpp"
 #include "Viewport/Viewport.h"
 
@@ -244,6 +249,31 @@ void FGameClientOverlay::DrawOverlay(float DeltaTime)
 	{
 		ImGui::Text("World: Game");
 		ImGui::Text("Actors: %d", static_cast<int>(World->GetActors().size()));
+
+		FGameCameraManager& CameraManager = Engine->GetCameraManager();
+		APlayerController* Controller = CameraManager.GetPlayerController();
+		if (!IsAliveObject(Controller) || !World->IsActorInWorld(Controller))
+		{
+			Controller = World->GetPlayerController(0);
+		}
+		APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
+		AActor* ViewTarget = Controller ? Controller->GetViewTarget() : nullptr;
+		UCameraComponent* ActiveCamera = World->GetActiveCamera();
+		UCameraComponent* ViewCamera = World->GetViewCamera();
+		UCameraComponent* DebugCamera = CameraManager.GetDebugCamera();
+		if (!IsAliveObject(DebugCamera))
+		{
+			DebugCamera = nullptr;
+		}
+
+
+		ImGui::Separator();
+		ImGui::Text("Controller: %s", Controller ? Controller->GetFName().ToString().c_str() : "(none)");
+		ImGui::Text("Pawn: %s", Pawn ? Pawn->GetFName().ToString().c_str() : "(none)");
+		ImGui::Text("ViewTarget: %s", ViewTarget ? ViewTarget->GetFName().ToString().c_str() : "(none)");
+		ImGui::Text("ActiveCamera: %s", ActiveCamera ? ActiveCamera->GetFName().ToString().c_str() : "(none)");
+		ImGui::Text("ViewCamera: %s", ViewCamera ? ViewCamera->GetFName().ToString().c_str() : "(none)");
+		ImGui::Text("DebugCamera: %s", DebugCamera ? DebugCamera->GetFName().ToString().c_str() : "(none)");
 	}
 
 	ImGui::End();

@@ -3,7 +3,6 @@
 #include <cmath>
 
 IMPLEMENT_CLASS(UCameraComponent, USceneComponent)
-HIDE_FROM_COMPONENT_LIST(UCameraComponent)
 
 FMatrix UCameraComponent::GetViewMatrix() const
 {

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Object/Object.h"
 #include "UI/SWindow.h"
@@ -11,6 +11,7 @@
 
 class FViewport;
 class UCameraComponent;
+class APlayerController;
 struct FInputSystemSnapshot;
 
 struct FGameInputSettings
@@ -43,6 +44,8 @@ public:
 	void SetCursorClipRect(const FRect& InViewportScreenRect);
 	void SetDrivingCamera(UCameraComponent* InCamera) { Possess(InCamera); }
 	UCameraComponent* GetDrivingCamera() const { return GetPossessedTarget(); }
+	void SetPlayerController(APlayerController* InController);
+	APlayerController* GetPlayerController() const { return PlayerController; }
 
 	void SetPIEPossessedInputEnabled(bool bEnabled);
 	bool IsPIEPossessedInputEnabled() const { return bPIEPossessedInputEnabled; }
@@ -53,8 +56,8 @@ public:
 	void ResetInputState();
 	void Possess(UCameraComponent* TargetCamera);
 	void UnPossess();
-	UCameraComponent* GetPossessedTarget() const { return PossessedCamera; }
-	bool HasPossessedTarget() const { return PossessedCamera != nullptr; }
+	UCameraComponent* GetPossessedTarget() const;
+	bool HasPossessedTarget() const { return GetPossessedTarget() != nullptr; }
 	bool Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	bool ProcessPIEInput(const FInputSystemSnapshot& Snapshot, float DeltaTime);
 
@@ -68,6 +71,7 @@ private:
 	FViewport* Viewport = nullptr;
 	HWND OwnerHWnd = nullptr;
 	UCameraComponent* PossessedCamera = nullptr;
+	APlayerController* PlayerController = nullptr;
 	FGameInputSettings InputSettings{};
 	RECT CursorClipClientRect = {};
 	bool bHasCursorClipRect = false;

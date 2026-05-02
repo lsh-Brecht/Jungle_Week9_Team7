@@ -1,12 +1,42 @@
-#include "GameClient/GameClientEngine.h"
+﻿#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "Core/Notification.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/World.h"
+#include "Scripting/LuaInputLibrary.h"
 
 IMPLEMENT_CLASS(UGameClientEngine, UEngine)
+
+void UGameClientEngine::InitCameraManager()
+{
+	UWorld* World = GetWorld();
+	CameraManager.SetWorld(World);
+
+	APlayerController* PlayerController = World ? World->FindOrCreatePlayerController() : nullptr;
+	CameraManager.SetPlayerController(PlayerController);
+
+	CameraManager.CreateDebugCamera();
+
+	if (World)
+	{
+		World->AutoWirePlayerController(PlayerController);
+	}
+
+	if (!CameraManager.FindStartupGameplayCamera())
+	{
+		CameraManager.CreateFallbackGameplayCamera();
+	}
+
+	if (World)
+	{
+		World->AutoWirePlayerController(PlayerController);
+	}
+	CameraManager.SyncWorldViewCamera();
+}
 
 void UGameClientEngine::Init(FWindowsWindow* InWindow)
 {
@@ -15,7 +45,13 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 	Settings.Load();
 
 	Session.Initialize(this);
+
+	InitCameraManager();
+
 	GameViewport.Initialize(this, InWindow, Renderer);
+	GameViewport.BindPlayerController(CameraManager.GetPlayerController());
+	GameViewport.BindDebugCamera(CameraManager.GetDebugCamera());
+
 	Overlay.Initialize(InWindow, Renderer, this);
 
 	SetGameViewportClient(GameViewport.GetViewportClient());
@@ -24,6 +60,7 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 
 void UGameClientEngine::Shutdown()
 {
+	CameraManager.ClearWorldBinding();
 	Overlay.Shutdown();
 	SetGameViewportClient(nullptr);
 	GameViewport.Shutdown();
@@ -108,9 +145,15 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 
 void UGameClientEngine::TickInGame(float DeltaTime)
 {
-	GameViewport.Tick(DeltaTime);
+	const FInputSystemSnapshot Snapshot = InputSystem::Get().MakeSnapshot();
+	FLuaInputLibrary::SetFrameSnapshot(Snapshot);
+
+	GameViewport.Tick(DeltaTime, Snapshot);
+
 	TaskScheduler.Tick(DeltaTime);
 	WorldTick(DeltaTime);
+
+	CameraManager.SyncWorldViewCamera();
 }
 
 void UGameClientEngine::ProcessPendingCommands()
@@ -124,16 +167,17 @@ void UGameClientEngine::ProcessPendingCommands()
 
 bool UGameClientEngine::RestartGame()
 {
+	CameraManager.ClearWorldBinding();
 	GameViewport.ReleaseWorldBinding();
+
 	if (!Session.Restart())
 	{
 		return false;
 	}
 
-	if (!GameViewport.RebuildCameraForCurrentWorld())
-	{
-		return false;
-	}
+	InitCameraManager();
+	GameViewport.BindPlayerController(CameraManager.GetPlayerController());
+	GameViewport.BindDebugCamera(CameraManager.GetDebugCamera());
 
 	BeginPlay();
 	return true;

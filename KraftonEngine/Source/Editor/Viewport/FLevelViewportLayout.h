@@ -81,7 +81,11 @@ public:
 		AmbientLight,
 		DirectionalLight,
 		PointLight,
-		SpotLight
+		SpotLight,
+		Camera,
+		Pawn,
+		PlayerController,
+		EmptyActor
 	};
 
 	AActor* SpawnPlaceActor(EViewportPlaceActorType Type, const FVector& Location);

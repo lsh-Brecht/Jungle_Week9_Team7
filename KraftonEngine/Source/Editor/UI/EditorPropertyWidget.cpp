@@ -17,6 +17,10 @@
 #include "Component/DecalComponent.h"
 #include "Component/HeightFogComponent.h"
 #include "Component/Collision/ShapeComponent.h"
+#include "Component/CameraComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/World.h"
 #include "Core/PropertyTypes.h"
 #include "Core/ClassTypes.h"
 #include "Resource/ResourceManager.h"
@@ -468,6 +472,165 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 		PrimaryActor->SetVisible(bVisible);
 	}
 
+	// PlayerController — Pawn Possess / ViewTarget 연결
+	if (APlayerController* PC = Cast<APlayerController>(PrimaryActor))
+	{
+		SEPARATOR();
+		ImGui::Text("PlayerController");
+		ImGui::Separator();
+
+		// 현재 Possess 중인 Pawn 표시
+		APawn* CurPawn = PC->GetPawn();
+		if (CurPawn)
+		{
+			const FString& N = CurPawn->GetFName().ToString();
+			ImGui::Text("Possessed: %s", N.empty() ? "Pawn" : N.c_str());
+			ImGui::SameLine();
+			if (ImGui::SmallButton("UnPossess"))
+				PC->UnPossess();
+		}
+		else
+		{
+			ImGui::TextDisabled("Possessed: (none)");
+		}
+
+		// Pawn 선택해서 Possess
+		if (ImGui::Button("Possess Pawn..."))
+			ImGui::OpenPopup("##PawnPicker");
+		if (ImGui::BeginPopup("##PawnPicker"))
+		{
+			UWorld* World = EditorEngine->GetWorld();
+			bool bAny = false;
+			for (AActor* A : World->GetActors())
+			{
+				if (APawn* P = Cast<APawn>(A))
+				{
+					bAny = true;
+					const FString& N = P->GetFName().ToString();
+					if (ImGui::MenuItem(N.empty() ? "Pawn" : N.c_str()))
+					{
+						PC->Possess(P);
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+			if (!bAny) ImGui::TextDisabled("No Pawns in world");
+			ImGui::EndPopup();
+		}
+
+		ImGui::Spacing();
+
+		// 현재 ViewTarget 표시
+		AActor* VT = PC->GetViewTarget();
+		if (VT)
+		{
+			const FString& N = VT->GetFName().ToString();
+			ImGui::Text("ViewTarget: %s", N.empty() ? VT->GetClass()->GetName() : N.c_str());
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Clear##VT"))
+				PC->SetViewTarget(nullptr);
+		}
+		else
+		{
+			ImGui::TextDisabled("ViewTarget: (none)");
+		}
+
+		// ViewTarget 선택
+		if (ImGui::Button("Set ViewTarget..."))
+			ImGui::OpenPopup("##ViewTargetPicker");
+		if (ImGui::BeginPopup("##ViewTargetPicker"))
+		{
+			UWorld* World = EditorEngine->GetWorld();
+			for (AActor* A : World->GetActors())
+			{
+				if (!A) continue;
+				const FString& N = A->GetFName().ToString();
+				const char* Label = N.empty() ? A->GetClass()->GetName() : N.c_str();
+				if (ImGui::MenuItem(Label))
+				{
+					PC->SetViewTarget(A);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::EndPopup();
+		}
+	}
+	// Pawn — 현재 Controller 표시
+	else if (APawn* Pawn = Cast<APawn>(PrimaryActor))
+	{
+		SEPARATOR();
+		ImGui::Text("Pawn");
+		ImGui::Separator();
+		APlayerController* Ctrl = Pawn->GetController();
+		if (Ctrl)
+		{
+			const FString& N = Ctrl->GetFName().ToString();
+			ImGui::Text("Controller: %s", N.empty() ? "PlayerController" : N.c_str());
+			ImGui::SameLine();
+			if (ImGui::SmallButton("UnPossess##Pawn"))
+			{
+				Ctrl->UnPossess();
+			}
+		}
+		else
+		{
+			ImGui::TextDisabled("Controller: (none)");
+		}
+
+		if (ImGui::Button("Possessed By Controller..."))
+		{
+			ImGui::OpenPopup("##ControllerPickerForPawn");
+		}
+		if (ImGui::BeginPopup("##ControllerPickerForPawn"))
+		{
+			UWorld* World = EditorEngine->GetWorld();
+			bool bAny = false;
+			if (World)
+			{
+				for (APlayerController* Controller : World->GetPlayerControllers())
+				{
+					if (!Controller) continue;
+					bAny = true;
+					const FString& N = Controller->GetFName().ToString();
+					if (ImGui::MenuItem(N.empty() ? "PlayerController" : N.c_str()))
+					{
+						Controller->Possess(Pawn);
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+			if (!bAny) ImGui::TextDisabled("No PlayerControllers in world");
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::Button("Create Controller And Possess"))
+		{
+			if (UWorld* World = EditorEngine->GetWorld())
+			{
+				if (APlayerController* Controller = World->FindOrCreatePlayerController())
+				{
+					Controller->Possess(Pawn);
+				}
+			}
+		}
+
+		if (ImGui::Button("Set Controller ViewTarget To This Pawn"))
+		{
+			if (UWorld* World = EditorEngine->GetWorld())
+			{
+				if (APlayerController* Controller = World->FindOrCreatePlayerController())
+				{
+					Controller->SetViewTarget(Pawn);
+					if (UCameraComponent* Camera = Pawn->FindPawnCamera())
+					{
+						World->SetActiveCamera(Camera);
+						World->SetViewCamera(Camera);
+					}
+				}
+			}
+		}
+	}
+
 }
 
 void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
@@ -501,6 +664,7 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 	AddComponentClassGroup(ComponentGroups, "Light", ULightComponentBase::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Movement", UMovementComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Collision", UShapeComponent::StaticClass());
+	AddComponentClassGroup(ComponentGroups, "Camera", UCameraComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Primitive", UPrimitiveComponent::StaticClass());
 
 	TArray<UClass*> OtherClasses;
@@ -659,10 +823,19 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 
 		if (SelectedClass->IsA(USceneComponent::StaticClass()))
 		{
-			if (SelectedComponent != nullptr && SelectedComponent->GetClass()->IsA(USceneComponent::StaticClass()))
-				Cast<USceneComponent>(Comp)->AttachToComponent(Cast<USceneComponent>(SelectedComponent));
-			else
-				Cast<USceneComponent>(Comp)->AttachToComponent(Root);
+			USceneComponent* SceneComp = Cast<USceneComponent>(Comp);
+			if (!Root && SceneComp)
+			{
+				Actor->SetRootComponent(SceneComp);
+				Root = SceneComp;
+			}
+			else if (SceneComp)
+			{
+				if (SelectedComponent != nullptr && SelectedComponent->GetClass()->IsA(USceneComponent::StaticClass()))
+					SceneComp->AttachToComponent(Cast<USceneComponent>(SelectedComponent));
+				else if (Root)
+					SceneComp->AttachToComponent(Root);
+			}
 
 			// 빌보드가 필요한 컴포넌트들에 대해 빌보드 생성 보장
 			if (Comp->IsA<ULightComponentBase>())
@@ -676,6 +849,22 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 			else if (Comp->IsA<UHeightFogComponent>())
 			{
 				Cast<UHeightFogComponent>(Comp)->EnsureEditorBillboard();
+			}
+		}
+
+		SelectedComponent = Comp;
+		bActorSelected = false;
+
+		if (UCameraComponent* Camera = Cast<UCameraComponent>(Comp))
+		{
+			if (UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr)
+			{
+				World->SetActiveCamera(Camera);
+				World->SetViewCamera(Camera);
+				if (APlayerController* Controller = World->GetPlayerController(0))
+				{
+					Controller->SetViewTarget(Actor);
+				}
 			}
 		}
 	}
@@ -825,6 +1014,27 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 	}
 
 	ImGui::Separator();
+
+	// CameraComponent — Active Camera 지정
+	if (UCameraComponent* Cam = Cast<UCameraComponent>(SelectedComponent))
+	{
+		UWorld* World = EditorEngine->GetWorld();
+		if (World)
+		{
+			if (World->GetActiveCamera() == Cam)
+				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Active Camera]");
+			else if (ImGui::Button("Set as Active Camera"))
+			{
+				World->SetActiveCamera(Cam);
+				World->SetViewCamera(Cam);
+				if (APlayerController* Controller = World->GetPlayerController(0))
+				{
+					Controller->SetViewTarget(Cam->GetOwner());
+				}
+			}
+		}
+		ImGui::Separator();
+	}
 
 	// PropertyDescriptor 기반 자동 위젯 렌더링
 	TArray<FPropertyDescriptor> Props;

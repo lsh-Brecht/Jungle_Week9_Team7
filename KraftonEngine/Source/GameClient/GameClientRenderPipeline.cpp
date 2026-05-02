@@ -1,4 +1,4 @@
-#include "GameClient/GameClientRenderPipeline.h"
+﻿#include "GameClient/GameClientRenderPipeline.h"
 
 #include "GameClient/GameClientEngine.h"
 #include "GameClient/GameClientViewport.h"
@@ -48,10 +48,10 @@ void FGameClientRenderPipeline::RenderGameViewport(FRenderer& Renderer)
 		return;
 	}
 
-	UCameraComponent* Camera = Engine->GetGameViewport().GetCamera();
+	UCameraComponent* Camera = Engine->GetCameraManager().GetViewCamera();
 	if (!Camera)
 	{
-		Camera = World->GetActiveCamera();
+		Camera = Engine->GetCameraManager().ResolveViewCamera();
 	}
 	if (!Camera)
 	{
@@ -81,7 +81,7 @@ void FGameClientRenderPipeline::RenderGameViewport(FRenderer& Renderer)
 
 	Frame.SetRenderOptions(Options);
 	Frame.SetViewportInfo(Viewport);
-	Frame.LODContext = World->PrepareLODContext();
+	Frame.LODContext = World->PrepareLODContext(Camera);
 
 	FScene& Scene = World->GetScene();
 	Scene.ClearFrameData();

@@ -524,6 +524,12 @@
     <ClCompile Include="Source\Engine\GameFramework\Light\SpotLightActor.cpp">
       <Filter>Source\Engine\GameFramework\Light</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\GameFramework\Pawn.cpp">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\GameFramework\PlayerController.cpp">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp">
       <Filter>Source\Engine\GameFramework</Filter>
     </ClCompile>
@@ -788,6 +794,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaCameraComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaComponentBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -797,10 +806,19 @@
     <ClCompile Include="Source\Engine\Scripting\LuaGameObjectBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaInputLibrary.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp">
@@ -813,6 +831,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp">
@@ -838,6 +859,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Viewport\ViewportClient.cpp">
       <Filter>Source\Engine\Viewport</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameCameraManager.cpp">
+      <Filter>Source\GameClient</Filter>
     </ClCompile>
     <ClCompile Include="Source\GameClient\GameClientEngine.cpp">
       <Filter>Source\GameClient</Filter>
@@ -1177,6 +1201,12 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\Light\SpotLightActor.h">
       <Filter>Source\Engine\GameFramework\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\GameFramework\Pawn.h">
+      <Filter>Source\Engine\GameFramework</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\GameFramework\PlayerController.h">
+      <Filter>Source\Engine\GameFramework</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h">
       <Filter>Source\Engine\GameFramework</Filter>
@@ -1523,6 +1553,9 @@
     <ClInclude Include="Source\Engine\Scripting\LuaHandles.h">
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaInputLibrary.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Scripting\LuaPropertyBridge.h">
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
@@ -1567,6 +1600,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Viewport\ViewportClient.h">
       <Filter>Source\Engine\Viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameCameraManager.h">
+      <Filter>Source\GameClient</Filter>
     </ClInclude>
     <ClInclude Include="Source\GameClient\GameClientEngine.h">
       <Filter>Source\GameClient</Filter>

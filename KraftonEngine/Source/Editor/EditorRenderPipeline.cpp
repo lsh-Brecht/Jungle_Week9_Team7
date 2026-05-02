@@ -11,6 +11,7 @@
 #include "Engine/Render/Types/ForwardLightData.h"
 #include "Component/Light/LightComponentBase.h"
 #include "Core/ProjectSettings.h"
+#include "Viewport/GameViewportClient.h"
 
 FEditorRenderPipeline::FEditorRenderPipeline(UEditorEngine* InEditor, FRenderer& InRenderer)
 	: Editor(InEditor)
@@ -92,7 +93,24 @@ void FEditorRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 
 void FEditorRenderPipeline::RenderViewport(FLevelEditorViewportClient* VC, FRenderer& Renderer)
 {
+	UWorld* World = Editor->GetWorld();
+	if (!World) return;
+
 	UCameraComponent* Camera = VC->GetCamera();
+	if (Editor->IsPIEPossessedMode())
+	{
+		if (UGameViewportClient* GameViewportClient = Editor->GetGameViewportClient())
+		{
+			if (UCameraComponent* GameplayCamera = GameViewportClient->GetDrivingCamera())
+			{
+				Camera = GameplayCamera;
+			}
+		}
+		if (!Camera)
+		{
+			Camera = World->GetViewCamera();
+		}
+	}
 	if (!Camera) return;
 
 	FViewport* VP = VC->GetViewport();
@@ -100,9 +118,6 @@ void FEditorRenderPipeline::RenderViewport(FLevelEditorViewportClient* VC, FRend
 
 	ID3D11DeviceContext* Ctx = Renderer.GetFD3DDevice().GetDeviceContext();
 	if (!Ctx) return;
-
-	UWorld* World = Editor->GetWorld();
-	if (!World) return;
 
 	FGPUOcclusionCulling& GPUOcclusion = GetOcclusionForViewport(VC);
 
@@ -182,7 +197,7 @@ void FEditorRenderPipeline::BuildFrame(FLevelEditorViewportClient* VC, UCameraCo
 	Frame.SetRenderOptions(VC->GetRenderOptions());
 	Frame.SetViewportInfo(VP);
 	Frame.OcclusionCulling = &GetOcclusionForViewport(VC);
-	Frame.LODContext = World->PrepareLODContext();
+	Frame.LODContext = World->PrepareLODContext(Camera);
 
 	// Cursor position relative to viewport (for 2.5D culling visualization)
 	if (!VC->GetCursorViewportPosition(Frame.CursorViewportX, Frame.CursorViewportY))

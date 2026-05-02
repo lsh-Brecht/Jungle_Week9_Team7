@@ -2,6 +2,7 @@
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
+#include "Component/CameraComponent.h"
 #include "Component/Script/LuaScriptComponent.h"
 #include "Component/SceneComponent.h"
 #include "Component/PrimitiveComponent.h"
@@ -18,6 +19,8 @@
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 // Lua가 Object에 직접 접근할 수 없도록 감쌈
 // nullptr일 경우를 대비
@@ -271,6 +274,54 @@ struct FLuaStaticMeshComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UStaticMeshComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaCameraComponentHandle
+{
+	uint32 UUID = 0;
+
+	UCameraComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UCameraComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaPawnHandle
+{
+	uint32 UUID = 0;
+
+	APawn* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<APawn>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaPlayerControllerHandle
+{
+	uint32 UUID = 0;
+
+	APlayerController* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<APlayerController>(Object);
 	}
 
 	bool IsValid() const

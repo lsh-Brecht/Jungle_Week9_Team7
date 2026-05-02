@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/CoreTypes.h"
 
@@ -8,15 +8,18 @@ class FWindowsWindow;
 class UCameraComponent;
 class UGameClientEngine;
 class UGameViewportClient;
+class APlayerController;
+struct FInputSystemSnapshot;
 
 class FGameClientViewport
 {
 public:
 	bool Initialize(UGameClientEngine* InEngine, FWindowsWindow* Window, FRenderer& Renderer);
 	void Shutdown();
-	void Tick(float DeltaTime);
+	void Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	void OnWindowResized(uint32 Width, uint32 Height);
-	bool RebuildCameraForCurrentWorld();
+	void BindDebugCamera(UCameraComponent* DebugCamera);
+	void BindPlayerController(APlayerController* PlayerController);
 	void ReleaseWorldBinding();
 	void SetInputEnabled(bool bEnabled);
 
@@ -24,10 +27,8 @@ public:
 	const FViewport* GetViewport() const { return Viewport; }
 
 	UGameViewportClient* GetViewportClient() const { return ViewportClient; }
-	UCameraComponent* GetCamera() const { return Camera; }
 
 private:
-	bool CreateCamera();
 	bool CreateViewport(FWindowsWindow* Window, FRenderer& Renderer);
 	bool CreateViewportClient(FWindowsWindow* Window);
 
@@ -35,6 +36,5 @@ private:
 	UGameClientEngine* Engine = nullptr;
 	FViewport* Viewport = nullptr;
 	UGameViewportClient* ViewportClient = nullptr;
-	UCameraComponent* Camera = nullptr;
 	bool bInputEnabled = false;
 };

@@ -23,13 +23,20 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterCapsuleComponentBinding(Lua);
 
 	RegisterStaticMeshComponentBinding(Lua);
+	RegisterCameraComponentBinding(Lua);
 
 	RegisterMovementComponentBinding(Lua);
 	RegisterProjectileMovementComponentBinding(Lua);
 	RegisterInterpToMovementComponentBinding(Lua);
 	RegisterPendulumMovementComponentBinding(Lua);
 	RegisterRotatingMovementComponentBinding(Lua);
-	
+	RegisterHopMovementComponentBinding(Lua);
+
+	RegisterPawnBinding(Lua);
+	RegisterPlayerControllerBinding(Lua);
+
 	RegisterGameObjectBinding(Lua);
+	RegisterWorldExtendedBinding(Lua);
+	RegisterInputBinding(Lua);
 	RegisterDelegateBinding(Lua);
 }
