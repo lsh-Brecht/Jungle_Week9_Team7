@@ -15,6 +15,7 @@ public:
 
 	virtual void DrawDebugShape(FScene& Scene, const FColor& Color) const = 0;
 	void ContributeSelectedVisuals(FScene& Scene) const override;
+	void Serialize(FArchive& Ar) override;
 	TDelegate<> TestDelegate;
 
 protected:

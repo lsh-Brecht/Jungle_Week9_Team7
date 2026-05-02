@@ -1,6 +1,7 @@
 ﻿#include "BoxComponent.h"
 #include "Math/Matrix.h"
 #include "Render/Scene/FScene.h"
+#include "Serialization/Archive.h"
 #include <cmath>
 #include <cstring>
 
@@ -61,6 +62,12 @@ void UBoxComponent::PostEditProperty(const char* PropertyName)
 	{
 		MarkWorldBoundsDirty();
 	}
+}
+
+void UBoxComponent::Serialize(FArchive& Ar)
+{
+	UShapeComponent::Serialize(Ar);
+	Ar << BoxExtent;
 }
 
 void UBoxComponent::DrawDebugShape(FScene& Scene, const FColor& Color) const

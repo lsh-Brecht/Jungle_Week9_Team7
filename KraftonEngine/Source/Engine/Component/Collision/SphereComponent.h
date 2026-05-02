@@ -15,6 +15,7 @@ public:
 	void DrawDebugShape(FScene& Scene, const FColor& Color) const override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override;
+	void Serialize(FArchive& Ar) override;
 
 	float GetSphereRadius() const { return SphereRadius; }
 	void SetSphereRadius(float InRadius)
