@@ -1,7 +1,9 @@
 ﻿#include "Engine/Runtime/EngineLoop.h"
 #include "Profiling/StartupProfiler.h"
 
-#if IS_OBJ_VIEWER
+#if IS_GAME_CLIENT
+#include "GameClient/GameClientEngine.h"
+#elif IS_OBJ_VIEWER
 #include "ObjViewer/ObjViewerEngine.h"
 #elif WITH_EDITOR
 #include "Editor/EditorEngine.h"
@@ -9,7 +11,9 @@
 
 void FEngineLoop::CreateEngine()
 {
-#if IS_OBJ_VIEWER
+#if IS_GAME_CLIENT
+	GEngine = UObjectManager::Get().CreateObject<UGameClientEngine>();
+#elif IS_OBJ_VIEWER
 	GEngine = UObjectManager::Get().CreateObject<UObjViewerEngine>();
 #elif WITH_EDITOR
 	GEngine = UObjectManager::Get().CreateObject<UEditorEngine>();

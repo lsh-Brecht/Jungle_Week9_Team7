@@ -68,7 +68,7 @@
       <UniqueIdentifier>{9d062af4-b676-61f1-319e-efb1ba670c12}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Engine\Component\Script">
-      <UniqueIdentifier>{38c20658-443a-467c-b9f3-b2551a4124bd}</UniqueIdentifier>
+      <UniqueIdentifier>{b17c02e8-fa1d-b877-30dd-94123cc6c2aa}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Engine\Core">
       <UniqueIdentifier>{aaeb2f3f-eff4-9d0e-a471-82c1372b9aed}</UniqueIdentifier>
@@ -165,6 +165,9 @@
     </Filter>
     <Filter Include="Source\Engine\Viewport">
       <UniqueIdentifier>{b95fbad5-2f3a-0600-c7ff-db94055fd64b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\GameClient">
+      <UniqueIdentifier>{1d3d9676-a04a-e9c2-255a-08485248176e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\ObjViewer">
       <UniqueIdentifier>{3e63d691-bd37-40d8-2cea-c874f8e3a95b}</UniqueIdentifier>
@@ -440,6 +443,9 @@
     <ClCompile Include="Source\Engine\Component\MeshComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Movement\HopMovementComponent.cpp">
+      <Filter>Source\Engine\Component\Movement</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Component\Movement\InterpToMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClCompile>
@@ -458,11 +464,11 @@
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp">
-      <Filter>Source\Engine\Component\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp">
+      <Filter>Source\Engine\Component\Script</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
@@ -833,6 +839,24 @@
     <ClCompile Include="Source\Engine\Viewport\ViewportClient.cpp">
       <Filter>Source\Engine\Viewport</Filter>
     </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientEngine.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientOverlay.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientRenderPipeline.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientSession.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientSettings.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientViewport.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
     <ClCompile Include="Source\ObjViewer\ObjViewerEngine.cpp">
       <Filter>Source\ObjViewer</Filter>
     </ClCompile>
@@ -867,9 +891,6 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\Engine\Component\Movement\HopMovementComponent.cpp">
-      <Filter>Source\Engine\Component\Movement</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -965,6 +986,9 @@
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h">
+      <Filter>Source\Engine\Collision</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Collision\MeshTriangleBVH.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
@@ -990,9 +1014,6 @@
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Collision\WorldPrimitivePickingBVH.h">
-      <Filter>Source\Engine\Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\ActorComponent.h">
@@ -1052,6 +1073,9 @@
     <ClInclude Include="Source\Engine\Component\MeshComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Movement\HopMovementComponent.h">
+      <Filter>Source\Engine\Component\Movement</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\InterpToMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClInclude>
@@ -1070,11 +1094,11 @@
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h">
-      <Filter>Source\Engine\Component\Script</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\Component\SceneComponent.h">
       <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h">
+      <Filter>Source\Engine\Component\Script</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h">
       <Filter>Source\Engine\Component</Filter>
@@ -1466,6 +1490,9 @@
     <ClInclude Include="Source\Engine\Runtime\Delegate.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Runtime\DelegateSubscriptionBox.h">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Runtime\Engine.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
@@ -1541,6 +1568,24 @@
     <ClInclude Include="Source\Engine\Viewport\ViewportClient.h">
       <Filter>Source\Engine\Viewport</Filter>
     </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientEngine.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientOverlay.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientRenderPipeline.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientSession.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientSettings.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientViewport.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
     <ClInclude Include="Source\ObjViewer\ObjViewerEngine.h">
       <Filter>Source\ObjViewer</Filter>
     </ClInclude>
@@ -1579,10 +1624,6 @@
     </ClInclude>
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Runtime\DelegateSubscriptionBox.h" />
-    <ClInclude Include="Source\Engine\Component\Movement\HopMovementComponent.h">
-      <Filter>Source\Engine\Component\Movement</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

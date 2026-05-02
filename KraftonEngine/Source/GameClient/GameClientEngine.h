@@ -1,0 +1,53 @@
+#pragma once
+
+#include "Engine/Runtime/Engine.h"
+#include "GameClient/GameClientOverlay.h"
+#include "GameClient/GameClientSession.h"
+#include "GameClient/GameClientSettings.h"
+#include "GameClient/GameClientViewport.h"
+
+class UGameClientEngine : public UEngine
+{
+public:
+	DECLARE_CLASS(UGameClientEngine, UEngine)
+
+	UGameClientEngine() = default;
+	~UGameClientEngine() override = default;
+
+	void Init(FWindowsWindow* InWindow) override;
+	void Shutdown() override;
+	void Tick(float DeltaTime) override;
+	void OnWindowResized(uint32 Width, uint32 Height) override;
+
+	FGameClientSettings& GetSettings() { return Settings; }
+	const FGameClientSettings& GetSettings() const { return Settings; }
+
+	FGameClientSession& GetSession() { return Session; }
+	const FGameClientSession& GetSession() const { return Session; }
+
+	FGameClientViewport& GetGameViewport() { return GameViewport; }
+	const FGameClientViewport& GetGameViewport() const { return GameViewport; }
+
+	FGameClientOverlay& GetOverlay() { return Overlay; }
+
+	void RenderOverlay(float DeltaTime);
+	bool IsPauseMenuOpen() const { return bPauseMenuOpen; }
+	void SetPauseMenuOpen(bool bOpen);
+	void TogglePauseMenu();
+	void RequestRestart();
+	void RequestExit();
+
+private:
+	void TickAlways(float DeltaTime);
+	void TickInGame(float DeltaTime);
+	void ProcessPendingCommands();
+	bool RestartGame();
+
+private:
+	FGameClientSettings Settings;
+	FGameClientSession Session;
+	FGameClientViewport GameViewport;
+	FGameClientOverlay Overlay;
+	bool bPauseMenuOpen = false;
+	bool bRestartRequested = false;
+};

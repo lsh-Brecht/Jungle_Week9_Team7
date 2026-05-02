@@ -31,16 +31,26 @@ CONFIGURATIONS = [
     ("Release", "x64"),
     ("ObjViewDebug", "x64"),
     ("Demo", "x64"),
+    ("GameClient", "x64"),
 ]
 
 # Per-configuration overrides
 CONFIG_PROPS = {
     "ObjViewDebug": {
         "release_like": True,
-        "extra_defines": ["IS_OBJ_VIEWER=1"],
+        "with_editor": False,
+        "is_obj_viewer": True,
+        "is_game_client": False,
     },
     "Demo": {
         "release_like": True,
+        "extra_defines": ["STATS=0"],
+    },
+    "GameClient": {
+        "release_like": True,
+        "with_editor": False,
+        "is_obj_viewer": False,
+        "is_game_client": True,
         "extra_defines": ["STATS=0"],
     },
 }
@@ -76,6 +86,7 @@ INCLUDE_PATHS = [
     "ThirdParty\\ImGui",
     "Source\\Editor",
     "Source\\ObjViewer",
+    "Source\\GameClient",
     ".",
 ]
 
@@ -349,7 +360,10 @@ def generate_vcxproj(files: dict[str, list[str]]):
             base_defs.append("WIN32")
 
         base_defs.append("NDEBUG" if is_release else "_DEBUG")
-        base_defs.extend(["_CONSOLE", "WITH_EDITOR=1"])
+        base_defs.append("_CONSOLE")
+        base_defs.append(f"WITH_EDITOR={1 if props.get('with_editor', True) else 0}")
+        base_defs.append(f"IS_OBJ_VIEWER={1 if props.get('is_obj_viewer', False) else 0}")
+        base_defs.append(f"IS_GAME_CLIENT={1 if props.get('is_game_client', False) else 0}")
         base_defs.extend(props.get("extra_defines", []))
         base_defs.append("%(PreprocessorDefinitions)")
 

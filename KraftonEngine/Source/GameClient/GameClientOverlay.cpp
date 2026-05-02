@@ -1,0 +1,364 @@
+#include "GameClient/GameClientOverlay.h"
+
+#include "GameClient/GameClientEngine.h"
+#include "GameClient/GameClientViewport.h"
+#include "Engine/Input/InputSystem.h"
+#include "Engine/Platform/Paths.h"
+#include "Engine/Runtime/WindowsWindow.h"
+#include "GameFramework/World.h"
+#include "Render/Pipeline/Renderer.h"
+#include "SimpleJSON/json.hpp"
+#include "Viewport/Viewport.h"
+
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
+
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+
+namespace
+{
+	constexpr const char* ContinueLabel = "\xEA\xB3\x84\xEC\x86\x8D";
+	constexpr const char* OptionsLabel = "\xEC\x98\xB5\xEC\x85\x98";
+	constexpr const char* RestartLabel = "\xEB\x8B\xA4\xEC\x8B\x9C\xEC\x8B\x9C\xEC\x9E\x91";
+	constexpr const char* ExitLabel = "\xEC\xA2\x85\xEB\xA3\x8C";
+	constexpr const char* BackLabel = "\xEB\x92\xA4\xEB\xA1\x9C";
+
+	FString GetImGuiStyleSettingsPath()
+	{
+		return FPaths::ToUtf8(FPaths::SettingsDir() + L"ImGuiStyle.ini");
+	}
+
+	void ApplyFallbackStyle()
+	{
+		ImGui::StyleColorsDark();
+
+		ImGuiStyle& Style = ImGui::GetStyle();
+		Style.WindowRounding = 4.0f;
+		Style.FrameRounding = 3.0f;
+		Style.GrabRounding = 3.0f;
+		Style.ScrollbarRounding = 3.0f;
+		Style.WindowBorderSize = 1.0f;
+		Style.FrameBorderSize = 0.0f;
+		Style.WindowPadding = ImVec2(10.0f, 8.0f);
+		Style.ItemSpacing = ImVec2(8.0f, 8.0f);
+	}
+
+	void LoadEditorImGuiStyle()
+	{
+		ApplyFallbackStyle();
+
+		const FString Path = GetImGuiStyleSettingsPath();
+		const std::filesystem::path FilePath(FPaths::ToWide(Path));
+		std::ifstream File(FilePath);
+		if (!File.is_open())
+		{
+			return;
+		}
+
+		const FString Content(
+			(std::istreambuf_iterator<char>(File)),
+			std::istreambuf_iterator<char>());
+
+		json::JSON Root = json::JSON::Load(Content);
+		if (Root.IsNull())
+		{
+			return;
+		}
+
+		ImGuiStyle& Style = ImGui::GetStyle();
+
+		if (Root.hasKey("Colors"))
+		{
+			json::JSON Colors = Root["Colors"];
+			int32 Count = static_cast<int32>(Colors.length());
+			if (Count > ImGuiCol_COUNT)
+			{
+				Count = ImGuiCol_COUNT;
+			}
+
+			for (int32 Index = 0; Index < Count; ++Index)
+			{
+				json::JSON Color = Colors[Index];
+				Style.Colors[Index] = ImVec4(
+					static_cast<float>(Color[0].ToFloat()),
+					static_cast<float>(Color[1].ToFloat()),
+					static_cast<float>(Color[2].ToFloat()),
+					static_cast<float>(Color[3].ToFloat()));
+			}
+		}
+
+		if (Root.hasKey("Alpha")) Style.Alpha = static_cast<float>(Root["Alpha"].ToFloat());
+		if (Root.hasKey("WindowRounding")) Style.WindowRounding = static_cast<float>(Root["WindowRounding"].ToFloat());
+		if (Root.hasKey("FrameRounding")) Style.FrameRounding = static_cast<float>(Root["FrameRounding"].ToFloat());
+		if (Root.hasKey("GrabRounding")) Style.GrabRounding = static_cast<float>(Root["GrabRounding"].ToFloat());
+		if (Root.hasKey("ScrollbarRounding")) Style.ScrollbarRounding = static_cast<float>(Root["ScrollbarRounding"].ToFloat());
+		if (Root.hasKey("WindowBorderSize")) Style.WindowBorderSize = static_cast<float>(Root["WindowBorderSize"].ToFloat());
+		if (Root.hasKey("FrameBorderSize")) Style.FrameBorderSize = static_cast<float>(Root["FrameBorderSize"].ToFloat());
+	}
+
+	bool DrawMenuButton(const char* Label, float Width, float Height)
+	{
+		ImGui::SetCursorPosX((ImGui::GetWindowSize().x - Width) * 0.5f);
+		return ImGui::Button(Label, ImVec2(Width, Height));
+	}
+}
+
+bool FGameClientOverlay::Initialize(
+	FWindowsWindow* Window,
+	FRenderer& Renderer,
+	UGameClientEngine* InEngine)
+{
+	if (!Window)
+	{
+		return false;
+	}
+
+	Engine = InEngine;
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	LoadEditorImGuiStyle();
+
+	ImGuiIO& IO = ImGui::GetIO();
+	IO.IniFilename = "Settings/imgui_gameclient.ini";
+	IO.Fonts->AddFontFromFileTTF(
+		"C:\\Windows\\Fonts\\malgun.ttf",
+		16.0f,
+		nullptr,
+		IO.Fonts->GetGlyphRangesKorean());
+
+	ImGui_ImplWin32_Init(reinterpret_cast<void*>(Window->GetHWND()));
+	ImGui_ImplDX11_Init(
+		Renderer.GetFD3DDevice().GetDevice(),
+		Renderer.GetFD3DDevice().GetDeviceContext());
+
+	bInitialized = true;
+	return true;
+}
+
+void FGameClientOverlay::Shutdown()
+{
+	if (!bInitialized)
+	{
+		return;
+	}
+
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
+	bInitialized = false;
+	Engine = nullptr;
+}
+
+void FGameClientOverlay::Update(float DeltaTime)
+{
+	(void)DeltaTime;
+
+	if (!bInitialized)
+	{
+		return;
+	}
+
+	ImGuiIO& IO = ImGui::GetIO();
+	const bool bMenuOpen = Engine && Engine->IsPauseMenuOpen();
+	if (!bMenuOpen)
+	{
+		bShowingOptions = false;
+	}
+	InputSystem::Get().SetGuiMouseCapture(bMenuOpen || IO.WantCaptureMouse);
+	InputSystem::Get().SetGuiKeyboardCapture(bMenuOpen || IO.WantCaptureKeyboard);
+	InputSystem::Get().SetGuiTextInputCapture(IO.WantTextInput);
+}
+
+void FGameClientOverlay::Render(float DeltaTime)
+{
+	if (!bInitialized)
+	{
+		return;
+	}
+
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	DrawViewport();
+	DrawOverlay(DeltaTime);
+	DrawPauseMenu();
+
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+void FGameClientOverlay::DrawViewport()
+{
+	if (!Engine)
+	{
+		return;
+	}
+
+	FViewport* Viewport = Engine->GetGameViewport().GetViewport();
+	if (!Viewport || !Viewport->GetSRV())
+	{
+		return;
+	}
+
+	ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+	if (!MainViewport)
+	{
+		return;
+	}
+
+	const ImVec2 Min = MainViewport->Pos;
+	const ImVec2 Max(
+		MainViewport->Pos.x + MainViewport->Size.x,
+		MainViewport->Pos.y + MainViewport->Size.y);
+
+	ImGui::GetBackgroundDrawList(MainViewport)->AddImage(
+		reinterpret_cast<ImTextureID>(Viewport->GetSRV()),
+		Min,
+		Max);
+}
+
+void FGameClientOverlay::DrawOverlay(float DeltaTime)
+{
+	if (!Engine || !Engine->GetSettings().bEnableOverlay)
+	{
+		return;
+	}
+
+	ImGui::SetNextWindowBgAlpha(0.65f);
+	ImGui::Begin(
+		"GameClient",
+		nullptr,
+		ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+
+	ImGui::Text("Krafton GameClient");
+	ImGui::Text("DeltaTime: %.4f", DeltaTime);
+
+	if (UWorld* World = Engine->GetWorld())
+	{
+		ImGui::Text("World: Game");
+		ImGui::Text("Actors: %d", static_cast<int>(World->GetActors().size()));
+	}
+
+	ImGui::End();
+}
+
+void FGameClientOverlay::DrawPauseMenu()
+{
+	if (!Engine || !Engine->IsPauseMenuOpen())
+	{
+		return;
+	}
+
+	ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+	if (!MainViewport)
+	{
+		return;
+	}
+
+	const ImVec2 ViewportMin = MainViewport->Pos;
+	const ImVec2 ViewportMax(
+		MainViewport->Pos.x + MainViewport->Size.x,
+		MainViewport->Pos.y + MainViewport->Size.y);
+	ImGui::GetBackgroundDrawList(MainViewport)->AddRectFilled(
+		ViewportMin,
+		ViewportMax,
+		IM_COL32(0, 0, 0, 145));
+
+	const ImVec2 MenuSize = bShowingOptions ? ImVec2(320.0f, 180.0f) : ImVec2(320.0f, 292.0f);
+	const ImVec2 MenuCenter(
+		MainViewport->Pos.x + MainViewport->Size.x * 0.5f,
+		MainViewport->Pos.y + MainViewport->Size.y * 0.5f);
+
+	ImGui::SetNextWindowPos(MenuCenter, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(MenuSize, ImGuiCond_Always);
+	ImGui::SetNextWindowFocus();
+
+	const ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoDocking
+		| ImGuiWindowFlags_NoSavedSettings
+		| ImGuiWindowFlags_NoMove
+		| ImGuiWindowFlags_NoResize
+		| ImGuiWindowFlags_NoCollapse;
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24.0f, 22.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 12.0f));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.09f, 0.11f, 0.98f));
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.22f, 0.25f, 0.30f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.23f, 0.30f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.50f, 0.80f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.22f, 0.42f, 0.72f, 1.0f));
+
+	if (ImGui::Begin("##GameClientPauseMenu", nullptr, Flags))
+	{
+		if (bShowingOptions)
+		{
+			DrawPauseOptionsMenu();
+		}
+		else
+		{
+			DrawPauseMainMenu();
+		}
+	}
+	ImGui::End();
+
+	ImGui::PopStyleColor(5);
+	ImGui::PopStyleVar(5);
+}
+
+void FGameClientOverlay::DrawPauseMainMenu()
+{
+	const float ButtonWidth = 220.0f;
+	const float ButtonHeight = 38.0f;
+	const char* Title = "MENU";
+	const float TitleWidth = ImGui::CalcTextSize(Title).x;
+
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - TitleWidth) * 0.5f);
+	ImGui::TextUnformatted(Title);
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+	if (DrawMenuButton(ContinueLabel, ButtonWidth, ButtonHeight))
+	{
+		Engine->SetPauseMenuOpen(false);
+	}
+	if (DrawMenuButton(OptionsLabel, ButtonWidth, ButtonHeight))
+	{
+		bShowingOptions = true;
+	}
+	if (DrawMenuButton(RestartLabel, ButtonWidth, ButtonHeight))
+	{
+		Engine->RequestRestart();
+	}
+	if (DrawMenuButton(ExitLabel, ButtonWidth, ButtonHeight))
+	{
+		Engine->RequestExit();
+	}
+}
+
+void FGameClientOverlay::DrawPauseOptionsMenu()
+{
+	FViewportRenderOptions& Options = Engine->GetSettings().RenderOptions;
+	const char* Title = "GRAPHICS";
+	const float TitleWidth = ImGui::CalcTextSize(Title).x;
+	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - TitleWidth) * 0.5f);
+	ImGui::TextUnformatted(Title);
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+	ImGui::Checkbox("FXAA", &Options.ShowFlags.bFXAA);
+
+	ImGui::Dummy(ImVec2(0.0f, 8.0f));
+	if (DrawMenuButton(BackLabel, 180.0f, 34.0f))
+	{
+		bShowingOptions = false;
+	}
+}
