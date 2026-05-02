@@ -55,18 +55,18 @@ void FPaths::CreateDir(const std::wstring& Path)
 std::wstring FPaths::ToWide(const std::string& Utf8Str)
 {
 	if (Utf8Str.empty()) return {};
-	int32_t Size = MultiByteToWideChar(CP_UTF8, 0, Utf8Str.c_str(), -1, nullptr, 0);
-	std::wstring Result(Size - 1, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, Utf8Str.c_str(), -1, &Result[0], Size);
+	int32_t Size = MultiByteToWideChar(CP_UTF8, 0, Utf8Str.data(), static_cast<int>(Utf8Str.size()), nullptr, 0);
+	std::wstring Result(Size, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, Utf8Str.data(), static_cast<int>(Utf8Str.size()), Result.data(), Size);
 	return Result;
 }
 
 std::string FPaths::ToUtf8(const std::wstring& WideStr)
 {
 	if (WideStr.empty()) return {};
-	int32_t Size = WideCharToMultiByte(CP_UTF8, 0, WideStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-	std::string Result(Size - 1, '\0');
-	WideCharToMultiByte(CP_UTF8, 0, WideStr.c_str(), -1, &Result[0], Size, nullptr, nullptr);
+	int32_t Size = WideCharToMultiByte(CP_UTF8, 0, WideStr.data(), static_cast<int>(WideStr.size()), nullptr, 0, nullptr, nullptr);
+	std::string Result(Size, '\0');
+	WideCharToMultiByte(CP_UTF8, 0, WideStr.data(), static_cast<int>(WideStr.size()), Result.data(), Size, nullptr, nullptr);
 	return Result;
 }
 

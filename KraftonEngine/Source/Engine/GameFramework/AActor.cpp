@@ -10,6 +10,28 @@
 
 #include <algorithm>
 
+namespace
+{
+	UActorComponent* ResolveOwnedComponent(AActor* Owner, uint32 ComponentUUID)
+	{
+		if (!Owner || ComponentUUID == 0)
+		{
+			return nullptr;
+		}
+
+		UActorComponent* Component = Cast<UActorComponent>(UObjectManager::Get().FindByUUID(ComponentUUID));
+		if (!Component || Component->GetOwner() != Owner)
+		{
+			return nullptr;
+		}
+
+		const TArray<UActorComponent*>& Components = Owner->GetComponents();
+		return std::find(Components.begin(), Components.end(), Component) != Components.end()
+			? Component
+			: nullptr;
+	}
+}
+
 IMPLEMENT_CLASS(AActor, UObject)
 
 AActor::AActor()
@@ -189,9 +211,22 @@ void AActor::BeginPlay()
 	bActorHasBegunPlay = true;
 
 	// UE 순서: 컴포넌트 BeginPlay 먼저, 그다음 Actor 본인 (오버라이드 측 Super 호출 시).
+	TArray<uint32> ComponentUUIDs;
+	ComponentUUIDs.reserve(OwnedComponents.size());
 	for (UActorComponent* Comp : OwnedComponents)
 	{
-		if (Comp) Comp->BeginPlay();
+		if (Comp)
+		{
+			ComponentUUIDs.push_back(Comp->GetUUID());
+		}
+	}
+
+	for (uint32 ComponentUUID : ComponentUUIDs)
+	{
+		if (UActorComponent* Comp = ResolveOwnedComponent(this, ComponentUUID))
+		{
+			Comp->BeginPlay();
+		}
 	}
 
 }
@@ -212,9 +247,19 @@ void AActor::EndPlay()
 	bActorHasBegunPlay = false;
 	PrimaryActorTick.UnRegisterTickFunction();
 
+	TArray<uint32> ComponentUUIDs;
+	ComponentUUIDs.reserve(OwnedComponents.size());
 	for (UActorComponent* Comp : OwnedComponents)
 	{
 		if (Comp)
+		{
+			ComponentUUIDs.push_back(Comp->GetUUID());
+		}
+	}
+
+	for (uint32 ComponentUUID : ComponentUUIDs)
+	{
+		if (UActorComponent* Comp = ResolveOwnedComponent(this, ComponentUUID))
 		{
 			Comp->PrimaryComponentTick.UnRegisterTickFunction();
 			Comp->EndPlay();

@@ -211,7 +211,15 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 	ConfigureScriptEnvironment(LuaView, Env);
 	AssignComponentBindingHandles(Env, Component);
 
-	sol::load_result LoadResult = LuaView.load_file(AbsolutePath);
+	std::ifstream File(FPaths::ToWide(AbsolutePath), std::ios::binary);
+	if (!File)
+	{
+		UE_LOG("[Lua] Lua File Compile Error (%s): Cannot open file", NormalizedPath.c_str());
+		return false;
+	}
+
+	const std::string Content((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
+	sol::load_result LoadResult = LuaView.load_buffer(Content.data(), Content.size(), "@" + AbsolutePath);
 	if (!LoadResult.valid())
 	{
 		sol::error Error = LoadResult;
