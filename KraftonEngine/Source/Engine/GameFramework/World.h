@@ -2,6 +2,7 @@
 #include "Object/Object.h"
 #include "Core/RayTypes.h"
 #include "Core/CollisionTypes.h"
+#include "Collision/WorldCollisionBVH.h"
 #include "Collision/WorldPrimitivePickingBVH.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/Level.h"
@@ -45,6 +46,11 @@ public:
 	void UpdateWorldPrimitivePickingBVH(UPrimitiveComponent* Primitive);
 	void BuildWorldPrimitivePickingBVHNow() const;
 	void CollectWorldPrimitivePickingBVHDebugAABBs(TArray<FWorldPrimitivePickingBVH::FDebugAABB>& OutAABBs) const;
+	void MarkWorldCollisionBVHDirty();
+	void InsertWorldCollisionBVH(UPrimitiveComponent* Primitive);
+	void RemoveWorldCollisionBVH(UPrimitiveComponent* Primitive);
+	void UpdateWorldCollisionBVH(UPrimitiveComponent* Primitive);
+	void BuildWorldCollisionBVHNow() const;
 	void BeginDeferredPickingBVHUpdate();
 	void EndDeferredPickingBVHUpdate();
 	void WarmupPickingData() const;
@@ -88,6 +94,7 @@ private:
 	bool bHasBegunPlay = false;
 	bool bHasLastFullLODUpdateCameraPos = false;
 	mutable FWorldPrimitivePickingBVH WorldPrimitivePickingBVH;
+	mutable FWorldCollisionBVH WorldCollisionBVH;
 	int32 DeferredPickingBVHUpdateDepth = 0;
 	bool bDeferredPickingBVHDirty = false;
 	uint32 VisibleProxyBuildFrame = 0;
