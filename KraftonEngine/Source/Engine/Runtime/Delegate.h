@@ -102,9 +102,16 @@ public:
 			return;
 		}
 
-		for (const auto& handler : Handlers)
+		const TArray<HandlerType> HandlersSnapshot = Handlers;
+		for (const auto& handler : HandlersSnapshot)
 		{
-			if (handler.second)
+			const auto It = std::find_if(Handlers.begin(), Handlers.end(),
+				[HandlerID = handler.first](const HandlerType& RegisteredHandler)
+				{
+					return RegisteredHandler.first == HandlerID;
+				});
+
+			if (It != Handlers.end() && handler.second)
 			{
 				handler.second(args...);
 			}

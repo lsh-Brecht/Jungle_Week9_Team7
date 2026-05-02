@@ -172,6 +172,50 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			ULuaScriptComponent
 		),
 
+		"GetLuaScript",
+		[](const FLuaGameObjectHandle& Self, const FString& ScriptIdentifier)
+		{
+			FLuaScriptComponentHandle Handle;
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.GetLuaScript Call.");
+				return Handle;
+			}
+
+			ULuaScriptComponent* Component = FLuaWorldLibrary::FindLuaScriptComponent(Actor, ScriptIdentifier);
+			if (Component)
+			{
+				Handle.UUID = Component->GetUUID();
+			}
+
+			return Handle;
+		},
+
+		"GetLuaScripts",
+		[](const FLuaGameObjectHandle& Self, sol::this_state State)
+		{
+			sol::state_view LuaView(State);
+			sol::table Result = LuaView.create_table();
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				return Result;
+			}
+
+			int LuaIndex = 1;
+			for (ULuaScriptComponent* Component : FLuaWorldLibrary::FindComponents<ULuaScriptComponent>(Actor))
+			{
+				FLuaScriptComponentHandle Handle;
+				Handle.UUID = Component->GetUUID();
+				Result[LuaIndex++] = Handle;
+			}
+
+			return Result;
+		},
+
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveLuaScript",
 			ULuaScriptComponent
@@ -392,6 +436,50 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			}
 
 			return Handle;
+		},
+
+		"GetComponentByIndex",
+		[](const FLuaGameObjectHandle& Self, const FString& TypeName, int32 LuaIndex)
+		{
+			FLuaActorComponentHandle Handle;
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.GetComponentByIndex Call.");
+				return Handle;
+			}
+
+			UActorComponent* Component = FLuaWorldLibrary::FindComponentByTypeName(Actor, TypeName, LuaIndex - 1);
+			if (Component)
+			{
+				Handle.UUID = Component->GetUUID();
+			}
+
+			return Handle;
+		},
+
+		"GetComponents",
+		[](const FLuaGameObjectHandle& Self, const FString& TypeName, sol::this_state State)
+		{
+			sol::state_view LuaView(State);
+			sol::table Result = LuaView.create_table();
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				return Result;
+			}
+
+			int LuaIndex = 1;
+			for (UActorComponent* Component : FLuaWorldLibrary::FindComponentsByTypeName(Actor, TypeName))
+			{
+				FLuaActorComponentHandle Handle;
+				Handle.UUID = Component->GetUUID();
+				Result[LuaIndex++] = Handle;
+			}
+
+			return Result;
 		},
 
 		"GetOrAddComponent",

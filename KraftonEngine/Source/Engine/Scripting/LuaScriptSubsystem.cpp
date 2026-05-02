@@ -1,4 +1,4 @@
-#include "LuaScriptSubsystem.h"
+﻿#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -99,6 +99,24 @@ namespace
 			Environment["_accessLevel"] = sol::nil;
 		}
 	}
+
+	void ConfigureScriptEnvironment(sol::state_view LuaView, sol::environment& Environment)
+	{
+		sol::table MetaTable = LuaView.create_table();
+		MetaTable["__index"] = LuaView.globals();
+		MetaTable.set_function("__newindex",
+			[](sol::table Target, sol::object Key, sol::object Value)
+			{
+				Target.raw_set(Key, Value);
+			});
+		Environment[sol::metatable_key] = MetaTable;
+	}
+
+	sol::environment GetCallerEnvironment(sol::this_environment ThisEnv)
+	{
+		sol::environment Environment = ThisEnv;
+		return Environment.valid() ? Environment : sol::environment();
+	}
 }
 
 void FLuaScriptSubsystem::Initialize()
@@ -117,7 +135,6 @@ void FLuaScriptSubsystem::Initialize()
 	UE_LOG("[Lua] Lua Scripting Initialized.");
 }
 
-// Lua 상태를 새 빈 상태로 바꿔서 기존 Lua 환경을 정리
 void FLuaScriptSubsystem::Shutdown()
 {
 	if (!bInitialized)
@@ -134,22 +151,16 @@ void FLuaScriptSubsystem::Shutdown()
 	}
 	WatchSubs.clear();
 
+	CancelAllComponentTasks();
+	ComponentBindings.clear();
 	Lua = sol::state();
+
 	LoadedScripts.clear();
 	LoadedScriptOrder.clear();
 	ScriptIncludes.clear();
 	IncludeDependents.clear();
 	ModulePaths.clear();
 	DependencyContextStack.clear();
-	if (GEngine)
-	{
-		for (const auto& [ComponentUUID, Binding] : ComponentBindings)
-		{
-			(void)Binding;
-			GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
-		}
-	}
-	ComponentBindings.clear();
 	bInitialized = false;
 	UE_LOG("[Lua] Lua Scripting Shutdown.");
 }
@@ -197,6 +208,7 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 	 
 	sol::state_view LuaView(Lua);
 	sol::environment Env(LuaView, sol::create, LuaView.globals());
+	ConfigureScriptEnvironment(LuaView, Env);
 	AssignComponentBindingHandles(Env, Component);
 
 	sol::load_result LoadResult = LuaView.load_file(AbsolutePath);
@@ -312,9 +324,68 @@ const FLuaScriptSubsystem::FLuaComponentBinding* FLuaScriptSubsystem::FindCompon
 	return It != ComponentBindings.end() ? &It->second : nullptr;
 }
 
+bool FLuaScriptSubsystem::IsComponentBound(uint32 ComponentUUID) const
+{
+	return FindComponentBinding(ComponentUUID) != nullptr;
+}
+
+void FLuaScriptSubsystem::CancelAllComponentTasks()
+{
+	if (!GEngine)
+	{
+		return;
+	}
+
+	for (const auto& [ComponentUUID, Binding] : ComponentBindings)
+	{
+		(void)Binding;
+		GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
+	}
+}
+
+bool FLuaScriptSubsystem::TryBeginCoroutine(const FString& FunctionName, uint32 OwnerUUID)
+{
+	if (FunctionName != "Tick" || OwnerUUID == 0)
+	{
+		return true;
+	}
+
+	FLuaComponentBinding* Binding = FindComponentBinding(OwnerUUID);
+	if (!Binding)
+	{
+		return false;
+	}
+
+	if (Binding->ActiveCoroutineFunctions.find(FunctionName) != Binding->ActiveCoroutineFunctions.end())
+	{
+		return false;
+	}
+
+	Binding->ActiveCoroutineFunctions.insert(FunctionName);
+	return true;
+}
+
+void FLuaScriptSubsystem::FinishCoroutine(const FString& FunctionName, uint32 OwnerUUID)
+{
+	if (FunctionName != "Tick" || OwnerUUID == 0)
+	{
+		return;
+	}
+
+	if (FLuaComponentBinding* Binding = FindComponentBinding(OwnerUUID))
+	{
+		Binding->ActiveCoroutineFunctions.erase(FunctionName);
+	}
+}
+
 void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID)
 {
 	if (!Function.valid())
+	{
+		return;
+	}
+
+	if (!TryBeginCoroutine(FunctionName ? FString(FunctionName) : FString(), OwnerUUID))
 	{
 		return;
 	}
@@ -330,6 +401,11 @@ void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::fu
 		return;
 	}
 
+	if (!TryBeginCoroutine(FunctionName ? FString(FunctionName) : FString(), OwnerUUID))
+	{
+		return;
+	}
+
 	sol::thread Thread = CreateCoroutineThread(Function);
 	lua_pushnumber(Thread.thread_state(), static_cast<lua_Number>(DeltaTime));
 	ResumeCoroutine(std::move(Thread), OwnerUUID, FunctionName, 1);
@@ -338,6 +414,11 @@ void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::fu
 void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, const FLuaGameObjectHandle& OtherActor)
 {
 	if (!Function.valid())
+	{
+		return;
+	}
+
+	if (!TryBeginCoroutine(FunctionName ? FString(FunctionName) : FString(), OwnerUUID))
 	{
 		return;
 	}
@@ -383,6 +464,7 @@ void FLuaScriptSubsystem::HandleCoroutineResult(int Status, sol::thread Thread, 
 	}
 
 	lua_settop(ThreadState, 0);
+	FinishCoroutine(FunctionName, OwnerUUID);
 }
 
 void FLuaScriptSubsystem::ScheduleCoroutineResume(float Delay, sol::thread Thread, uint32 OwnerUUID, const FString& FunctionName)
@@ -407,7 +489,8 @@ void FLuaScriptSubsystem::ScheduleCoroutineResume(float Delay, sol::thread Threa
 
 			ResumeCoroutine(Thread, OwnerUUID, FunctionName, 0);
 		},
-		OwnerUUID);
+		OwnerUUID,
+		true);
 }
 
 float FLuaScriptSubsystem::ExtractYieldDelay(lua_State* ThreadState) const
@@ -548,27 +631,27 @@ void FLuaScriptSubsystem::RegisterRuntimeFunctions(sol::state& TargetLua)
 		});
 
 	TargetLua.set_function("Include",
-		[this](const FString& Path, sol::this_state State) -> sol::object
+		[this](const FString& Path, sol::this_environment ThisEnv, sol::this_state State) -> sol::object
 		{
-			return IncludeFile(Path, State);
+			return IncludeFile(Path, ThisEnv, State);
 		});
 
 	TargetLua.set_function("LuaInclude",
-		[this](const FString& Path, sol::this_state State) -> sol::object
+		[this](const FString& Path, sol::this_environment ThisEnv, sol::this_state State) -> sol::object
 		{
-			return IncludeFile(Path, State);
+			return IncludeFile(Path, ThisEnv, State);
 		});
 
 	TargetLua.set_function("dofile",
-		[this](const FString& Path, sol::this_state State) -> sol::object
+		[this](const FString& Path, sol::this_environment ThisEnv, sol::this_state State) -> sol::object
 		{
-			return IncludeFile(Path, State);
+			return IncludeFile(Path, ThisEnv, State);
 		});
 
 	TargetLua.set_function("require",
-		[this](const FString& ModuleName, sol::this_state State) -> sol::object
+		[this](const FString& ModuleName, sol::this_environment ThisEnv, sol::this_state State) -> sol::object
 		{
-			return RequireModule(ModuleName, State);
+			return RequireModule(ModuleName, ThisEnv, State);
 		});
 
 	TargetLua.set_function("Wait", sol::yielding([](float Seconds)
@@ -630,6 +713,11 @@ bool FLuaScriptSubsystem::ExecuteEntryScript(sol::state_view LuaView, const FStr
 
 bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath)
 {
+	return ExecuteScriptFile(LuaView, NormalizedPath, nullptr);
+}
+
+bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment)
+{
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
 
 	std::ifstream File(FPaths::ToWide(AbsolutePath), std::ios::binary);
@@ -640,7 +728,21 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 	}
 	const std::string Content((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
 
-	sol::protected_function_result Result = LuaView.safe_script(Content, sol::script_pass_on_error, "@" + AbsolutePath);
+	sol::load_result LoadResult = LuaView.load_buffer(Content.data(), Content.size(), "@" + AbsolutePath);
+	if (!LoadResult.valid())
+	{
+		sol::error Error = LoadResult;
+		UE_LOG("[Lua] Lua File Compile Error (%s): %s", NormalizedPath.c_str(), Error.what());
+		return false;
+	}
+
+	sol::protected_function ScriptFunction = LoadResult;
+	if (Environment && Environment->valid())
+	{
+		sol::set_environment(*Environment, ScriptFunction);
+	}
+
+	sol::protected_function_result Result = ScriptFunction();
 
 	if (!Result.valid())
 	{
@@ -711,14 +813,8 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 		}
 	}
 
-	if (GEngine)
-	{
-		for (const auto& [ComponentUUID, Binding] : ComponentBindings)
-		{
-			(void)Binding;
-			GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
-		}
-	}
+	CancelAllComponentTasks();
+	ComponentBindings.clear();
 
 	Lua = std::move(NewLua);
 	LoadedScripts = std::move(NewLoadedScripts);
@@ -727,7 +823,6 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 	ModulePaths = std::move(NewModulePaths);
 	RebuildIncludeDependents();
 
-	ComponentBindings.clear();
 	for (const auto& [ComponentUUID, ScriptPath] : ComponentBindingsToRestore)
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(ComponentUUID);
@@ -855,14 +950,15 @@ TMap<FString, FString>& FLuaScriptSubsystem::GetActiveModulePaths()
 	return ModulePaths;
 }
 
-sol::object FLuaScriptSubsystem::IncludeFile(const FString& Path, sol::this_state State)
+sol::object FLuaScriptSubsystem::IncludeFile(const FString& Path, sol::this_environment ThisEnv, sol::this_state State)
 {
 	sol::state_view LuaView(State);
+	sol::environment Environment = GetCallerEnvironment(ThisEnv);
 
 	const FString NormalizedPath = ResolveScriptPath(Path);
 	RecordIncludeDependency(NormalizedPath);
 
-	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath))
+	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr))
 	{
 		return sol::make_object(LuaView, false);
 	}
@@ -870,9 +966,10 @@ sol::object FLuaScriptSubsystem::IncludeFile(const FString& Path, sol::this_stat
 	return sol::make_object(LuaView, true);
 }
 
-sol::object FLuaScriptSubsystem::RequireModule(const FString& ModuleName, sol::this_state State)
+sol::object FLuaScriptSubsystem::RequireModule(const FString& ModuleName, sol::this_environment ThisEnv, sol::this_state State)
 {
 	sol::state_view LuaView(State);
+	sol::environment Environment = GetCallerEnvironment(ThisEnv);
 	sol::table Package = LuaView["package"];
 	sol::table Loaded = Package["loaded"];
 
@@ -887,7 +984,7 @@ sol::object FLuaScriptSubsystem::RequireModule(const FString& ModuleName, sol::t
 	TMap<FString, FString>& ActiveModulePaths = GetActiveModulePaths();
 	ActiveModulePaths[ModuleName] = NormalizedPath;
 
-	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath))
+	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr))
 	{
 		return sol::nil;
 	}

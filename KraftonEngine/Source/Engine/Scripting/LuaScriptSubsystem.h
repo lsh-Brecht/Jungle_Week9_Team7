@@ -35,6 +35,7 @@ public:
 	void CallComponentTick(ULuaScriptComponent* Component, float DeltaTime);
 	void CallComponentEndPlay(ULuaScriptComponent* Component);
 	void CallComponentOverlap(ULuaScriptComponent* Component, AActor* OtherActor);
+	bool IsComponentBound(uint32 ComponentUUID) const;
 
 private:
 	FLuaScriptSubsystem() = default;
@@ -48,6 +49,7 @@ private:
 	bool ExecuteFileInternal(const FString& Path, bool bTrackAsEntry);
 	bool ExecuteEntryScript(sol::state_view LuaView, const FString& NormalizedPath, TMap<FString, TSet<FString>>& OutScriptIncludes, TMap<FString, FString>& OutModulePaths);
 	bool ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath);
+	bool ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment);
 	bool CompileFile(sol::state_view LuaView, const FString& NormalizedPath);
 	bool ReloadScriptsAtomically(const TSet<FString>& ReloadTargets);
 
@@ -58,8 +60,8 @@ private:
 	void RebuildIncludeDependents();
 	TMap<FString, FString>& GetActiveModulePaths();
 
-	sol::object IncludeFile(const FString& Path, sol::this_state State);
-	sol::object RequireModule(const FString& ModuleName, sol::this_state State);
+	sol::object IncludeFile(const FString& Path, sol::this_environment ThisEnv, sol::this_state State);
+	sol::object RequireModule(const FString& ModuleName, sol::this_environment ThisEnv, sol::this_state State);
 
 	struct FLuaDependencyContext
 	{
@@ -78,10 +80,14 @@ private:
 		sol::function Tick;
 		sol::function EndPlay;
 		sol::function OnOverlap;
+		TSet<FString> ActiveCoroutineFunctions;
 	};
 
 	FLuaComponentBinding* FindComponentBinding(uint32 ComponentUUID);
 	const FLuaComponentBinding* FindComponentBinding(uint32 ComponentUUID) const;
+	void CancelAllComponentTasks();
+	bool TryBeginCoroutine(const FString& FunctionName, uint32 OwnerUUID);
+	void FinishCoroutine(const FString& FunctionName, uint32 OwnerUUID);
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID);
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, float DeltaTime);
 	void StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID, const FLuaGameObjectHandle& OtherActor);
