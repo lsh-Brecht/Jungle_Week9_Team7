@@ -8,6 +8,7 @@
 class UWorld;
 class USceneComponent;
 class UShapeComponent;
+class ULuaScriptComponent;
 
 class FLuaWorldLibrary
 {
@@ -39,6 +40,38 @@ public:
 			}
 		}
 		return nullptr;
+	}
+
+	template<typename TComponent>
+	static TArray<TComponent*> FindComponents(AActor* Actor)
+	{
+		TArray<TComponent*> Result;
+		if (!Actor)
+		{
+			return Result;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			if (TComponent* Typed = Cast<TComponent>(Component))
+			{
+				Result.push_back(Typed);
+			}
+		}
+		return Result;
+	}
+
+	template<typename TComponent>
+	static TComponent* FindComponentAt(AActor* Actor, int32 ComponentIndex)
+	{
+		if (ComponentIndex < 0)
+		{
+			return nullptr;
+		}
+
+		TArray<TComponent*> Components = FindComponents<TComponent>(Actor);
+		const size_t Index = static_cast<size_t>(ComponentIndex);
+		return Index < Components.size() ? Components[Index] : nullptr;
 	}
 
 	template<typename TComponent>
@@ -107,6 +140,9 @@ public:
 	static UStaticMeshComponent* GetOrAddStaticMeshComponent(AActor* Actor);
 
 	static UActorComponent* FindComponentByTypeName(AActor* Actor, const FString& TypeName);
+	static UActorComponent* FindComponentByTypeName(AActor* Actor, const FString& TypeName, int32 ComponentIndex);
+	static TArray<UActorComponent*> FindComponentsByTypeName(AActor* Actor, const FString& TypeName);
+	static ULuaScriptComponent* FindLuaScriptComponent(AActor* Actor, const FString& ScriptIdentifier);
 
 	static UActorComponent* GetOrAddComponentByTypeName(AActor* Actor, const FString& TypeName);
 

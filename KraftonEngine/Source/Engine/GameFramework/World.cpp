@@ -2,12 +2,33 @@
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Collision/PrimitiveCollision.h"
 #include "Engine/Component/CameraComponent.h"
 #include "Render/Types/LODContext.h"
+#include "Scripting/LuaScriptSubsystem.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
+
+namespace
+{
+	void DispatchLuaOverlap(AActor* Actor, AActor* OtherActor)
+	{
+		if (!Actor || !OtherActor)
+		{
+			return;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			if (ULuaScriptComponent* LuaScript = Cast<ULuaScriptComponent>(Component))
+			{
+				FLuaScriptSubsystem::Get().CallComponentOverlap(LuaScript, OtherActor);
+			}
+		}
+	}
+}
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -279,6 +300,8 @@ void UWorld::UpdateCollision()
 	TArray<FWorldCollisionBVH::FOverlapCandidatePair> PotentialPairs;
 	WorldCollisionBVH.GeneratePotentialPairs(PotentialPairs);
 
+	TSet<uint64> DispatchedActorPairs;
+	TArray<TPair<uint32, uint32>> ActorPairsToDispatch;
 	for (const FWorldCollisionBVH::FOverlapCandidatePair& Pair : PotentialPairs)
 	{
 		if (FPrimitiveCollision::Intersect(Pair.A, Pair.B))
@@ -291,7 +314,38 @@ void UWorld::UpdateCollision()
 			{
 				ShapeB->SetDebugShapeColor(FColor::Red());
 			}
+
+			AActor* ActorA = Pair.A ? Pair.A->GetOwner() : nullptr;
+			AActor* ActorB = Pair.B ? Pair.B->GetOwner() : nullptr;
+			if (ActorA && ActorB && ActorA != ActorB)
+			{
+				uint32 UUIDA = ActorA->GetUUID();
+				uint32 UUIDB = ActorB->GetUUID();
+				if (UUIDB < UUIDA)
+				{
+					std::swap(UUIDA, UUIDB);
+				}
+
+				const uint64 PairKey = (static_cast<uint64>(UUIDA) << 32) | UUIDB;
+				if (DispatchedActorPairs.insert(PairKey).second)
+				{
+					ActorPairsToDispatch.push_back({ UUIDA, UUIDB });
+				}
+			}
 		}
+	}
+
+	for (const auto& [UUIDA, UUIDB] : ActorPairsToDispatch)
+	{
+		AActor* ActorA = Cast<AActor>(UObjectManager::Get().FindByUUID(UUIDA));
+		AActor* ActorB = Cast<AActor>(UObjectManager::Get().FindByUUID(UUIDB));
+		if (!ActorA || !ActorB)
+		{
+			continue;
+		}
+
+		DispatchLuaOverlap(ActorA, ActorB);
+		DispatchLuaOverlap(ActorB, ActorA);
 	}
 }
 

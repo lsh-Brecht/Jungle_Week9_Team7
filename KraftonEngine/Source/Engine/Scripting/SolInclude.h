@@ -1,6 +1,14 @@
 ﻿// SolInclude.h
 #pragma once
 
+#ifndef SOL_ALL_SAFETIES_ON
+#define SOL_ALL_SAFETIES_ON 1
+#endif
+
+#ifndef SOL_LUAJIT
+#define SOL_LUAJIT 1
+#endif
+
 
 #ifdef check
 	#pragma push_macro("check")

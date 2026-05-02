@@ -38,6 +38,12 @@ namespace
 	struct FLuaAllowedComponentClass;
 
 	FString NormalizeLuaTypeName(FString Name);
+	FString NormalizeLuaScriptIdentifier(FString Value);
+	bool HasSuffix(const FString& Value, const FString& Suffix);
+	bool HasLuaExtension(const FString& Value);
+	FString GetPathBaseName(const FString& Value);
+	FString GetPathStem(const FString& Value);
+	bool LuaScriptMatchesIdentifier(const ULuaScriptComponent* Component, const FString& ScriptIdentifier);
 	bool IsAllowedLuaActorClassName(const FString& ClassName);
 	const FLuaAllowedComponentClass* FindAllowedLuaComponentClass(const FString& TypeName);
 }
@@ -398,6 +404,86 @@ namespace
 		return Name;
 	}
 
+	FString NormalizeLuaScriptIdentifier(FString Value)
+	{
+		std::replace(Value.begin(), Value.end(), '\\', '/');
+		std::transform(
+			Value.begin(),
+			Value.end(),
+			Value.begin(),
+			[](unsigned char C)
+			{
+				return static_cast<char>(std::tolower(C));
+			}
+		);
+
+		while (Value.rfind("./", 0) == 0)
+		{
+			Value.erase(0, 2);
+		}
+
+		return Value;
+	}
+
+	bool HasSuffix(const FString& Value, const FString& Suffix)
+	{
+		return Value.size() >= Suffix.size()
+			&& Value.compare(Value.size() - Suffix.size(), Suffix.size(), Suffix) == 0;
+	}
+
+	bool HasLuaExtension(const FString& Value)
+	{
+		return HasSuffix(Value, ".lua");
+	}
+
+	FString GetPathBaseName(const FString& Value)
+	{
+		const size_t Slash = Value.find_last_of('/');
+		return Slash == FString::npos ? Value : Value.substr(Slash + 1);
+	}
+
+	FString GetPathStem(const FString& Value)
+	{
+		FString BaseName = GetPathBaseName(Value);
+		const size_t Dot = BaseName.find_last_of('.');
+		return Dot == FString::npos ? BaseName : BaseName.substr(0, Dot);
+	}
+
+	bool LuaScriptMatchesIdentifier(const ULuaScriptComponent* Component, const FString& ScriptIdentifier)
+	{
+		if (!Component)
+		{
+			return false;
+		}
+
+		if (ScriptIdentifier.empty())
+		{
+			return true;
+		}
+
+		const FString ScriptPath = NormalizeLuaScriptIdentifier(Component->GetScriptPath());
+		FString Query = NormalizeLuaScriptIdentifier(ScriptIdentifier);
+		FString QueryWithExtension = Query;
+		if (!HasLuaExtension(QueryWithExtension))
+		{
+			QueryWithExtension += ".lua";
+		}
+
+		if (ScriptPath == Query || ScriptPath == QueryWithExtension)
+		{
+			return true;
+		}
+
+		if (HasSuffix(ScriptPath, "/" + Query) || HasSuffix(ScriptPath, "/" + QueryWithExtension))
+		{
+			return true;
+		}
+
+		return GetPathBaseName(ScriptPath) == Query
+			|| GetPathBaseName(ScriptPath) == QueryWithExtension
+			|| GetPathStem(ScriptPath) == Query;
+	}
+
 	bool IsAllowedLuaActorClassName(const FString& ClassName)
 	{
 		const FString NormalizedClassName = NormalizeLuaTypeName(ClassName);
@@ -458,16 +544,34 @@ namespace
 
 UActorComponent* FLuaWorldLibrary::FindComponentByTypeName(AActor* Actor, const FString& TypeName)
 {
-	if (!Actor)
+	return FindComponentByTypeName(Actor, TypeName, 0);
+}
+
+UActorComponent* FLuaWorldLibrary::FindComponentByTypeName(AActor* Actor, const FString& TypeName, int32 ComponentIndex)
+{
+	if (ComponentIndex < 0)
 	{
 		return nullptr;
+	}
+
+	TArray<UActorComponent*> Components = FindComponentsByTypeName(Actor, TypeName);
+	const size_t Index = static_cast<size_t>(ComponentIndex);
+	return Index < Components.size() ? Components[Index] : nullptr;
+}
+
+TArray<UActorComponent*> FLuaWorldLibrary::FindComponentsByTypeName(AActor* Actor, const FString& TypeName)
+{
+	TArray<UActorComponent*> Result;
+	if (!Actor)
+	{
+		return Result;
 	}
 
 	const FLuaAllowedComponentClass* AllowedClass = FindAllowedLuaComponentClass(TypeName);
 	if (!AllowedClass || !AllowedClass->Class)
 	{
 		UE_LOG("[LuaSecurity] FindComponent blocked: component type is not allowed from Lua. type = %s", TypeName.c_str());
-		return nullptr;
+		return Result;
 	}
 
 	UClass* TargetClass = AllowedClass->Class;
@@ -481,7 +585,26 @@ UActorComponent* FLuaWorldLibrary::FindComponentByTypeName(AActor* Actor, const 
 
 		if (Component->GetClass()->IsA(TargetClass))
 		{
-			return Component;
+			Result.push_back(Component);
+		}
+	}
+
+	return Result;
+}
+
+ULuaScriptComponent* FLuaWorldLibrary::FindLuaScriptComponent(AActor* Actor, const FString& ScriptIdentifier)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		ULuaScriptComponent* ScriptComponent = Cast<ULuaScriptComponent>(Component);
+		if (LuaScriptMatchesIdentifier(ScriptComponent, ScriptIdentifier))
+		{
+			return ScriptComponent;
 		}
 	}
 

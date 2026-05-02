@@ -1,8 +1,10 @@
 #include "Runtime/TaskScheduler.h"
 
+#include "Scripting/LuaScriptSubsystem.h"
+
 #include <algorithm>
 
-void FTaskScheduler::Schedule(float Delay, const std::function<void()>& Callback, uint32 OwnerUUID)
+void FTaskScheduler::Schedule(float Delay, const std::function<void()>& Callback, uint32 OwnerUUID, bool bRequiresLiveLuaBinding)
 {
 	if (!Callback)
 	{
@@ -12,6 +14,7 @@ void FTaskScheduler::Schedule(float Delay, const std::function<void()>& Callback
 	FDelayedTask Task;
 	Task.RemainingTime = (std::max)(Delay, 0.0f);
 	Task.OwnerUUID = OwnerUUID;
+	Task.bRequiresLiveLuaBinding = bRequiresLiveLuaBinding;
 	Task.OnExpired.Add(Callback, OwnerUUID);
 	Tasks.push_back(std::move(Task));
 }
@@ -41,6 +44,13 @@ void FTaskScheduler::Tick(float DeltaTime)
 
 	for (FDelayedTask& Task : ExpiredTasks)
 	{
+		if (Task.bRequiresLiveLuaBinding &&
+			Task.OwnerUUID != 0 &&
+			!FLuaScriptSubsystem::Get().IsComponentBound(Task.OwnerUUID))
+		{
+			continue;
+		}
+
 		Task.OnExpired.BroadCast();
 	}
 }
