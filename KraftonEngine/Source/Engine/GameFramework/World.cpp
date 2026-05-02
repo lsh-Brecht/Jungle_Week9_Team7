@@ -256,6 +256,18 @@ void UWorld::UpdateActorInOctree(AActor* Actor)
 
 void UWorld::UpdateCollision()
 {
+	for (AActor* Actor : GetActors())
+	{
+		if (!Actor) continue;
+		for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
+		{
+			if (UShapeComponent* ShapeComp = Cast<UShapeComponent>(Primitive))
+			{
+				ShapeComp->SetDebugShapeColor(FColor::Green());
+			}
+		}
+	}
+
 	WorldCollisionBVH.EnsureBuilt(GetActors());
 
 	TArray<FWorldCollisionBVH::FOverlapCandidatePair> PotentialPairs;
