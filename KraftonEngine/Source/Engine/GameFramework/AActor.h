@@ -3,6 +3,7 @@
 #include "Object/ObjectFactory.h"
 #include "Component/SceneComponent.h"
 #include "Core/TickFunction.h"
+#include "Runtime/Delegate.h"
 
 class FArchive;
 
@@ -91,6 +92,8 @@ public:
 	FActorTickFunction PrimaryActorTick;
 	
 	bool IsOverlappingActor(const AActor* Other) const;
+
+
 
 protected:
 	virtual void TickActor( float DeltaSeconds, ELevelTick TickType, FActorTickFunction& ThisTickFunction );

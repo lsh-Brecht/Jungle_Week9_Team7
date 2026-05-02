@@ -96,7 +96,6 @@ public:
 
 	static UClass StaticClassInstance;
 	static UClass* StaticClass() { return &StaticClassInstance; }
-
 protected:
 	FName ObjectName;
 

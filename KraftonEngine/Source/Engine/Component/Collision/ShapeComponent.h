@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Component/PrimitiveComponent.h"
-
+#include "Engine/Runtime/Delegate.h"
 class FScene;
 
 class UShapeComponent : public UPrimitiveComponent
@@ -15,6 +15,7 @@ public:
 
 	virtual void DrawDebugShape(FScene& Scene, const FColor& Color) const = 0;
 	void ContributeSelectedVisuals(FScene& Scene) const override;
+	TDelegate<> TestDelegate;
 
 protected:
 	FColor DebugShapeColor = FColor::Green(); //에디터 내에서 사용.

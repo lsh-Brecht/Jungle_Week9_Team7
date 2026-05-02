@@ -3,6 +3,7 @@
 #include "Engine/Runtime/Engine.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/TextRenderComponent.h"
+#include "Component/Collision/BoxComponent.h"
 #include "Component/SubUVComponent.h"
 
 IMPLEMENT_CLASS(AStaticMeshActor, AActor)
@@ -15,7 +16,13 @@ void AStaticMeshActor::InitDefaultComponents(const FString& UStaticMeshFileName)
 	ID3D11Device* Device = GEngine->GetRenderer().GetFD3DDevice().GetDevice();
 	UStaticMesh* Asset = FObjManager::LoadObjStaticMesh(UStaticMeshFileName, Device);
 
+
+
 	StaticMeshComponent->SetStaticMesh(Asset);
+	BoxComponent = AddComponent<UBoxComponent>();
+	BoxComponent->AttachToComponent(StaticMeshComponent);
+	//BoxComponent->TestDelegate.AddDynamic<UStaticMeshComponent>(StaticMeshComponent, &UStaticMeshComponent::ThreeTimesScale);
+	//StaticMeshComponent->DelegateSubscriptionBox.Subscribe(BoxComponent->TestDelegate, StaticMeshComponent, &UStaticMeshComponent::ThreeTimesScale, BoxComponent );
 
 	// UUID 텍스트 표시
 	//TextRenderComponent = AddComponent<UTextRenderComponent>();

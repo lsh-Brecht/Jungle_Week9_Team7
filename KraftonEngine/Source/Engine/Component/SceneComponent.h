@@ -69,6 +69,12 @@ public:
 	void MoveLocal(const FVector& Delta);
 	void Rotate(float DeltaYaw, float DeltaPitch);
 
+
+	//delegate test code
+	//void ThreeTimesScale() {
+	//	SetRelativeScale(FVector(3, 3, 3));
+	//}
+
 protected:
 	USceneComponent* ParentComponent = nullptr;
 	TArray<USceneComponent*> ChildComponents;

@@ -4,6 +4,7 @@
 #include "Core/PropertyTypes.h"
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
+#include "../Engine/Runtime/DelegateSubscriptionBox.h"
 
 class UMaterial;
 class FPrimitiveSceneProxy;
@@ -17,7 +18,7 @@ public:
 	DECLARE_CLASS(UStaticMeshComponent, UMeshComponent)
 
 	UStaticMeshComponent() = default;
-	~UStaticMeshComponent() override = default;
+	~UStaticMeshComponent() override;
 
 	FMeshBuffer* GetMeshBuffer() const override;
 	FMeshDataView GetMeshDataView() const override;
@@ -41,8 +42,9 @@ public:
 	// Property Editor 지원
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override;
-
 	const FString& GetStaticMeshPath() const { return StaticMeshPath; }
+	/*FDelegateSubscriptionBox DelegateSubscriptionBox; 
+	void ThreeTimesScale();*/
 
 private:
 	void CacheLocalBounds();

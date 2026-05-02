@@ -102,6 +102,10 @@ UMaterial* UStaticMeshComponent::GetMaterial(int32 ElementIndex) const
 	return nullptr;
 }
 
+UStaticMeshComponent::~UStaticMeshComponent()
+{
+}
+
 FMeshBuffer* UStaticMeshComponent::GetMeshBuffer() const
 {
 	if (!StaticMesh) return nullptr;
@@ -318,3 +322,9 @@ void UStaticMeshComponent::PostEditProperty(const char* PropertyName)
 		}
 	}
 }
+
+
+//void UStaticMeshComponent::ThreeTimesScale()
+//{
+//	USceneComponent::ThreeTimesScale();
+//}

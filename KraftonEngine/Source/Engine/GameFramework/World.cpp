@@ -253,6 +253,8 @@ void UWorld::UpdateCollision()
 				// 충돌 발생 시 처리!
 				AllCollisionComponents[i]->SetDebugShapeColor(FColor::Red());
 				AllCollisionComponents[j]->SetDebugShapeColor(FColor::Red());
+				AllCollisionComponents[i]->TestDelegate.BroadCast();
+				AllCollisionComponents[j]->TestDelegate.BroadCast();
 			}
 		}
 	}

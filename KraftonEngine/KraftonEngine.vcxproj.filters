@@ -1550,11 +1550,13 @@
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Runtime\DelegateSubscriptionBox.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VcpkgLua.props" />
+    <None Include="LuaScripts\template.lua" />
   </ItemGroup>
 </Project>
