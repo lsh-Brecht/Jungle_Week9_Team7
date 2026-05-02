@@ -238,6 +238,9 @@ void FEditorRenderPipeline::CollectCommands(FLevelEditorViewportClient* VC, UWor
 		if (Flags.bPickingBVH)
 			Collector.CollectPickingBVHDebug(World, Scene);
 
+		if (Flags.bCollisionBVH)
+			Collector.CollectCollisionBVHDebug(World, Scene);
+
 		Collector.CollectDebugDraw(Frame, Scene);
 	}
 

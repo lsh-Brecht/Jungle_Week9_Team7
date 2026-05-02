@@ -483,6 +483,7 @@
     <ClInclude Include="Source\Engine\Collision\SpatialPartition.h" />
     <ClInclude Include="Source\Engine\Collision\WorldCollisionBVH.h" />
     <ClInclude Include="Source\Engine\Collision\WorldPrimitivePickingBVH.h" />
+    <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h" />
     <ClInclude Include="Source\Engine\Component\ActorComponent.h" />
     <ClInclude Include="Source\Engine\Component\BillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\CameraComponent.h" />

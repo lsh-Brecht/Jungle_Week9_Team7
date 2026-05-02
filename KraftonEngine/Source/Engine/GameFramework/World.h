@@ -51,6 +51,7 @@ public:
 	void RemoveWorldCollisionBVH(UPrimitiveComponent* Primitive);
 	void UpdateWorldCollisionBVH(UPrimitiveComponent* Primitive);
 	void BuildWorldCollisionBVHNow() const;
+	void CollectWorldCollisionBVHDebugAABBs(TArray<FWorldCollisionBVH::FDebugAABB>& OutAABBs) const;
 	void BeginDeferredPickingBVHUpdate();
 	void EndDeferredPickingBVHUpdate();
 	void WarmupPickingData() const;

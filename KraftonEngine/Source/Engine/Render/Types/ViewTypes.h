@@ -34,6 +34,7 @@ struct FShowFlags
 	bool bDebugDraw = true;
 	bool bOctree = false;
 	bool bPickingBVH = false;
+	bool bCollisionBVH = false;
 	bool bFog = true;
 	bool bFXAA = false;
 	bool bViewLightCulling = false;

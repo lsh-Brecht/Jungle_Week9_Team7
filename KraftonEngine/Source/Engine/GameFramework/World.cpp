@@ -184,6 +184,12 @@ void UWorld::BuildWorldCollisionBVHNow() const
 	WorldCollisionBVH.BuildNow(GetActors());
 }
 
+void UWorld::CollectWorldCollisionBVHDebugAABBs(TArray<FWorldCollisionBVH::FDebugAABB>& OutAABBs) const
+{
+	WorldCollisionBVH.EnsureBuilt(GetActors());
+	WorldCollisionBVH.CollectDebugAABBs(OutAABBs);
+}
+
 void UWorld::BeginDeferredPickingBVHUpdate()
 {
 	++DeferredPickingBVHUpdateDepth;

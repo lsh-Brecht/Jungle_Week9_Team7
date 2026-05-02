@@ -26,6 +26,7 @@ public:
 	void CollectCollisionShapeDebug(UWorld* World, FScene& Scene);
 	void CollectOctreeDebug(const FOctree* Node, FScene& Scene, uint32 Depth = 0);
 	void CollectPickingBVHDebug(UWorld* World, FScene& Scene);
+	void CollectCollisionBVHDebug(UWorld* World, FScene& Scene);
 
 private:
 	void FilterVisibleProxies(const FFrameContext& Frame, FScene& Scene, FCollectOutput& Output);

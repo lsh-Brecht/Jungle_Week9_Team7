@@ -131,6 +131,19 @@ void FRenderCollector::CollectPickingBVHDebug(UWorld* World, FScene& Scene)
 	}
 }
 
+void FRenderCollector::CollectCollisionBVHDebug(UWorld* World, FScene& Scene)
+{
+	if (!World) return;
+
+	TArray<FWorldCollisionBVH::FDebugAABB> DebugAABBs;
+	World->CollectWorldCollisionBVHDebugAABBs(DebugAABBs);
+
+	for (const FWorldCollisionBVH::FDebugAABB& DebugAABB : DebugAABBs)
+	{
+		Scene.AddDebugAABB(DebugAABB.Min, DebugAABB.Max, DebugAABB.Color);
+	}
+}
+
 void FRenderCollector::CollectCollisionShapeDebug(UWorld* World, FScene& Scene)
 {
 	if (!World) return;

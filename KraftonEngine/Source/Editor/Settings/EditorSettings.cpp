@@ -30,6 +30,7 @@ namespace Key
 	constexpr const char* bDebugDraw = "bDebugDraw";
 	constexpr const char* bOctree = "bOctree";
 	constexpr const char* bPickingBVH = "bPickingBVH";
+	constexpr const char* bCollisionBVH = "bCollisionBVH";
 	constexpr const char* bFog = "bFog";
 	constexpr const char* bShowShadowFrustum = "bShowShadowFrustum";
 	constexpr const char* GridSpacing = "GridSpacing";
