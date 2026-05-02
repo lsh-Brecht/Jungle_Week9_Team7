@@ -1017,10 +1017,14 @@ void FLevelViewportLayout::RenderViewportUI(float DeltaTime)
 	if (ContentSize.x > 0 && ContentSize.y > 0)
 	{
 		// 상단에 Play/Stop 툴바 영역 확보 후 나머지를 뷰포트에 할당
-		const float ToolbarHeight = PlayToolbar.GetDesiredHeight();
-		ImGui::SetCursorScreenPos(ContentPos);
-		PlayToolbar.Render(ContentSize.x);
-		RenderSharedGizmoToolbar(ContentPos.x, ContentPos.y);
+		float ToolbarHeight = 0.0f;
+		if (!Editor->IsPIEPossessedMode())
+		{
+			ToolbarHeight = PlayToolbar.GetDesiredHeight();
+			ImGui::SetCursorScreenPos(ContentPos);
+			PlayToolbar.Render(ContentSize.x);
+			RenderSharedGizmoToolbar(ContentPos.x, ContentPos.y);
+		}
 
 		FRect ContentRect = {
 			ContentPos.x,
@@ -1060,14 +1064,17 @@ void FLevelViewportLayout::RenderViewportUI(float DeltaTime)
 		}
 
 		// 각 뷰포트 패인 상단에 툴바 오버레이 렌더
-		for (int32 i = 0; i < ActiveSlotCount; ++i)
+		if (!Editor->IsPIEPossessedMode())
 		{
-			const bool bShowPaneToolbar =
-				IsSlotVisibleEnough(i) &&
-				(LayoutTransition == EViewportLayoutTransition::None || i == TransitionSourceSlot);
-			if (bShowPaneToolbar)
+			for (int32 i = 0; i < ActiveSlotCount; ++i)
 			{
-				RenderPaneToolbar(i);
+				const bool bShowPaneToolbar =
+					IsSlotVisibleEnough(i) &&
+					(LayoutTransition == EViewportLayoutTransition::None || i == TransitionSourceSlot);
+				if (bShowPaneToolbar)
+				{
+					RenderPaneToolbar(i);
+				}
 			}
 		}
 
@@ -1150,21 +1157,24 @@ void FLevelViewportLayout::RenderViewportUI(float DeltaTime)
 			}
 
 			// 활성 뷰포트 전환 (분할 바 드래그 중이 아닐 때)
-			if (!DraggingSplitter && (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)))
+			if (!Editor->IsPIEPossessedMode())
 			{
-				for (int32 i = 0; i < ActiveSlotCount; ++i)
+				if (!DraggingSplitter && (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)))
 				{
-					if (i < static_cast<int32>(LevelViewportClients.size()) &&
-						IsSlotVisibleEnough(i) && ViewportWindows[i]->IsHover(MP))
+					for (int32 i = 0; i < ActiveSlotCount; ++i)
 					{
-						if (LevelViewportClients[i] != ActiveViewportClient)
-							SetActiveViewport(LevelViewportClients[i]);
-						break;
+						if (i < static_cast<int32>(LevelViewportClients.size()) &&
+							IsSlotVisibleEnough(i) && ViewportWindows[i]->IsHover(MP))
+						{
+							if (LevelViewportClients[i] != ActiveViewportClient)
+								SetActiveViewport(LevelViewportClients[i]);
+							break;
+						}
 					}
 				}
-			}
 
-			HandleViewportContextMenuInput(MP);
+				HandleViewportContextMenuInput(MP);
+			}
 		}
 	}
 
