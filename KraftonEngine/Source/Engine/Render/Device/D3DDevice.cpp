@@ -121,6 +121,26 @@ void FD3DDevice::CreateDeviceAndSwapChain(HWND InHWindow)
 		}
 	}
 
+	// DXGI의 Alt+Enter 자동 독점전체화면 전환 차단
+	{
+		IDXGIDevice* DXGIDevice2 = nullptr;
+		IDXGIAdapter* Adapter = nullptr;
+		IDXGIFactory1* AssocFactory = nullptr;
+		if (SUCCEEDED(Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&DXGIDevice2)))
+		{
+			if (SUCCEEDED(DXGIDevice2->GetAdapter(&Adapter)))
+			{
+				if (SUCCEEDED(Adapter->GetParent(__uuidof(IDXGIFactory1), (void**)&AssocFactory)))
+				{
+					AssocFactory->MakeWindowAssociation(InHWindow, DXGI_MWA_NO_ALT_ENTER);
+					AssocFactory->Release();
+				}
+				Adapter->Release();
+			}
+			DXGIDevice2->Release();
+		}
+	}
+
 	if (Factory5) Factory5->Release();
 
 	SwapChain->GetDesc(&swapChainDesc);

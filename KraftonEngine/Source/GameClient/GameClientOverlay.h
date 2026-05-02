@@ -22,6 +22,7 @@ private:
 
 private:
 	UGameClientEngine* Engine = nullptr;
+	FWindowsWindow* Window = nullptr;
 	bool bInitialized = false;
 	bool bShowingOptions = false;
 };

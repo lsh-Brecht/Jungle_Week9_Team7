@@ -244,6 +244,15 @@ void FEditorMainPanel::RenderMainMenuBar()
 		bShowShortcutOverlay = !bShowShortcutOverlay;
 	}
 
+	const bool bFullscreen = Window && Window->IsFullscreen();
+	if (ImGui::MenuItem(bFullscreen ? "Windowed" : "Fullscreen", "Alt+Enter"))
+	{
+		if (Window)
+		{
+			Window->ToggleFullscreen();
+		}
+	}
+
 	ImGui::EndMainMenuBar();
 }
 

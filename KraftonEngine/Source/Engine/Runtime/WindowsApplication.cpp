@@ -90,6 +90,13 @@ LRESULT FWindowsApplication::WndProc(HWND hWnd, unsigned int Msg, WPARAM wParam,
 			OnSizingCallback();
 		}
 		return 0;
+	case WM_SYSKEYDOWN:
+		if (wParam == VK_RETURN)
+		{
+			Window.ToggleFullscreen();
+			return 0;
+		}
+		break;
 	default:
 		break;
 	}
@@ -162,3 +169,4 @@ void FWindowsApplication::Destroy()
 		DestroyWindow(Window.GetHWND());
 	}
 }
+

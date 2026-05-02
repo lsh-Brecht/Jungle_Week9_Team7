@@ -117,6 +117,7 @@ bool FGameClientOverlay::Initialize(
 	}
 
 	Engine = InEngine;
+	this->Window = Window;
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -270,7 +271,7 @@ void FGameClientOverlay::DrawPauseMenu()
 		ViewportMax,
 		IM_COL32(0, 0, 0, 145));
 
-	const ImVec2 MenuSize = bShowingOptions ? ImVec2(320.0f, 180.0f) : ImVec2(320.0f, 292.0f);
+	const ImVec2 MenuSize = bShowingOptions ? ImVec2(320.0f, 216.0f) : ImVec2(320.0f, 292.0f);
 	const ImVec2 MenuCenter(
 		MainViewport->Pos.x + MainViewport->Size.x * 0.5f,
 		MainViewport->Pos.y + MainViewport->Size.y * 0.5f);
@@ -355,6 +356,17 @@ void FGameClientOverlay::DrawPauseOptionsMenu()
 	ImGui::Dummy(ImVec2(0.0f, 4.0f));
 
 	ImGui::Checkbox("FXAA", &Options.ShowFlags.bFXAA);
+
+	const bool bFullscreen = Window && Window->IsFullscreen();
+	const char* FullscreenLabel = bFullscreen ? "전체화면 해제" : "전체화면";
+	ImGui::Dummy(ImVec2(0.0f, 4.0f));
+	if (DrawMenuButton(FullscreenLabel, 220.0f, 38.0f))
+	{
+		if (Window)
+		{
+			Window->ToggleFullscreen();
+		}
+	}
 
 	ImGui::Dummy(ImVec2(0.0f, 8.0f));
 	if (DrawMenuButton(BackLabel, 180.0f, 34.0f))
