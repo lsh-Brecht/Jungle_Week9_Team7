@@ -1,9 +1,7 @@
 ﻿#include "CapsuleComponent.h"
 #include "Math/MathUtils.h"
 #include "Render/Scene/FScene.h"
-#include <algorithm>
-#include <cmath>
-#include <cstring>
+#include "Serialization/Archive.h"
 
 IMPLEMENT_CLASS(UCapsuleComponent, UShapeComponent)
 
@@ -122,6 +120,13 @@ void UCapsuleComponent::PostEditProperty(const char* PropertyName)
 	{
 		MarkWorldBoundsDirty();
 	}
+}
+
+void UCapsuleComponent::Serialize(FArchive& Ar)
+{
+	UShapeComponent::Serialize(Ar);
+	Ar << CapsuleHalfHeight;
+	Ar << CapsuleRadius;
 }
 
 void UCapsuleComponent::DrawDebugShape(FScene& Scene, const FColor& Color) const

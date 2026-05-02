@@ -16,6 +16,7 @@ public:
 	void DrawDebugShape(FScene& Scene, const FColor& Color) const override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override;
+	void Serialize(FArchive& Ar) override;
 
 	const FVector& GetBoxExtent() const { return BoxExtent; }
 	void SetBoxExtent(const FVector& InExtent)
