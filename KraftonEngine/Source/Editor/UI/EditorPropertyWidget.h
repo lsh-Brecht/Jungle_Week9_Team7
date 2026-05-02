@@ -24,6 +24,7 @@ private:
 	void PropagatePropertyChange(const FString& PropName, const TArray<AActor*>& SelectedActors);
 
 	static FString OpenObjFileDialog();
+	static FString OpenLuaScriptFileDialog();
 
 	UActorComponent* SelectedComponent = nullptr;
 	AActor* LastSelectedActor = nullptr;

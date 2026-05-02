@@ -67,6 +67,9 @@
     <Filter Include="Source\Engine\Component\Movement">
       <UniqueIdentifier>{9d062af4-b676-61f1-319e-efb1ba670c12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Component\Script">
+      <UniqueIdentifier>{38c20658-443a-467c-b9f3-b2551a4124bd}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Engine\Core">
       <UniqueIdentifier>{aaeb2f3f-eff4-9d0e-a471-82c1372b9aed}</UniqueIdentifier>
     </Filter>
@@ -377,6 +380,9 @@
     <ClCompile Include="Source\Engine\Collision\SpatialPartition.cpp">
       <Filter>Source\Engine\Collision</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Collision\WorldCollisionBVH.cpp">
+      <Filter>Source\Engine\Collision</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Collision\WorldPrimitivePickingBVH.cpp">
       <Filter>Source\Engine\Collision</Filter>
     </ClCompile>
@@ -411,6 +417,9 @@
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\HeightFogComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\HopMovementComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\Light\AmbientLightComponent.cpp">
@@ -451,6 +460,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp">
+      <Filter>Source\Engine\Component\Script</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
@@ -773,6 +785,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaDelegateBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -783,6 +798,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp">
@@ -968,6 +986,9 @@
     <ClInclude Include="Source\Engine\Collision\SpatialPartition.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Collision\WorldCollisionBVH.h">
+      <Filter>Source\Engine\Collision</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Collision\WorldPrimitivePickingBVH.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
@@ -1005,6 +1026,9 @@
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\HeightFogComponent.h">
+      <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\HopMovementComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Light\AmbientLightComponent.h">
@@ -1045,6 +1069,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
       <Filter>Source\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h">
+      <Filter>Source\Engine\Component\Script</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\SceneComponent.h">
       <Filter>Source\Engine\Component</Filter>
@@ -1467,6 +1494,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Scripting\LuaHandles.h">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Scripting\LuaPropertyBridge.h">
       <Filter>Source\Engine\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Scripting\LuaScriptSubsystem.h">

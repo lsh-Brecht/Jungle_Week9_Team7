@@ -356,7 +356,7 @@ def generate_vcxproj(files: dict[str, list[str]]):
         ET.SubElement(cl, "PreprocessorDefinitions").text = ";".join(base_defs)
 
         ET.SubElement(cl, "ConformanceMode").text = "true"
-        ET.SubElement(cl, "AdditionalOptions").text = "/utf-8 %(AdditionalOptions)"
+        ET.SubElement(cl, "AdditionalOptions").text = "/bigobj /utf-8 %(AdditionalOptions)"
         ET.SubElement(cl, "ExceptionHandling").text = "Async"
         ET.SubElement(cl, "MultiProcessorCompilation").text = "true"
 

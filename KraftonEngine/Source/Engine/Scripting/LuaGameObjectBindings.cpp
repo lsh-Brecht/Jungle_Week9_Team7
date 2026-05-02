@@ -1,4 +1,4 @@
-﻿// LuaGameObjectBindings.cpp
+// LuaGameObjectBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -15,6 +15,8 @@
 #include "GameFramework/AActor.h"
 
 #include "Component/StaticMeshComponent.h"
+#include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
@@ -25,6 +27,31 @@
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/InterpToMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
+#include "Component/HopMovementComponent.h"
+
+#ifndef LUA_ENABLE_DEBUG_UUID_LOOKUP
+#define LUA_ENABLE_DEBUG_UUID_LOOKUP 0
+#endif
+
+namespace
+{
+	uint32 GetOwnerUUIDFromEnvironment(sol::this_environment ThisEnv)
+	{
+		sol::environment Env = ThisEnv;
+		if (!Env.valid())
+		{
+			return 0;
+		}
+
+		sol::object OwnerUUID = Env["_ownerUUID"];
+		if (!OwnerUUID.valid() || OwnerUUID.get_type() != sol::type::number)
+		{
+			return 0;
+		}
+
+		return OwnerUUID.as<uint32>();
+	}
+}
 
 // Lua에 GameObject를 등록
 // Handle을 통해 UUID로만 접근 가능
@@ -100,6 +127,25 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			}
 		),
 
+		"Visible",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				AActor* Actor = Self.Resolve();
+				return Actor ? Actor->IsVisible() : false;
+			},
+			[](const FLuaGameObjectHandle& Self, bool bVisible)
+			{
+				AActor* Actor = Self.Resolve();
+				if (!Actor)
+				{
+					UE_LOG("[Lua] Invalid GameObject.Visible Access.");
+					return;
+				}
+				Actor->SetVisible(bVisible);
+			}
+		),
+
 		"Destroy",
 		[](const FLuaGameObjectHandle& Self)
 		{
@@ -113,6 +159,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 
 			return FLuaWorldLibrary::DestroyActor(Actor);
 		},
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"LuaScript",
+			FLuaScriptComponentHandle,
+			ULuaScriptComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddLuaScript",
+			FLuaScriptComponentHandle,
+			ULuaScriptComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveLuaScript",
+			ULuaScriptComponent
+		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
 			"Shape",
@@ -144,6 +207,12 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			URotatingMovementComponent
 		),
 
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"HopMovement",
+			FLuaHopMovementComponentHandle,
+			UHopMovementComponent
+		),
+
 		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
 			"GetOrAddProjectileMovement",
 			FLuaProjectileMovementComponentHandle,
@@ -168,6 +237,12 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			URotatingMovementComponent
 		),
 
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddHopMovement",
+			FLuaHopMovementComponentHandle,
+			UHopMovementComponent
+		),
+
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveProjectileMovement",
 			UProjectileMovementComponent
@@ -186,6 +261,11 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveRotatingMovement",
 			URotatingMovementComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveHopMovement",
+			UHopMovementComponent
 		),
 
 		LUA_GAMEOBJECT_SET_SHAPE_METHOD(
@@ -293,6 +373,89 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			);
 		},
 
+		"GetComponent",
+		[](const FLuaGameObjectHandle& Self, const FString& TypeName)
+		{
+			FLuaActorComponentHandle Handle;
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.GetComponent Call.");
+				return Handle;
+			}
+
+			UActorComponent* Component = FLuaWorldLibrary::FindComponentByTypeName(Actor, TypeName);
+			if (Component)
+			{
+				Handle.UUID = Component->GetUUID();
+			}
+
+			return Handle;
+		},
+
+		"GetOrAddComponent",
+		[](const FLuaGameObjectHandle& Self, const FString& TypeName)
+		{
+			FLuaActorComponentHandle Handle;
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.GetOrAddComponent Call.");
+				return Handle;
+			}
+
+			UActorComponent* Component = FLuaWorldLibrary::GetOrAddComponentByTypeName(Actor, TypeName);
+			if (Component)
+			{
+				Handle.UUID = Component->GetUUID();
+			}
+
+			return Handle;
+		},
+
+		"RemoveComponent",
+		[](const FLuaGameObjectHandle& Self, const FString& TypeName)
+		{
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.RemoveComponent Call.");
+				return false;
+			}
+
+			return FLuaWorldLibrary::RemoveComponentByTypeName(Actor, TypeName);
+		},
+
+		"ListComponents",
+		[](const FLuaGameObjectHandle& Self, sol::this_state State)
+		{
+			sol::state_view LuaView(State);
+			sol::table Result = LuaView.create_table();
+
+			AActor* Actor = Self.Resolve();
+			if (!Actor)
+			{
+				return Result;
+			}
+
+			int LuaIndex = 1;
+			for (UActorComponent* Component : Actor->GetComponents())
+			{
+				if (!Component)
+				{
+					continue;
+				}
+
+				FLuaActorComponentHandle Handle;
+				Handle.UUID = Component->GetUUID();
+				Result[LuaIndex++] = Handle;
+			}
+
+			return Result;
+		},
+
 		"RemoveShape",
 		[](const FLuaGameObjectHandle& Self)
 		{
@@ -330,11 +493,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		}
 	);
 
+#if LUA_ENABLE_DEBUG_UUID_LOOKUP
 	Lua.set_function(
 		"FindGameObjectByUUID",
-		[](uint32 UUID, sol::this_state State) -> sol::object
+		[](uint32 UUID, sol::this_environment ThisEnv, sol::this_state State) -> sol::object
 		{
 			sol::state_view LuaView(State);
+
+			const uint32 OwnerUUID = GetOwnerUUIDFromEnvironment(ThisEnv);
+			if (OwnerUUID == 0 || OwnerUUID != UUID)
+			{
+				UE_LOG(
+					"[LuaSecurity] FindGameObjectByUUID blocked. UUID=%u OwnerUUID=%u",
+					UUID,
+					OwnerUUID
+				);
+				return sol::nil;
+			}
 
 			UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 			AActor* Actor = Cast<AActor>(Object);
@@ -350,4 +525,5 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			return sol::make_object(LuaView, Handle);
 		}
 	);
+#endif
 }

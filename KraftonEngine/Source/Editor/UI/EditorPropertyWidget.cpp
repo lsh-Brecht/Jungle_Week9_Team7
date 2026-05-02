@@ -1,6 +1,7 @@
 ﻿#include "Editor/UI/EditorPropertyWidget.h"
 
 #include "Editor/EditorEngine.h"
+#include "Editor/UI/EditorFileUtils.h"
 
 #include "ImGui/imgui.h"
 #include "Component/ActorComponent.h"
@@ -32,6 +33,7 @@
 #include <array>
 #include <cfloat>
 #include <cstring>
+#include <cwctype>
 #include <filesystem>
 
 #include "Materials/MaterialManager.h"
@@ -89,6 +91,51 @@ namespace
 
 		return nullptr;
 	}
+
+	bool IsPathInsideDirectory(const std::filesystem::path& AbsolutePath, const std::filesystem::path& Directory)
+	{
+		const std::filesystem::path RelativePath = AbsolutePath.lexically_relative(Directory);
+		if (RelativePath.empty() || RelativePath.is_absolute())
+		{
+			return false;
+		}
+
+		for (const std::filesystem::path& Part : RelativePath)
+		{
+			if (Part == L"..")
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	FString MakeLuaScriptPropertyPath(const std::filesystem::path& AbsolutePath)
+	{
+		const std::filesystem::path ScriptDir = std::filesystem::path(FPaths::ScriptDir()).lexically_normal();
+		const std::filesystem::path RootDir = std::filesystem::path(FPaths::RootDir()).lexically_normal();
+
+		if (IsPathInsideDirectory(AbsolutePath, ScriptDir))
+		{
+			return FPaths::ToUtf8(AbsolutePath.lexically_relative(ScriptDir).generic_wstring());
+		}
+
+		if (IsPathInsideDirectory(AbsolutePath, RootDir))
+		{
+			return FPaths::ToUtf8(AbsolutePath.lexically_relative(RootDir).generic_wstring());
+		}
+
+		return FPaths::ToUtf8(AbsolutePath.generic_wstring());
+	}
+
+	bool IsLuaScriptFile(const std::filesystem::path& Path)
+	{
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(),
+			[](wchar_t Ch) { return static_cast<wchar_t>(std::towlower(Ch)); });
+		return Extension == L".lua";
+	}
 }
 
 static FString RemoveExtension(const FString& Path)
@@ -136,6 +183,34 @@ FString FEditorPropertyWidget::OpenObjFileDialog()
 	}
 
 	return FString();
+}
+
+FString FEditorPropertyWidget::OpenLuaScriptFileDialog()
+{
+	const std::wstring ScriptDirectory = FPaths::ScriptDir();
+	FPaths::CreateDir(ScriptDirectory);
+
+	FEditorFileDialogOptions Options;
+	Options.Filter = L"Lua Scripts (*.lua)\0*.lua\0";
+	Options.Title = L"Select Lua Script";
+	Options.DefaultExtension = L"lua";
+	Options.InitialDirectory = ScriptDirectory.c_str();
+	Options.bFileMustExist = true;
+	Options.bPathMustExist = true;
+
+	const FString SelectedPath = FEditorFileUtils::OpenFileDialog(Options);
+	if (SelectedPath.empty())
+	{
+		return FString();
+	}
+
+	const std::filesystem::path AbsolutePath = std::filesystem::path(FPaths::ToWide(SelectedPath)).lexically_normal();
+	if (!IsLuaScriptFile(AbsolutePath))
+	{
+		return FString();
+	}
+
+	return MakeLuaScriptPropertyPath(AbsolutePath);
 }
 
 void FEditorPropertyWidget::Render(float DeltaTime)
@@ -957,12 +1032,51 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 	case EPropertyType::String:
 	{
 		FString* Val = static_cast<FString*>(Prop.ValuePtr);
-		char Buf[256];
-		strncpy_s(Buf, sizeof(Buf), Val->c_str(), _TRUNCATE);
-		if (ImGui::InputText(Prop.Name.c_str(), Buf, sizeof(Buf)))
+		if (Prop.Name == "ScriptPath")
 		{
-			*Val = Buf;
-			bChanged = true;
+			ImGui::Text("%s", Prop.Name.c_str());
+			ImGui::SameLine(120);
+
+			const float ButtonWidth = ImGui::CalcTextSize("...").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			const float ClearWidth = ImGui::CalcTextSize("Clear").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			const float Spacing = ImGui::GetStyle().ItemSpacing.x;
+			ImGui::SetNextItemWidth(-(ButtonWidth + ClearWidth + Spacing * 2.0f));
+
+			char Buf[512];
+			strncpy_s(Buf, sizeof(Buf), Val->c_str(), _TRUNCATE);
+			ImGui::InputText("##ScriptPath", Buf, sizeof(Buf), ImGuiInputTextFlags_ReadOnly);
+
+			ImGui::SameLine();
+			if (ImGui::Button("..."))
+			{
+				FString LuaPath = OpenLuaScriptFileDialog();
+				if (!LuaPath.empty())
+				{
+					*Val = LuaPath;
+					bChanged = true;
+				}
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Select .lua file");
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				Val->clear();
+				bChanged = true;
+			}
+		}
+		else
+		{
+			char Buf[256];
+			strncpy_s(Buf, sizeof(Buf), Val->c_str(), _TRUNCATE);
+			if (ImGui::InputText(Prop.Name.c_str(), Buf, sizeof(Buf)))
+			{
+				*Val = Buf;
+				bChanged = true;
+			}
 		}
 		break;
 	}

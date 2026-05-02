@@ -1,4 +1,4 @@
-﻿#include "LuaScriptSubsystem.h"
+#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -6,6 +6,7 @@
 #include "Core/Notification.h"
 #include "Platform/Paths.h"
 #include "Platform/DirectoryWatcher.h"
+#include "Component/Script/LuaScriptComponent.h"
 #include "GameFramework/AActor.h"
 #include "Object/Object.h"
 #include "Runtime/Engine.h"
@@ -66,6 +67,38 @@ namespace
 		Handle.UUID = Actor->GetUUID();
 		Environment[Name] = Handle;
 	}
+
+	void AssignScriptComponentHandle(sol::environment& Environment, const char* Name, const ULuaScriptComponent* Component)
+	{
+		if (!Component)
+		{
+			Environment[Name] = sol::nil;
+			return;
+		}
+
+		FLuaScriptComponentHandle Handle;
+		Handle.UUID = Component->GetUUID();
+		Environment[Name] = Handle;
+	}
+
+	void AssignComponentBindingHandles(sol::environment& Environment, const ULuaScriptComponent* Component)
+	{
+		AssignScriptComponentHandle(Environment, "self", Component);
+
+		const AActor* Owner = Component ? Component->GetOwner() : nullptr;
+		AssignGameObjectHandle(Environment, "owner", Owner);
+		AssignGameObjectHandle(Environment, "obj", Owner);
+		if (Owner)
+		{
+			Environment["_ownerUUID"] = Owner->GetUUID();
+			Environment["_accessLevel"] = "ActorLocal";
+		}
+		else
+		{
+			Environment["_ownerUUID"] = 0;
+			Environment["_accessLevel"] = sol::nil;
+		}
+	}
 }
 
 void FLuaScriptSubsystem::Initialize()
@@ -110,12 +143,13 @@ void FLuaScriptSubsystem::Shutdown()
 	DependencyContextStack.clear();
 	if (GEngine)
 	{
-		for (const auto& [ActorUUID, Binding] : ActorBindings)
+		for (const auto& [ComponentUUID, Binding] : ComponentBindings)
 		{
-			GEngine->GetTaskScheduler().CancelTasks(ActorUUID);
+			(void)Binding;
+			GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
 		}
 	}
-	ActorBindings.clear();
+	ComponentBindings.clear();
 	bInitialized = false;
 	UE_LOG("[Lua] Lua Scripting Shutdown.");
 }
@@ -146,9 +180,9 @@ bool FLuaScriptSubsystem::ExecuteFile(const FString& Path)
 	return ExecuteFileInternal(Path, true);
 }
 
-bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
+bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FString& ScriptPath)
 {
-	if (!bInitialized || !Actor)
+	if (!bInitialized || !Component)
 	{
 		return false;
 	}
@@ -163,7 +197,7 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 	 
 	sol::state_view LuaView(Lua);
 	sol::environment Env(LuaView, sol::create, LuaView.globals());
-	AssignGameObjectHandle(Env, "obj", Actor);
+	AssignComponentBindingHandles(Env, Component);
 
 	sol::load_result LoadResult = LuaView.load_file(AbsolutePath);
 	if (!LoadResult.valid())
@@ -183,8 +217,9 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 		return false;
 	}
 
-	FLuaActorBinding Binding;
-	Binding.ActorUUID = Actor->GetUUID();
+	FLuaComponentBinding Binding;
+	Binding.ComponentUUID = Component->GetUUID();
+	Binding.OwnerActorUUID = Component->GetOwner() ? Component->GetOwner()->GetUUID() : 0;
 	Binding.ScriptPath = NormalizedPath;
 	Binding.Environment = std::move(Env);
 	Binding.BeginPlay = Binding.Environment["BeginPlay"];
@@ -194,62 +229,62 @@ bool FLuaScriptSubsystem::BindActor(AActor* Actor, const FString& ScriptPath)
 
 	if (GEngine)
 	{
-		GEngine->GetTaskScheduler().CancelTasks(Binding.ActorUUID);
+		GEngine->GetTaskScheduler().CancelTasks(Binding.ComponentUUID);
 	}
-	ActorBindings.erase(Binding.ActorUUID);
-	ActorBindings.emplace(Binding.ActorUUID, std::move(Binding));
+	ComponentBindings.erase(Binding.ComponentUUID);
+	ComponentBindings.emplace(Binding.ComponentUUID, std::move(Binding));
 	return true;
 }
 
-void FLuaScriptSubsystem::UnbindActor(const AActor* Actor)
+void FLuaScriptSubsystem::UnbindComponent(const ULuaScriptComponent* Component)
 {
-	if (!Actor)
+	if (!Component)
 	{
 		return;
 	}
 
 	if (GEngine)
 	{
-		GEngine->GetTaskScheduler().CancelTasks(Actor->GetUUID());
+		GEngine->GetTaskScheduler().CancelTasks(Component->GetUUID());
 	}
-	ActorBindings.erase(Actor->GetUUID());
+	ComponentBindings.erase(Component->GetUUID());
 }
 
-void FLuaScriptSubsystem::CallActorBeginPlay(AActor* Actor)
+void FLuaScriptSubsystem::CallComponentBeginPlay(ULuaScriptComponent* Component)
 {
-	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
-		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-		StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ActorUUID);
-	}
-}
-
-void FLuaScriptSubsystem::CallActorTick(AActor* Actor, float DeltaTime)
-{
-	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
-	{
-		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-		StartCoroutine("Tick", Binding->Tick, Binding->ActorUUID, DeltaTime);
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ComponentUUID);
 	}
 }
 
-void FLuaScriptSubsystem::CallActorEndPlay(AActor* Actor)
+void FLuaScriptSubsystem::CallComponentTick(ULuaScriptComponent* Component, float DeltaTime)
 {
-	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
-		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
-		StartCoroutine("EndPlay", Binding->EndPlay, Binding->ActorUUID);
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		StartCoroutine("Tick", Binding->Tick, Binding->ComponentUUID, DeltaTime);
 	}
 }
 
-void FLuaScriptSubsystem::CallActorOverlap(AActor* Actor, AActor* OtherActor)
+void FLuaScriptSubsystem::CallComponentEndPlay(ULuaScriptComponent* Component)
 {
-	if (FLuaActorBinding* Binding = FindActorBinding(Actor ? Actor->GetUUID() : 0))
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
-		AssignGameObjectHandle(Binding->Environment, "obj", Actor);
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		StartCoroutine("EndPlay", Binding->EndPlay, Binding->ComponentUUID);
+	}
+}
+
+void FLuaScriptSubsystem::CallComponentOverlap(ULuaScriptComponent* Component, AActor* OtherActor)
+{
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
+	{
+		AssignComponentBindingHandles(Binding->Environment, Component);
 		FLuaGameObjectHandle OtherHandle;
 		OtherHandle.UUID = OtherActor ? OtherActor->GetUUID() : 0;
-		StartCoroutine("OnOverlap", Binding->OnOverlap, Binding->ActorUUID, OtherHandle);
+		StartCoroutine("OnOverlap", Binding->OnOverlap, Binding->ComponentUUID, OtherHandle);
 	}
 }
 
@@ -265,16 +300,16 @@ void FLuaScriptSubsystem::RegisterScriptDirectoryWatcher(const FString& ScriptSu
 
 }
 
-FLuaScriptSubsystem::FLuaActorBinding* FLuaScriptSubsystem::FindActorBinding(uint32 ActorUUID)
+FLuaScriptSubsystem::FLuaComponentBinding* FLuaScriptSubsystem::FindComponentBinding(uint32 ComponentUUID)
 {
-	auto It = ActorBindings.find(ActorUUID);
-	return It != ActorBindings.end() ? &It->second : nullptr;
+	auto It = ComponentBindings.find(ComponentUUID);
+	return It != ComponentBindings.end() ? &It->second : nullptr;
 }
 
-const FLuaScriptSubsystem::FLuaActorBinding* FLuaScriptSubsystem::FindActorBinding(uint32 ActorUUID) const
+const FLuaScriptSubsystem::FLuaComponentBinding* FLuaScriptSubsystem::FindComponentBinding(uint32 ComponentUUID) const
 {
-	auto It = ActorBindings.find(ActorUUID);
-	return It != ActorBindings.end() ? &It->second : nullptr;
+	auto It = ComponentBindings.find(ComponentUUID);
+	return It != ComponentBindings.end() ? &It->second : nullptr;
 }
 
 void FLuaScriptSubsystem::StartCoroutine(const char* FunctionName, const sol::function& Function, uint32 OwnerUUID)
@@ -344,7 +379,7 @@ void FLuaScriptSubsystem::HandleCoroutineResult(int Status, sol::thread Thread, 
 	if (Status != LUA_OK)
 	{
 		const char* Error = lua_tostring(ThreadState, -1);
-		UE_LOG("[Lua] Lua Actor Coroutine Error (%s): %s", FunctionName.c_str(), Error ? Error : "unknown error");
+		UE_LOG("[Lua] Lua Component Coroutine Error (%s): %s", FunctionName.c_str(), Error ? Error : "unknown error");
 	}
 
 	lua_settop(ThreadState, 0);
@@ -365,7 +400,7 @@ void FLuaScriptSubsystem::ScheduleCoroutineResume(float Delay, sol::thread Threa
 				return;
 			}
 
-			if (OwnerUUID != 0 && !FindActorBinding(OwnerUUID))
+			if (OwnerUUID != 0 && !FindComponentBinding(OwnerUUID))
 			{
 				return;
 			}
@@ -661,11 +696,11 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 
 	TMap<FString, TSet<FString>> NewScriptIncludes;
 	TMap<FString, FString> NewModulePaths;
-	TArray<std::pair<uint32, FString>> ActorBindingsToRestore;
-	ActorBindingsToRestore.reserve(ActorBindings.size());
-	for (const auto& [ActorUUID, Binding] : ActorBindings)
+	TArray<std::pair<uint32, FString>> ComponentBindingsToRestore;
+	ComponentBindingsToRestore.reserve(ComponentBindings.size());
+	for (const auto& [ComponentUUID, Binding] : ComponentBindings)
 	{
-		ActorBindingsToRestore.emplace_back(ActorUUID, Binding.ScriptPath);
+		ComponentBindingsToRestore.emplace_back(ComponentUUID, Binding.ScriptPath);
 	}
 
 	for (const FString& Script : NewLoadedScriptOrder)
@@ -678,9 +713,10 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 
 	if (GEngine)
 	{
-		for (const auto& [ActorUUID, Binding] : ActorBindings)
+		for (const auto& [ComponentUUID, Binding] : ComponentBindings)
 		{
-			GEngine->GetTaskScheduler().CancelTasks(ActorUUID);
+			(void)Binding;
+			GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
 		}
 	}
 
@@ -691,13 +727,13 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 	ModulePaths = std::move(NewModulePaths);
 	RebuildIncludeDependents();
 
-	ActorBindings.clear();
-	for (const auto& [ActorUUID, ScriptPath] : ActorBindingsToRestore)
+	ComponentBindings.clear();
+	for (const auto& [ComponentUUID, ScriptPath] : ComponentBindingsToRestore)
 	{
-		UObject* Object = UObjectManager::Get().FindByUUID(ActorUUID);
-		if (AActor* Actor = Cast<AActor>(Object))
+		UObject* Object = UObjectManager::Get().FindByUUID(ComponentUUID);
+		if (ULuaScriptComponent* Component = Cast<ULuaScriptComponent>(Object))
 		{
-			BindActor(Actor, ScriptPath);
+			BindComponent(Component, ScriptPath);
 		}
 	}
 

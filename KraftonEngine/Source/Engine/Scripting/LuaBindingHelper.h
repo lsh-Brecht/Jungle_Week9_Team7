@@ -3,21 +3,32 @@
 #include "Core/Log.h"
 #include "LuaWorldLibrary.h"
 
-// Handle 타입에 공통으로 필요한 Lua 멤버를 등록
-// HANDLE_TYPE: FLuaGameObjectHandle, FLuaBoxComponentHandle처럼 UUID와 IsValid()를 가진 Lua Handle 타입
-#define LUA_HANDLE_COMMON(HANDLE_TYPE) \
-	"IsValid", \
-	[](const HANDLE_TYPE& Handle) \
-	{ \
-		return Handle.IsValid(); \
-	}, \
-	"UUID", \
+#ifndef LUA_ENABLE_DEBUG_HANDLE_UUID
+#define LUA_ENABLE_DEBUG_HANDLE_UUID 1
+#endif
+
+#if LUA_ENABLE_DEBUG_HANDLE_UUID
+#define LUA_HANDLE_DEBUG_UUID(HANDLE_TYPE) \
+	, "UUID", \
 	sol::property( \
 		[](const HANDLE_TYPE& Self) \
 		{ \
 			return Self.UUID; \
 		} \
 	)
+#else
+#define LUA_HANDLE_DEBUG_UUID(HANDLE_TYPE)
+#endif
+
+// Handle 타입에 공통으로 필요한 Lua 멤버를 등록
+// UUID는 기본 Lua API에 노출하지 않는다. 디버깅이 필요할 때만 LUA_ENABLE_DEBUG_HANDLE_UUID를 켠다.
+#define LUA_HANDLE_COMMON(HANDLE_TYPE) \
+	"IsValid", \
+	[](const HANDLE_TYPE& Handle) \
+	{ \
+		return Handle.IsValid(); \
+	} \
+	LUA_HANDLE_DEBUG_UUID(HANDLE_TYPE)
 
 // Component의 읽기 전용 property를 Lua에 등록
 // TYPE_NAME: 로그용 타입 이름, PROPERTY_NAME: Lua 속성 이름, HANDLE_TYPE: Lua Handle 타입, COMPONENT_TYPE: 실제 C++ 컴포넌트 타입, VALUE_TYPE: 반환 타입, DEFAULT_VALUE: 실패 시 기본값, GETTER_CALL: Component-> 뒤에 붙을 getter 호출식

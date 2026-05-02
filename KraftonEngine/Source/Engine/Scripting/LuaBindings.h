@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 namespace sol
 {
@@ -8,6 +8,10 @@ namespace sol
 void RegisterLuaBindings(sol::state& Lua);
 
 void RegisterActorLifecycleBinding(sol::state& Lua);
+void RegisterActorComponentBinding(sol::state& Lua);
+void RegisterLuaScriptComponentBinding(sol::state& Lua);
+void RegisterSceneComponentBinding(sol::state& Lua);
+void RegisterPrimitiveComponentBinding(sol::state& Lua);
 void RegisterStaticMeshComponentBinding(sol::state& Lua);
 
 void RegisterFVectorBinding(sol::state& Lua);
@@ -20,6 +24,7 @@ void RegisterProjectileMovementComponentBinding(sol::state& Lua);
 void RegisterInterpToMovementComponentBinding(sol::state& Lua);
 void RegisterPendulumMovementComponentBinding(sol::state& Lua);
 void RegisterRotatingMovementComponentBinding(sol::state& Lua);
+void RegisterHopMovementComponentBinding(sol::state& Lua);
 
 void RegisterShapeComponentBinding(sol::state& Lua);
 void RegisterBoxComponentBinding(sol::state& Lua);

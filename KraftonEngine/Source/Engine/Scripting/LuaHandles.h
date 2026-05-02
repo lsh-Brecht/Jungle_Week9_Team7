@@ -1,6 +1,10 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/StaticMeshComponent.h"
+#include "Component/ActorComponent.h"
+#include "Component/Script/LuaScriptComponent.h"
+#include "Component/SceneComponent.h"
+#include "Component/PrimitiveComponent.h"
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
 #include "Component/Collision/ShapeComponent.h"
@@ -10,6 +14,7 @@
 #include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
+#include "Component/HopMovementComponent.h"
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
@@ -24,6 +29,70 @@ struct FLuaGameObjectHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<AActor>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaActorComponentHandle
+{
+	uint32 UUID = 0;
+
+	UActorComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UActorComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaScriptComponentHandle
+{
+	uint32 UUID = 0;
+
+	ULuaScriptComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<ULuaScriptComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaSceneComponentHandle
+{
+	uint32 UUID = 0;
+
+	USceneComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<USceneComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaPrimitiveComponentHandle
+{
+	uint32 UUID = 0;
+
+	UPrimitiveComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UPrimitiveComponent>(Object);
 	}
 
 	bool IsValid() const
@@ -106,6 +175,22 @@ struct FLuaRotatingMovementComponentHandle
 		return Cast<URotatingMovementComponent>(Object);
 	}
 
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaHopMovementComponentHandle
+{
+	uint32 UUID = 0;
+	
+	UHopMovementComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UHopMovementComponent>(Object);
+	}
+	
 	bool IsValid() const
 	{
 		return Resolve() != nullptr;

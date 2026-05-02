@@ -1,4 +1,4 @@
-﻿// LuaStaticMeshBindings.cpp
+// LuaStaticMeshBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -6,6 +6,7 @@
 #include "LuaBindingHelper.h"
 #include "LuaHandles.h"
 #include "LuaWorldLibrary.h"
+#include "LuaPropertyBridge.h"
 
 #include "Core/Log.h"
 #include "Component/StaticMeshComponent.h"
@@ -31,6 +32,25 @@ void RegisterStaticMeshComponentBinding(sol::state& Lua)
 				}
 
 				return Mesh->GetStaticMeshPath();
+			}
+		),
+
+		"Visible",
+		sol::property(
+			[](const FLuaStaticMeshComponentHandle& Self)
+			{
+				UStaticMeshComponent* Mesh = Self.Resolve();
+				return Mesh ? Mesh->IsVisible() : false;
+			},
+			[](const FLuaStaticMeshComponentHandle& Self, bool bVisible)
+			{
+				UStaticMeshComponent* Mesh = Self.Resolve();
+				if (!Mesh)
+				{
+					UE_LOG("[Lua] Invalid StaticMeshComponent.Visible Access.");
+					return;
+				}
+				Mesh->SetVisibility(bVisible);
 			}
 		),
 
@@ -102,6 +122,30 @@ void RegisterStaticMeshComponentBinding(sol::state& Lua)
 			}
 
 			return FLuaWorldLibrary::SetMaterialVector4Parameter(Mesh, ElementIndex, ParameterName, Value);
+		},
+
+		"ListProperties",
+		[](const FLuaStaticMeshComponentHandle& Self, sol::this_state State)
+		{
+			return FLuaPropertyBridge::ListProperties(State, Self.Resolve());
+		},
+
+		"HasProperty",
+		[](const FLuaStaticMeshComponentHandle& Self, const FString& Name)
+		{
+			return FLuaPropertyBridge::HasProperty(Self.Resolve(), Name);
+		},
+
+		"GetProperty",
+		[](const FLuaStaticMeshComponentHandle& Self, const FString& Name, sol::this_state State)
+		{
+			return FLuaPropertyBridge::GetProperty(State, Self.Resolve(), Name);
+		},
+
+		"SetProperty",
+		[](const FLuaStaticMeshComponentHandle& Self, const FString& Name, sol::object Value)
+		{
+			return FLuaPropertyBridge::SetProperty(Self.Resolve(), Name, Value);
 		},
 
 		"SetColor",

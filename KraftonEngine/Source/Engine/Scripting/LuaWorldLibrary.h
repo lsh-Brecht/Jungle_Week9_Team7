@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Core/CoreTypes.h"
 #include "GameFramework/AActor.h"
@@ -105,6 +105,12 @@ public:
 	}
 
 	static UStaticMeshComponent* GetOrAddStaticMeshComponent(AActor* Actor);
+
+	static UActorComponent* FindComponentByTypeName(AActor* Actor, const FString& TypeName);
+
+	static UActorComponent* GetOrAddComponentByTypeName(AActor* Actor, const FString& TypeName);
+
+	static bool RemoveComponentByTypeName(AActor* Actor, const FString& TypeName);
 
 	static bool SetStaticMesh(UStaticMeshComponent* MeshComponent, const FString& StaticMeshPath);
 
