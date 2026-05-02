@@ -14,6 +14,7 @@
 #include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
+#include "Component/HopMovementComponent.h"
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
@@ -174,6 +175,22 @@ struct FLuaRotatingMovementComponentHandle
 		return Cast<URotatingMovementComponent>(Object);
 	}
 
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaHopMovementComponentHandle
+{
+	uint32 UUID = 0;
+	
+	UHopMovementComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UHopMovementComponent>(Object);
+	}
+	
 	bool IsValid() const
 	{
 		return Resolve() != nullptr;

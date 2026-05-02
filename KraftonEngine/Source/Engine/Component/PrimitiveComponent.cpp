@@ -85,6 +85,10 @@ void UPrimitiveComponent::MarkRenderTransformDirty()
 
 	World->UpdateActorInOctree(OwnerActor);
 	World->UpdateWorldPrimitivePickingBVH(this);
+	if (GetCollisionShapeType() != ECollisionShapeType::None)
+	{
+		World->UpdateWorldCollisionBVH(this);
+	}
 }
 
 void UPrimitiveComponent::MarkRenderVisibilityDirty()
@@ -242,6 +246,10 @@ void UPrimitiveComponent::CreateRenderState()
 	FScene& Scene = Owner->GetWorld()->GetScene();
 	SceneProxy = Scene.AddPrimitive(this);
 	Owner->GetWorld()->InsertWorldPrimitivePickingBVH(this);
+	if (GetCollisionShapeType() != ECollisionShapeType::None)
+	{
+		Owner->GetWorld()->InsertWorldCollisionBVH(this);
+	}
 }
 
 void UPrimitiveComponent::DestroyRenderState()
@@ -253,6 +261,10 @@ void UPrimitiveComponent::DestroyRenderState()
 		{
 			World->GetPartition().RemoveSinglePrimitive(this);
 			World->RemoveWorldPrimitivePickingBVH(this);
+			if (GetCollisionShapeType() != ECollisionShapeType::None)
+			{
+				World->RemoveWorldCollisionBVH(this);
+			}
 
 			if (SceneProxy)
 			{

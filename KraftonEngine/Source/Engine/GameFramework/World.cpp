@@ -69,6 +69,7 @@ void UWorld::DestroyActor(AActor* Actor)
 	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 	{
 		RemoveWorldPrimitivePickingBVH(Primitive);
+		RemoveWorldCollisionBVH(Primitive);
 	}
 	Actor->EndPlay();
 	// Remove from actor list
@@ -93,6 +94,7 @@ void UWorld::AddActor(AActor* Actor)
 	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 	{
 		InsertWorldPrimitivePickingBVH(Primitive);
+		InsertWorldCollisionBVH(Primitive);
 	}
 
 	// PIE 중 Duplicate(Ctrl+D)나 SpawnActor로 들어온 액터에도 BeginPlay를 보장.
@@ -155,6 +157,31 @@ void UWorld::CollectWorldPrimitivePickingBVHDebugAABBs(TArray<FWorldPrimitivePic
 {
 	WorldPrimitivePickingBVH.EnsureBuilt(GetActors());
 	WorldPrimitivePickingBVH.CollectDebugAABBs(OutAABBs);
+}
+
+void UWorld::MarkWorldCollisionBVHDirty()
+{
+	WorldCollisionBVH.MarkDirty();
+}
+
+void UWorld::InsertWorldCollisionBVH(UPrimitiveComponent* Primitive)
+{
+	WorldCollisionBVH.InsertObject(Primitive);
+}
+
+void UWorld::RemoveWorldCollisionBVH(UPrimitiveComponent* Primitive)
+{
+	WorldCollisionBVH.RemoveObject(Primitive);
+}
+
+void UWorld::UpdateWorldCollisionBVH(UPrimitiveComponent* Primitive)
+{
+	WorldCollisionBVH.UpdateObject(Primitive);
+}
+
+void UWorld::BuildWorldCollisionBVHNow() const
+{
+	WorldCollisionBVH.BuildNow(GetActors());
 }
 
 void UWorld::BeginDeferredPickingBVHUpdate()
@@ -229,30 +256,22 @@ void UWorld::UpdateActorInOctree(AActor* Actor)
 
 void UWorld::UpdateCollision()
 {
-	TArray<AActor*> Actors = GetActors();
-	uint32 ActorCount = static_cast<uint32>(Actors.size());
+	WorldCollisionBVH.EnsureBuilt(GetActors());
 
-	TArray<UShapeComponent*> AllCollisionComponents;
-	for (uint32 i = 0; i < ActorCount; ++i)
+	TArray<FWorldCollisionBVH::FOverlapCandidatePair> PotentialPairs;
+	WorldCollisionBVH.GeneratePotentialPairs(PotentialPairs);
+
+	for (const FWorldCollisionBVH::FOverlapCandidatePair& Pair : PotentialPairs)
 	{
-		for (UActorComponent* Comp : Actors[i]->GetComponents())
+		if (FPrimitiveCollision::Intersect(Pair.A, Pair.B))
 		{
-			if (UShapeComponent* colliComp = Cast<UShapeComponent>(Comp))
+			if (UShapeComponent* ShapeA = Cast<UShapeComponent>(Pair.A))
 			{
-				AllCollisionComponents.push_back(colliComp);
+				ShapeA->SetDebugShapeColor(FColor::Red());
 			}
-		}
-	}
-	uint32 CollisionCount = AllCollisionComponents.size();
-	for (int i = 0; i < CollisionCount; ++i)
-	{
-		for (int j = i + 1; j < CollisionCount; ++j)
-		{
-			if (FPrimitiveCollision::Intersect(AllCollisionComponents[i], AllCollisionComponents[j]))
+			if (UShapeComponent* ShapeB = Cast<UShapeComponent>(Pair.B))
 			{
-				// 충돌 발생 시 처리!
-				AllCollisionComponents[i]->SetDebugShapeColor(FColor::Red());
-				AllCollisionComponents[j]->SetDebugShapeColor(FColor::Red());
+				ShapeB->SetDebugShapeColor(FColor::Red());
 			}
 		}
 	}
@@ -342,6 +361,7 @@ void UWorld::EndPlay()
 
 	PersistentLevel->Clear();
 	MarkWorldPrimitivePickingBVHDirty();
+	MarkWorldCollisionBVHDirty();
 
 	// PersistentLevel은 CreateObject로 생성되었으므로 DestroyObject로 해제해야 alloc count가 맞음
 	UObjectManager::Get().DestroyObject(PersistentLevel);
