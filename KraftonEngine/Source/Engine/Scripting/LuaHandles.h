@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
@@ -14,7 +14,7 @@
 #include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
-#include "Component/HopMovementComponent.h"
+#include "Component/Movement/HopMovementComponent.h"
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"

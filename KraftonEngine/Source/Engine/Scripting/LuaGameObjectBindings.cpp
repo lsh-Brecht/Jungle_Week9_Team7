@@ -1,4 +1,4 @@
-// LuaGameObjectBindings.cpp
+﻿// LuaGameObjectBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -27,7 +27,7 @@
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/InterpToMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
-#include "Component/HopMovementComponent.h"
+#include "Component/Movement/HopMovementComponent.h"
 
 #ifndef LUA_ENABLE_DEBUG_UUID_LOOKUP
 #define LUA_ENABLE_DEBUG_UUID_LOOKUP 0

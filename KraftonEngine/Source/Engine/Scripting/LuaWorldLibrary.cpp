@@ -1,4 +1,4 @@
-#include "LuaWorldLibrary.h"
+﻿#include "LuaWorldLibrary.h"
 
 #include "Core/Log.h"
 #include "Object/Object.h"
@@ -20,8 +20,8 @@
 #include "Component/Movement/InterpToMovementComponent.h"
 #include "Component/Movement/PendulumMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
+#include "Component/Movement/HopMovementComponent.h"
 #include "Component/StaticMeshComponent.h"
-#include "Component/HopMovementComponent.h"
 
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
