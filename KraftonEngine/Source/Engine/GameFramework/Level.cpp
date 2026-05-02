@@ -78,7 +78,7 @@ void ULevel::BeginPlay()
 	for (size_t i = 0; i < InitialCount; ++i)
 	{
 		AActor* Actor = Actors[i];
-		if (Actor && !Actor->HasActorBegunPlay())
+		if (Actor && !Actor->HasActorBegunPlay() && !Actor->IsPooledActorInactive())
 		{
 			Actor->BeginPlay();
 		}

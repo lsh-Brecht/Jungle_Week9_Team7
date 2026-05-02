@@ -12,6 +12,11 @@ namespace
 			return false;
 		}
 
+		if (Actor->IsPooledActorInactive())
+		{
+			return false;
+		}
+
 		switch (TickType)
 		{
 		case LEVELTICK_ViewportsOnly:

@@ -55,4 +55,35 @@ void RegisterActorLifecycleBinding(sol::state& Lua)
 			return sol::make_object(LuaView, Handle);
 		}
 	);
+
+	Lua.set_function(
+		"AcquireActor",
+		[](const FString& ClassName, const FVector& Location, sol::this_state State) -> sol::object
+		{
+			sol::state_view LuaView(State);
+
+			AActor* Actor = FLuaWorldLibrary::AcquireActorByClassName(
+				ClassName,
+				Location
+			);
+
+			if (!Actor)
+			{
+				return sol::nil;
+			}
+
+			FLuaGameObjectHandle Handle;
+			Handle.UUID = Actor->GetUUID();
+
+			return sol::make_object(LuaView, Handle);
+		}
+	);
+
+	Lua.set_function(
+		"WarmUpActorPool",
+		[](const FString& ClassName, int32 Count)
+		{
+			return FLuaWorldLibrary::WarmUpActorPool(ClassName, Count);
+		}
+	);
 }

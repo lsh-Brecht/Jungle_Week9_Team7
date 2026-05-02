@@ -8,6 +8,7 @@
 #include "Engine/Component/CameraComponent.h"
 #include "Render/Types/LODContext.h"
 #include "Scripting/LuaScriptSubsystem.h"
+#include "Runtime/ObjectPoolSystem.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
 
@@ -87,6 +88,8 @@ void UWorld::DestroyActor(AActor* Actor)
 {
 	// remove and clean up
 	if (!Actor) return;
+	FObjectPoolSystem::Get().ForgetActor(Actor);
+	Actor->SetPooledActorState(false, false);
 	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 	{
 		RemoveWorldPrimitivePickingBVH(Primitive);
@@ -100,6 +103,16 @@ void UWorld::DestroyActor(AActor* Actor)
 
 	// Mark for garbage collection
 	UObjectManager::Get().DestroyObject(Actor);
+}
+
+bool UWorld::ReleaseActor(AActor* Actor)
+{
+	return FObjectPoolSystem::Get().ReleaseActor(Actor);
+}
+
+int32 UWorld::WarmUpActorPool(UClass* Class, int32 Count)
+{
+	return FObjectPoolSystem::Get().WarmUp(this, Class, Count);
 }
 
 void UWorld::AddActor(AActor* Actor)
@@ -119,7 +132,7 @@ void UWorld::AddActor(AActor* Actor)
 	}
 
 	// PIE 중 Duplicate(Ctrl+D)나 SpawnActor로 들어온 액터에도 BeginPlay를 보장.
-	if (bHasBegunPlay && !Actor->HasActorBegunPlay())
+	if (bHasBegunPlay && !Actor->HasActorBegunPlay() && !Actor->IsPooledActorInactive())
 	{
 		Actor->BeginPlay();
 	}
@@ -285,7 +298,7 @@ void UWorld::UpdateCollision()
 {
 	for (AActor* Actor : GetActors())
 	{
-		if (!Actor) continue;
+		if (!Actor || Actor->IsPooledActorInactive() || !Actor->IsActorCollisionEnabled()) continue;
 		for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 		{
 			if (UShapeComponent* ShapeComp = Cast<UShapeComponent>(Primitive))
@@ -424,6 +437,8 @@ void UWorld::EndPlay()
 	{
 		return;
 	}
+
+	FObjectPoolSystem::Get().ClearWorld(this);
 
 	PersistentLevel->EndPlay();
 

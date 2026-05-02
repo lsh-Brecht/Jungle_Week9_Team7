@@ -16,6 +16,9 @@ public:
 	static UWorld* GetActiveWorld();
 
 	static AActor* SpawnActorByClassName(const FString& ClassName, const FVector& Location);
+	static AActor* AcquireActorByClassName(const FString& ClassName, const FVector& Location, const FRotator& Rotation = FRotator());
+	static bool ReleaseActorToPool(AActor* Actor);
+	static int32 WarmUpActorPool(const FString& ClassName, int32 Count);
 
 	static AActor* SpawnStaticMeshActor(
 		const FString& StaticMeshPath,

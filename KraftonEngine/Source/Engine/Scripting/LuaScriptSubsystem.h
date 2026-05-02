@@ -34,6 +34,8 @@ public:
 	void CallComponentBeginPlay(ULuaScriptComponent* Component);
 	void CallComponentTick(ULuaScriptComponent* Component, float DeltaTime);
 	void CallComponentEndPlay(ULuaScriptComponent* Component);
+	void CallComponentSpawnFromPool(ULuaScriptComponent* Component);
+	void CallComponentReturnToPool(ULuaScriptComponent* Component);
 	void CallComponentOverlap(ULuaScriptComponent* Component, AActor* OtherActor);
 	bool IsComponentBound(uint32 ComponentUUID) const;
 
@@ -79,6 +81,8 @@ private:
 		sol::function BeginPlay;
 		sol::function Tick;
 		sol::function EndPlay;
+		sol::function OnSpawnFromPool;
+		sol::function OnReturnToPool;
 		sol::function OnOverlap;
 		TSet<FString> ActiveCoroutineFunctions;
 	};
