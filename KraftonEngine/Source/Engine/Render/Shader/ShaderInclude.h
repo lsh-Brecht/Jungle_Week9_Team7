@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Render/Types/RenderTypes.h"
 #include "Platform/Paths.h"
@@ -23,7 +23,14 @@ public:
 		LPCVOID* ppData,
 		UINT* pBytes) override
 	{
-		std::wstring FullPath = FPaths::ShaderDir() + FPaths::ToWide(pFileName);
+		FString IncludePath = "Shaders/";
+		IncludePath += pFileName;
+		std::wstring FullPath;
+		FString Error;
+		if (!FPaths::TryResolveShaderPath(IncludePath, FullPath, &Error))
+		{
+			return E_FAIL;
+		}
 
 		std::ifstream File(FullPath, std::ios::binary | std::ios::ate);
 		if (!File.is_open()) return E_FAIL;
@@ -40,12 +47,12 @@ public:
 		// include 경로 수집 (슬래시 정규화)
 		if (OutIncludes)
 		{
-			FString IncludePath = pFileName;
-			for (auto& Ch : IncludePath)
+			FString RelativeIncludePath = pFileName;
+			for (auto& Ch : RelativeIncludePath)
 			{
 				if (Ch == '\\') Ch = '/';
 			}
-			OutIncludes->push_back(IncludePath);
+			OutIncludes->push_back(RelativeIncludePath);
 		}
 
 		return S_OK;

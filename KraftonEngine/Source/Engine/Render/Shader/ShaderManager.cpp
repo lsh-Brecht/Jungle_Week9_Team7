@@ -1,4 +1,4 @@
-﻿#include "ShaderManager.h"
+#include "ShaderManager.h"
 #include "Platform/Paths.h"
 #include "Core/Log.h"
 #include "Core/Notification.h"
@@ -104,7 +104,13 @@ FShader* FShaderManager::GetOrCreate(const FShaderKey& Key, EShaderErrorMode Err
 
 	FShaderCacheEntry CacheEntry;
 	CacheEntry.Shader = std::make_unique<FShader>();
-	std::wstring WidePath = FPaths::ToWide(Key.Path);
+	std::wstring WidePath;
+	FString Error;
+	if (!FPaths::TryResolveShaderPath(Key.Path, WidePath, &Error))
+	{
+		UE_LOG("[Shader] Invalid shader path: %s", Error.c_str());
+		return nullptr;
+	}
 
 	// DefinesHash가 0이면 매크로 없음. UberLit만 기본 Cluster Culling define을 적용한다.
 	if (Key.DefinesHash == 0)
@@ -140,7 +146,13 @@ FShader* FShaderManager::PreCompile(const FShaderKey& Key, const D3D_SHADER_MACR
 
 	FShaderCacheEntry CacheEntry;
 	CacheEntry.Shader = std::make_unique<FShader>();
-	std::wstring WidePath = FPaths::ToWide(Key.Path);
+	std::wstring WidePath;
+	FString Error;
+	if (!FPaths::TryResolveShaderPath(Key.Path, WidePath, &Error))
+	{
+		UE_LOG("[Shader] Invalid shader path: %s", Error.c_str());
+		return nullptr;
+	}
 	CacheEntry.Shader->Create(CachedDevice, WidePath.c_str(), "VS", "PS", Defines, &CacheEntry.Includes, ErrorMode);
 	CacheEntry.StoredDefines = CopyDefines(Defines);
 
@@ -174,7 +186,13 @@ FComputeShader* FShaderManager::GetOrCreateCS(const FString& Path, const FString
 
 	FCSCacheEntry CacheEntry;
 	CacheEntry.Shader = std::make_unique<FComputeShader>();
-	std::wstring WidePath = FPaths::ToWide(Path);
+	std::wstring WidePath;
+	FString Error;
+	if (!FPaths::TryResolveShaderPath(Path, WidePath, &Error))
+	{
+		UE_LOG("[Shader] Invalid compute shader path: %s", Error.c_str());
+		return nullptr;
+	}
 	CacheEntry.Shader->Create(CachedDevice, WidePath.c_str(), EntryPoint.c_str(), &CacheEntry.Includes);
 
 	auto* RawPtr = CacheEntry.Shader.get();
@@ -275,7 +293,13 @@ void FShaderManager::OnShadersChanged(const TSet<FString>& ChangedFiles)
 		if (It == ShaderCache.end()) continue;
 
 		FShaderCacheEntry& Entry = It->second;
-		std::wstring WidePath = FPaths::ToWide(Key.Path);
+		std::wstring WidePath;
+		FString Error;
+		if (!FPaths::TryResolveShaderPath(Key.Path, WidePath, &Error))
+		{
+			UE_LOG("[ShaderHotReload] Invalid shader path: %s", Error.c_str());
+			continue;
+		}
 
 		auto NewShader = std::make_unique<FShader>();
 		TArray<FString> NewIncludes;
@@ -303,7 +327,13 @@ void FShaderManager::OnShadersChanged(const TSet<FString>& ChangedFiles)
 		if (It == CSCache.end()) continue;
 
 		FCSCacheEntry& Entry = It->second;
-		std::wstring WidePath = FPaths::ToWide(Key.Path);
+		std::wstring WidePath;
+		FString Error;
+		if (!FPaths::TryResolveShaderPath(Key.Path, WidePath, &Error))
+		{
+			UE_LOG("[ShaderHotReload] Invalid compute shader path: %s", Error.c_str());
+			continue;
+		}
 
 		auto NewCS = std::make_unique<FComputeShader>();
 		TArray<FString> NewIncludes;

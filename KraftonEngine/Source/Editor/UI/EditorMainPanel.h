@@ -8,6 +8,7 @@
 #include "Editor/UI/EditorStatWidget.h"
 #include "Editor/UI/EditorShadowMapDebugWidget.h"
 #include "Editor/UI/EditorProjectSettingsWidget.h"
+#include "Editor/Packaging/EditorPackageSettings.h"
 #include "Editor/UI/ContentBrowser/ContentBrowser.h"
 #include "Math/Vector.h"
 
@@ -38,11 +39,16 @@ private:
 	void RenderMainMenuBar();
 	void RenderShortcutOverlay();
 	void RenderEditorDebugPanel();
+	void RenderPackageSettingsWindow();
 	void RenderConsoleDrawer(float DeltaTime);
 	void RenderFooterOverlay(float DeltaTime);
 	void HandleGlobalShortcuts();
 	void ToggleConsoleDrawer(bool bFocusInput);
 	void ProcessPendingDebugActions();
+	void OpenPackageSettingsWindow();
+	void BuildGamePackageFromSettings();
+	void CopyPackageSettingsToTextBuffers();
+	void CopyTextBuffersToPackageSettings();
 
 	FWindowsWindow* Window = nullptr;
 	UEditorEngine* EditorEngine = nullptr;
@@ -54,6 +60,14 @@ private:
 	FEditorContentBrowserWidget ContentBrowserWidget;
 	EditorShadowMapDebugWidget ShadowMapDebugWidget;
 	EditorProjectSettingsWidget ProjectSettingsWidget;
+	FEditorPackageSettings PackageSettings;
+	bool bPackageSettingsOpen = false;
+	char PackageProjectName[128] = {};
+	char PackageOutputDirectory[260] = {};
+	char PackageClientExecutablePath[260] = {};
+	char PackageStartSceneName[128] = {};
+	char PackageStartScenePackagePath[260] = {};
+	char PackageBuildConfiguration[128] = {};
 	bool bShowWidgetList = false;
 	bool bShowShortcutOverlay = false;
 	bool bHideEditorWindows = false;

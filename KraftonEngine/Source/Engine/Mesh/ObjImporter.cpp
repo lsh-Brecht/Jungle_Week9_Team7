@@ -1,4 +1,4 @@
-﻿#include "Mesh/ObjImporter.h"
+#include "Mesh/ObjImporter.h"
 #include "Mesh/StaticMeshAsset.h"
 #include "Materials/Material.h"
 #include "Core/Log.h"
@@ -144,7 +144,15 @@ bool FObjImporter::ParseObj(const FString& ObjFilePath, FObjInfo& OutObjInfo)
 {
 	OutObjInfo = FObjInfo();
 
-	std::ifstream File(FPaths::ToWide(ObjFilePath), std::ios::binary | std::ios::ate);
+	std::wstring DiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(ObjFilePath, DiskPath, &Error))
+	{
+		UE_LOG("Invalid OBJ file path: %s", Error.c_str());
+		return false;
+	}
+
+	std::ifstream File(std::filesystem::path(DiskPath), std::ios::binary | std::ios::ate);
 	if (!File.is_open())
 	{
 		UE_LOG("Failed to open OBJ file: %s", ObjFilePath.c_str());
@@ -308,7 +316,15 @@ bool FObjImporter::ParseObj(const FString& ObjFilePath, FObjInfo& OutObjInfo)
 bool FObjImporter::ParseMtl(const FString& MtlFilePath, TArray<FObjMaterialInfo>& OutMtlInfos)
 {
 	OutMtlInfos.clear();
-	std::ifstream File(FPaths::ToWide(MtlFilePath), std::ios::binary | std::ios::ate);
+	std::wstring DiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(MtlFilePath, DiskPath, &Error))
+	{
+		UE_LOG("Invalid MTL file path: %s", Error.c_str());
+		return false;
+	}
+
+	std::ifstream File(std::filesystem::path(DiskPath), std::ios::binary | std::ios::ate);
 
 	if (!File.is_open())
 	{
@@ -454,13 +470,19 @@ FString FObjImporter::ConvertMtlInfoToJson(const FObjMaterialInfo* MtlInfo)
 FString FObjImporter::ConvertMtlInfoToMat(const FObjMaterialInfo* MtlInfo)
 {
 	FString MatPath = "Asset/Materials/Auto/" + MtlInfo->MaterialSlotName + ".mat";
+	std::wstring MatDiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(MatPath, MatDiskPath, &Error))
+	{
+		return "";
+	}
 
 	// 이미 존재하면 덮어쓰지 않음 (에디터에서 수정했을 수 있으므로)
-	if (std::filesystem::exists(FPaths::ToWide(MatPath)))
+	if (std::filesystem::exists(std::filesystem::path(MatDiskPath)))
 		return MatPath;
 
 	// Auto/ 디렉토리 보장
-	std::filesystem::create_directories(FPaths::ToWide("Asset/Materials/Auto"));
+	std::filesystem::create_directories(std::filesystem::path(MatDiskPath).parent_path());
 
 	json::JSON JsonData;
 	JsonData["PathFileName"] = MatPath;
@@ -486,10 +508,14 @@ FString FObjImporter::ConvertMtlInfoToMat(const FObjMaterialInfo* MtlInfo)
 		JsonData["Parameters"]["SectionColor"][3] = 1.0f;
 	}
 
-	std::ofstream File(FPaths::ToWide(MatPath));
+#if IS_GAME_CLIENT
+	return MatPath;
+#else
+	std::ofstream File(std::filesystem::path(MatDiskPath), std::ios::binary);
 	File << JsonData.dump();
 
 	return MatPath;
+#endif
 }
 
 FVector FObjImporter::RemapPosition(const FVector& ObjPos, EForwardAxis Axis)

@@ -1,6 +1,6 @@
 #include "GameClient/GameClientSettings.h"
 
-#include "Platform/Paths.h"
+#include "Engine/Platform/Paths.h"
 #include "SimpleJSON/json.hpp"
 
 #include <filesystem>
@@ -9,99 +9,106 @@
 
 namespace
 {
-	constexpr const char* PathsKey = "Paths";
-	constexpr const char* GameClientStartLevelKey = "GameClientStartLevel";
-	constexpr const char* EditorStartLevelKey = "EditorStartLevel";
+FString ReadString(json::JSON& Object, const char* Key, const FString& Fallback)
+{
+	return Object.hasKey(Key) ? Object[Key].ToString() : Fallback;
+}
 
-	FString ReadStartLevelFromSettings()
+int32 ReadInt(json::JSON& Object, const char* Key, int32 Fallback)
+{
+	return Object.hasKey(Key) ? static_cast<int32>(Object[Key].ToInt()) : Fallback;
+}
+
+bool ReadBool(json::JSON& Object, const char* Key, bool Fallback)
+{
+	return Object.hasKey(Key) ? Object[Key].ToBool() : Fallback;
+}
+
+EViewMode ReadViewMode(json::JSON& Object, const char* Key, EViewMode Fallback)
+{
+	if (!Object.hasKey(Key))
 	{
-		const std::filesystem::path SettingsPath(FPaths::SettingsFilePath());
-		std::ifstream File(SettingsPath);
-		if (!File.is_open())
-		{
-			return "Default";
-		}
-
-		const FString Content(
-			(std::istreambuf_iterator<char>(File)),
-			std::istreambuf_iterator<char>());
-
-		json::JSON Root = json::JSON::Load(Content);
-		if (!Root.hasKey(PathsKey))
-		{
-			return "Default";
-		}
-
-		json::JSON Paths = Root[PathsKey];
-		if (Paths.hasKey(GameClientStartLevelKey))
-		{
-			return Paths[GameClientStartLevelKey].ToString();
-		}
-		if (Paths.hasKey(EditorStartLevelKey))
-		{
-			return Paths[EditorStartLevelKey].ToString();
-		}
-
-		return "Default";
+		return Fallback;
 	}
 
-	FString BuildScenePath(const FString& StartLevel)
-	{
-		if (StartLevel.empty())
-		{
-			return "";
-		}
+	const FString ViewMode = Object[Key].ToString();
+	if (ViewMode == "Unlit") return EViewMode::Unlit;
+	if (ViewMode == "Lit_Gouraud") return EViewMode::Lit_Gouraud;
+	if (ViewMode == "Lit_Lambert") return EViewMode::Lit_Lambert;
+	if (ViewMode == "Wireframe") return EViewMode::Wireframe;
+	if (ViewMode == "SceneDepth") return EViewMode::SceneDepth;
+	if (ViewMode == "WorldNormal") return EViewMode::WorldNormal;
+	if (ViewMode == "LightCulling") return EViewMode::LightCulling;
+	return EViewMode::Lit_Phong;
+}
 
-		std::filesystem::path ScenePath(FPaths::ToWide(StartLevel));
-		if (ScenePath.has_parent_path())
-		{
-			if (ScenePath.is_relative())
-			{
-				ScenePath = std::filesystem::path(FPaths::RootDir()) / ScenePath;
-			}
-			if (!ScenePath.has_extension())
-			{
-				ScenePath += L".Scene";
-			}
-			return FPaths::ToUtf8(ScenePath.wstring());
-		}
-
-		if (ScenePath.has_extension())
-		{
-			ScenePath = std::filesystem::path(FPaths::SceneDir()) / ScenePath.filename();
-		}
-		else
-		{
-			ScenePath = std::filesystem::path(FPaths::SceneDir()) / (FPaths::ToWide(StartLevel) + L".Scene");
-		}
-
-		return FPaths::ToUtf8(ScenePath.wstring());
-	}
+void ApplyRuntimeDefaults(FGameClientSettings& Settings)
+{
+	Settings.RenderOptions = FViewportRenderOptions();
+	Settings.RenderOptions.ViewMode = EViewMode::Lit_Phong;
+	Settings.RenderOptions.ShowFlags.bPrimitives = true;
+	Settings.RenderOptions.ShowFlags.bGrid = false;
+	Settings.RenderOptions.ShowFlags.bWorldAxis = false;
+	Settings.RenderOptions.ShowFlags.bGizmo = false;
+	Settings.RenderOptions.ShowFlags.bBillboardText = false;
+	Settings.RenderOptions.ShowFlags.bBoundingVolume = false;
+	Settings.RenderOptions.ShowFlags.bCollisionShapes = false;
+	Settings.RenderOptions.ShowFlags.bDebugDraw = Settings.bEnableDebugDraw;
+	Settings.RenderOptions.ShowFlags.bOctree = false;
+	Settings.RenderOptions.ShowFlags.bPickingBVH = false;
+	Settings.RenderOptions.ShowFlags.bCollisionBVH = false;
+	Settings.RenderOptions.ShowFlags.bFog = true;
+	Settings.RenderOptions.ShowFlags.bFXAA = true;
+	Settings.RenderOptions.ShowFlags.bViewLightCulling = false;
+	Settings.RenderOptions.ShowFlags.bVisualize25DCulling = false;
+	Settings.RenderOptions.ShowFlags.bShowShadowFrustum = false;
+}
 }
 
 void FGameClientSettings::Load()
 {
-	StartupScenePath = BuildScenePath(ReadStartLevelFromSettings());
-	WindowWidth = 1920;
-	WindowHeight = 1080;
-	bEnableOverlay = true;
+	ApplyRuntimeDefaults(*this);
 
-	RenderOptions = FViewportRenderOptions();
-	RenderOptions.ViewMode = EViewMode::Lit_Phong;
-	RenderOptions.ShowFlags.bPrimitives = true;
-	RenderOptions.ShowFlags.bGrid = false;
-	RenderOptions.ShowFlags.bWorldAxis = false;
-	RenderOptions.ShowFlags.bGizmo = false;
-	RenderOptions.ShowFlags.bBillboardText = false;
-	RenderOptions.ShowFlags.bBoundingVolume = false;
-	RenderOptions.ShowFlags.bCollisionShapes = false;
-	RenderOptions.ShowFlags.bDebugDraw = true;
-	RenderOptions.ShowFlags.bOctree = false;
-	RenderOptions.ShowFlags.bPickingBVH = false;
-	RenderOptions.ShowFlags.bCollisionBVH = false;
-	RenderOptions.ShowFlags.bFog = true;
-	RenderOptions.ShowFlags.bFXAA = false;
-	RenderOptions.ShowFlags.bViewLightCulling = false;
-	RenderOptions.ShowFlags.bVisualize25DCulling = false;
-	RenderOptions.ShowFlags.bShowShadowFrustum = false;
+	std::ifstream File(std::filesystem::path(FPaths::GameSettingsFilePath()), std::ios::binary);
+	if (!File.is_open())
+	{
+		return;
+	}
+
+	const FString Text((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
+	json::JSON Root = json::JSON::Load(Text);
+
+	if (Root.hasKey("Window"))
+	{
+		json::JSON& Window = Root["Window"];
+		WindowTitle = ReadString(Window, "Title", WindowTitle);
+		WindowWidth = ReadInt(Window, "Width", WindowWidth);
+		WindowHeight = ReadInt(Window, "Height", WindowHeight);
+		bFullscreen = ReadBool(Window, "Fullscreen", bFullscreen);
+	}
+
+	if (Root.hasKey("Paths"))
+	{
+		json::JSON& Paths = Root["Paths"];
+		StartupScenePackagePath = ReadString(Paths, "StartupScene", StartupScenePackagePath);
+	}
+
+	if (Root.hasKey("Runtime"))
+	{
+		json::JSON& Runtime = Root["Runtime"];
+		bRequireStartupScene = ReadBool(Runtime, "RequireStartupScene", bRequireStartupScene);
+		bEnableOverlay = ReadBool(Runtime, "EnableOverlay", bEnableOverlay);
+		bEnableDebugDraw = ReadBool(Runtime, "EnableDebugDraw", bEnableDebugDraw);
+		bEnableLuaHotReload = ReadBool(Runtime, "EnableLuaHotReload", bEnableLuaHotReload);
+	}
+
+	ApplyRuntimeDefaults(*this);
+
+	if (Root.hasKey("Render"))
+	{
+		json::JSON& Render = Root["Render"];
+		RenderOptions.ViewMode = ReadViewMode(Render, "ViewMode", RenderOptions.ViewMode);
+		RenderOptions.ShowFlags.bFXAA = ReadBool(Render, "FXAA", RenderOptions.ShowFlags.bFXAA);
+		RenderOptions.ShowFlags.bFog = ReadBool(Render, "Fog", RenderOptions.ShowFlags.bFog);
+	}
 }

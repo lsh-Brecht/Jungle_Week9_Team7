@@ -1,4 +1,4 @@
-﻿#include "SceneSaveManager.h"
+#include "SceneSaveManager.h"
 
 #include <iostream>
 #include <fstream>
@@ -164,6 +164,35 @@ void FSceneSaveManager::SaveSceneAsJSON(const string& InSceneName, FWorldContext
 		File.flush();
 		File.close();
 	}
+}
+
+bool FSceneSaveManager::SaveWorldToJSONFile(const std::wstring& AbsoluteFilePath, FWorldContext& WorldContext, UCameraComponent* PerspectiveCam)
+{
+	using namespace json;
+
+	if (!WorldContext.World || AbsoluteFilePath.empty())
+	{
+		return false;
+	}
+
+	std::filesystem::path FileDestination(AbsoluteFilePath);
+	if (FileDestination.has_parent_path())
+	{
+		std::filesystem::create_directories(FileDestination.parent_path());
+	}
+
+	JSON Root = SerializeWorld(WorldContext.World, WorldContext, PerspectiveCam);
+	Root[SceneKeys::Version] = 2;
+	Root[SceneKeys::Name] = FPaths::ToUtf8(FileDestination.stem().wstring());
+
+	std::ofstream File(FileDestination, std::ios::binary);
+	if (!File.is_open())
+	{
+		return false;
+	}
+
+	File << Root.dump();
+	return true;
 }
 
 json::JSON FSceneSaveManager::SerializeWorld(UWorld* World, const FWorldContext& Ctx, UCameraComponent* PerspectiveCam)

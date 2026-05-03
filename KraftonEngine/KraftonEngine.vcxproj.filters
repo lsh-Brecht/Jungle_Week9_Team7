@@ -31,6 +31,9 @@
     <Filter Include="Source\Editor\PIE">
       <UniqueIdentifier>{1485fbd8-4084-14c8-cd14-33798c9651d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Editor\Packaging">
+      <UniqueIdentifier>{258cac15-8fdc-fde4-9399-30ce49f994d0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Editor\Selection">
       <UniqueIdentifier>{024578ed-1bd0-0e0e-b5f9-209501f28d5c}</UniqueIdentifier>
     </Filter>
@@ -289,6 +292,21 @@
     </ClCompile>
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp">
       <Filter>Source\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Packaging\GamePackageAssetCollector.cpp">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Packaging\GamePackageBuilder.cpp">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Packaging\GamePackageManifest.cpp">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Packaging\GamePackageSmokeTester.cpp">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Editor\Packaging\GamePackageValidator.cpp">
+      <Filter>Source\Editor\Packaging</Filter>
     </ClCompile>
     <ClCompile Include="Source\Editor\Selection\SelectionManager.cpp">
       <Filter>Source\Editor\Selection</Filter>
@@ -887,6 +905,9 @@
     <ClCompile Include="Source\GameClient\GameClientOverlay.cpp">
       <Filter>Source\GameClient</Filter>
     </ClCompile>
+    <ClCompile Include="Source\GameClient\GameClientPackageValidator.cpp">
+      <Filter>Source\GameClient</Filter>
+    </ClCompile>
     <ClCompile Include="Source\GameClient\GameClientRenderPipeline.cpp">
       <Filter>Source\GameClient</Filter>
     </ClCompile>
@@ -943,6 +964,24 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\PIE\PIETypes.h">
       <Filter>Source\Editor\PIE</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\EditorPackageSettings.h">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\GamePackageAssetCollector.h">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\GamePackageBuilder.h">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\GamePackageManifest.h">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\GamePackageSmokeTester.h">
+      <Filter>Source\Editor\Packaging</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\Packaging\GamePackageValidator.h">
+      <Filter>Source\Editor\Packaging</Filter>
     </ClInclude>
     <ClInclude Include="Source\Editor\Selection\SelectionManager.h">
       <Filter>Source\Editor\Selection</Filter>
@@ -1647,6 +1686,9 @@
       <Filter>Source\GameClient</Filter>
     </ClInclude>
     <ClInclude Include="Source\GameClient\GameClientOverlay.h">
+      <Filter>Source\GameClient</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GameClient\GameClientPackageValidator.h">
       <Filter>Source\GameClient</Filter>
     </ClInclude>
     <ClInclude Include="Source\GameClient\GameClientRenderPipeline.h">

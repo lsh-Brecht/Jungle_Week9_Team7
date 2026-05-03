@@ -1,4 +1,4 @@
-﻿#include "Resource/ResourceManager.h"
+#include "Resource/ResourceManager.h"
 #include "Platform/Paths.h"
 #include "SimpleJSON/json.hpp"
 
@@ -101,18 +101,19 @@ void FResourceManager::LoadFromFile(const FString& Path, ID3D11Device* InDevice)
 void FResourceManager::LoadFromDirectory(const FString& Path, ID3D11Device* InDevice)
 {
 
-	std::wstring RootPath = FPaths::RootDir();
+	std::filesystem::path RootPath = std::filesystem::path(FPaths::RootDir()).lexically_normal();
 
 	for (const auto& Entry : std::filesystem::recursive_directory_iterator(FPaths::ToWide(Path)))
 	{
 		if (Entry.path().extension() != ".png")
 			continue;
 
-		UTexture2D::LoadFromFile(FPaths::ToUtf8(Entry.path()), InDevice);
+		const FString PackagePath = FPaths::ToUtf8(Entry.path().lexically_relative(RootPath).generic_wstring());
+		UTexture2D::LoadFromFile(PackagePath, InDevice);
 
 		DirectX::CreateWICTextureFromFile(
 			InDevice, (Entry.path()).c_str(),
-			nullptr, LoadedResource[FPaths::ToUtf8(Entry.path().lexically_relative(RootPath).generic_wstring())].GetAddressOf());
+			nullptr, LoadedResource[PackagePath].GetAddressOf());
 	}
 }
 
@@ -136,7 +137,13 @@ bool FResourceManager::LoadGPUResources(ID3D11Device* Device)
 			Resource.SRV = nullptr;
 		}
 
-		std::wstring FullPath = FPaths::Combine(FPaths::RootDir(), FPaths::ToWide(Resource.Path));
+		std::wstring FullPath;
+		FString Error;
+		if (!FPaths::TryResolvePackagePath(Resource.Path, FullPath, &Error))
+		{
+			UE_LOG("[Resource] Invalid resource path: %s", Error.c_str());
+			return false;
+		}
 
 		// 확장자에 따라 DDS / WIC 로더 분기
 		std::filesystem::path Ext = std::filesystem::path(Resource.Path).extension();

@@ -3,7 +3,10 @@
 #include "GameClient/GameClientEngine.h"
 #include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
+#include "Platform/Paths.h"
 #include "Serialization/SceneSaveManager.h"
+
+#include <filesystem>
 
 namespace
 {
@@ -30,46 +33,41 @@ bool FGameClientSession::Initialize(UGameClientEngine* InEngine)
 		return false;
 	}
 
-	const FString& StartupScenePath = Engine->GetSettings().StartupScenePath;
-	if (!StartupScenePath.empty())
-	{
-		FWorldContext LoadedContext;
-		FPerspectiveCameraData CameraData;
-		FSceneSaveManager::LoadSceneFromJSON(StartupScenePath, LoadedContext, CameraData);
-
-		if (LoadedContext.World)
-		{
-			UWorld* GameWorld = LoadedContext.World->DuplicateAs(EWorldType::Game);
-			LoadedContext.World->EndPlay();
-			UObjectManager::Get().DestroyObject(LoadedContext.World);
-			LoadedContext.World = nullptr;
-
-			if (!GameWorld)
-			{
-				return false;
-			}
-
-			Engine->GetWorldList().push_back(MakeGameWorldContext(GameWorld, WorldHandle));
-			Engine->SetActiveWorld(WorldHandle);
-			World = GameWorld;
-			return true;
-		}
-	}
-
-	FWorldContext& Context = Engine->CreateWorldContext(
-		EWorldType::Game,
-		WorldHandle,
-		"GameClient");
-
-	Engine->SetActiveWorld(Context.ContextHandle);
-
-	World = Context.World;
-	if (!World)
+	const FGameClientSettings& Settings = Engine->GetSettings();
+	std::wstring SceneDiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(Settings.StartupScenePackagePath, SceneDiskPath, &Error))
 	{
 		return false;
 	}
 
-	World->InitWorld();
+	if (!std::filesystem::exists(std::filesystem::path(SceneDiskPath)))
+	{
+		return false;
+	}
+
+	FWorldContext LoadedContext;
+	FPerspectiveCameraData CameraData;
+	FSceneSaveManager::LoadSceneFromJSON(FPaths::ToUtf8(SceneDiskPath), LoadedContext, CameraData);
+
+	if (!LoadedContext.World)
+	{
+		return false;
+	}
+
+	UWorld* GameWorld = LoadedContext.World->DuplicateAs(EWorldType::Game);
+	LoadedContext.World->EndPlay();
+	UObjectManager::Get().DestroyObject(LoadedContext.World);
+	LoadedContext.World = nullptr;
+
+	if (!GameWorld)
+	{
+		return false;
+	}
+
+	Engine->GetWorldList().push_back(MakeGameWorldContext(GameWorld, WorldHandle));
+	Engine->SetActiveWorld(WorldHandle);
+	World = GameWorld;
 	return true;
 }
 

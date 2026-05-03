@@ -1,4 +1,4 @@
-﻿#include "Texture/Texture2D.h"
+#include "Texture/Texture2D.h"
 #include "Object/ObjectFactory.h"
 #include "Core/Log.h"
 #include "Platform/Paths.h"
@@ -89,9 +89,13 @@ UTexture2D* UTexture2D::LoadFromCached(const FString& FilePath)
 
 bool UTexture2D::LoadInternal(const FString& FilePath, ID3D11Device* Device)
 {
-	//std::filesystem::path TexPath(FilePath);
-	//std::wstring WidePath = TexPath.wstring();
-	std::wstring WidePath = FPaths::ToWide(FilePath);
+	std::wstring WidePath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(FilePath, WidePath, &Error))
+	{
+		UE_LOG("Invalid texture path: %s", Error.c_str());
+		return false;
+	}
 
 	ID3D11Resource* Resource = nullptr;
 	HRESULT hr = DirectX::CreateWICTextureFromFileEx(

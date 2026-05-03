@@ -1,4 +1,4 @@
-﻿#include "Mesh/ObjManager.h"
+#include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
 #include "Mesh/ObjImporter.h"
 #include "Materials/Material.h"
@@ -26,7 +26,10 @@ static void EnsureMeshCacheDirExists()
 
 FString FObjManager::GetBinaryFilePath(const FString& OriginalPath)
 {
-	std::filesystem::path SrcPath(FPaths::ToWide(OriginalPath));
+	std::wstring OriginalDiskPath;
+	FString ResolveError;
+	const bool bResolvedOriginal = FPaths::TryResolvePackagePath(OriginalPath, OriginalDiskPath, &ResolveError);
+	std::filesystem::path SrcPath(bResolvedOriginal ? OriginalDiskPath : FPaths::ToWide(OriginalPath));
 	std::wstring Ext = SrcPath.extension().wstring();
 
 	// 이미 bin 경로가 들어온 경우에는 그대로 사용
@@ -175,8 +178,19 @@ UStaticMesh* FObjManager::LoadObjStaticMesh(const FString& PathFileName, ID3D11D
 	bool bNeedRebuild = true;
 
 	// 3. 타임스탬프 비교 (디스크 캐시 확인)
-	std::filesystem::path BinPathW(FPaths::ToWide(BinPath));
-	std::filesystem::path PathFileNameW(FPaths::ToWide(PathFileName));
+	std::wstring BinDiskPath;
+	std::wstring SourceDiskPath;
+	FString ResolveError;
+	if (!FPaths::TryResolvePackagePath(BinPath, BinDiskPath, &ResolveError))
+	{
+		BinDiskPath = FPaths::ToWide(BinPath);
+	}
+	if (!FPaths::TryResolvePackagePath(PathFileName, SourceDiskPath, &ResolveError))
+	{
+		SourceDiskPath = FPaths::ToWide(PathFileName);
+	}
+	std::filesystem::path BinPathW(BinDiskPath);
+	std::filesystem::path PathFileNameW(SourceDiskPath);
 	if (std::filesystem::exists(BinPathW))
 	{
 		if (!std::filesystem::exists(PathFileNameW) || PathFileName == BinPath ||

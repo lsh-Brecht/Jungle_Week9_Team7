@@ -5,10 +5,17 @@
 
 struct FGameClientSettings
 {
-	FString StartupScenePath;
-	int32 WindowWidth = 1920;
-	int32 WindowHeight = 1080;
-	bool bEnableOverlay = true;
+	FString WindowTitle = "GameClient";
+	int32 WindowWidth = 1280;
+	int32 WindowHeight = 720;
+	bool bFullscreen = false;
+
+	FString StartupScenePackagePath = "Asset/Scene/PackagedStart.Scene";
+
+	bool bRequireStartupScene = true;
+	bool bEnableOverlay = false;
+	bool bEnableDebugDraw = false;
+	bool bEnableLuaHotReload = false;
 	FViewportRenderOptions RenderOptions;
 
 	void Load();

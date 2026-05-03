@@ -287,6 +287,11 @@
   <ItemGroup>
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
+    <ClCompile Include="Source\Editor\Packaging\GamePackageAssetCollector.cpp" />
+    <ClCompile Include="Source\Editor\Packaging\GamePackageBuilder.cpp" />
+    <ClCompile Include="Source\Editor\Packaging\GamePackageManifest.cpp" />
+    <ClCompile Include="Source\Editor\Packaging\GamePackageSmokeTester.cpp" />
+    <ClCompile Include="Source\Editor\Packaging\GamePackageValidator.cpp" />
     <ClCompile Include="Source\Editor\Selection\SelectionManager.cpp" />
     <ClCompile Include="Source\Editor\Settings\EditorSettings.cpp" />
     <ClCompile Include="Source\Editor\Subsystem\OverlayStatSystem.cpp" />
@@ -486,6 +491,7 @@
     <ClCompile Include="Source\GameClient\GameCameraManager.cpp" />
     <ClCompile Include="Source\GameClient\GameClientEngine.cpp" />
     <ClCompile Include="Source\GameClient\GameClientOverlay.cpp" />
+    <ClCompile Include="Source\GameClient\GameClientPackageValidator.cpp" />
     <ClCompile Include="Source\GameClient\GameClientRenderPipeline.cpp" />
     <ClCompile Include="Source\GameClient\GameClientSession.cpp" />
     <ClCompile Include="Source\GameClient\GameClientSettings.cpp" />
@@ -507,6 +513,12 @@
     <ClInclude Include="Source\Editor\EditorEngine.h" />
     <ClInclude Include="Source\Editor\EditorRenderPipeline.h" />
     <ClInclude Include="Source\Editor\PIE\PIETypes.h" />
+    <ClInclude Include="Source\Editor\Packaging\EditorPackageSettings.h" />
+    <ClInclude Include="Source\Editor\Packaging\GamePackageAssetCollector.h" />
+    <ClInclude Include="Source\Editor\Packaging\GamePackageBuilder.h" />
+    <ClInclude Include="Source\Editor\Packaging\GamePackageManifest.h" />
+    <ClInclude Include="Source\Editor\Packaging\GamePackageSmokeTester.h" />
+    <ClInclude Include="Source\Editor\Packaging\GamePackageValidator.h" />
     <ClInclude Include="Source\Editor\Selection\SelectionManager.h" />
     <ClInclude Include="Source\Editor\Settings\EditorSettings.h" />
     <ClInclude Include="Source\Editor\Subsystem\OverlayStatSystem.h" />
@@ -742,6 +754,7 @@
     <ClInclude Include="Source\GameClient\GameCameraManager.h" />
     <ClInclude Include="Source\GameClient\GameClientEngine.h" />
     <ClInclude Include="Source\GameClient\GameClientOverlay.h" />
+    <ClInclude Include="Source\GameClient\GameClientPackageValidator.h" />
     <ClInclude Include="Source\GameClient\GameClientRenderPipeline.h" />
     <ClInclude Include="Source\GameClient\GameClientSession.h" />
     <ClInclude Include="Source\GameClient\GameClientSettings.h" />

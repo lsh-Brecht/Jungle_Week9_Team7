@@ -1,6 +1,7 @@
 ﻿#include "Editor/UI/EditorMainPanel.h"
 
 #include "Editor/EditorEngine.h"
+#include "Editor/Packaging/GamePackageBuilder.h"
 #include "Editor/Settings/EditorSettings.h"
 #include "Editor/Viewport/LevelEditorViewportClient.h"
 #include "Component/CameraComponent.h"
@@ -18,8 +19,10 @@
 
 #include "Editor/UI/ImGuiSetting.h"
 #include "Editor/UI/NotificationToast.h"
+#include "Core/Notification.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <random>
 #include <utility>
 
@@ -42,6 +45,13 @@ const FDebugPlaceActorOption GDebugPlaceActorOptions[] = {
 	{ "Point Light", FLevelViewportLayout::EViewportPlaceActorType::PointLight },
 	{ "Spot Light", FLevelViewportLayout::EViewportPlaceActorType::SpotLight },
 };
+
+template <size_t N>
+void CopyToTextBuffer(char (&Buffer)[N], const FString& Text)
+{
+	std::snprintf(Buffer, N, "%s", Text.c_str());
+	Buffer[N - 1] = '\0';
+}
 
 }
 
@@ -150,6 +160,7 @@ void FEditorMainPanel::Render(float DeltaTime)
 	}
 
 	ProjectSettingsWidget.Render();
+	RenderPackageSettingsWindow();
 
 	if (!bHideEditorWindows)
 	{
@@ -193,6 +204,12 @@ void FEditorMainPanel::RenderMainMenuBar()
 		if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S") && EditorEngine)
 		{
 			EditorEngine->SaveSceneAsWithDialog();
+		}
+
+		ImGui::Separator();
+		if (ImGui::MenuItem("Package Game...") && EditorEngine)
+		{
+			OpenPackageSettingsWindow();
 		}
 
 		ImGui::Separator();
@@ -281,6 +298,71 @@ void FEditorMainPanel::RenderShortcutOverlay()
 	ImGui::TextUnformatted("F : Focus on selection");
 	ImGui::TextUnformatted("Ctrl + LMB : Multi Picking (Toggle)");
 	ImGui::TextUnformatted("Ctrl + Alt + LMB Drag : Area Selection");
+
+	ImGui::End();
+}
+
+void FEditorMainPanel::RenderPackageSettingsWindow()
+{
+	if (!bPackageSettingsOpen)
+	{
+		return;
+	}
+
+	ImGui::SetNextWindowSize(ImVec2(560.0f, 520.0f), ImGuiCond_FirstUseEver);
+	if (!ImGui::Begin("Package Game", &bPackageSettingsOpen))
+	{
+		ImGui::End();
+		return;
+	}
+
+	if (ImGui::CollapsingHeader("Output", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::InputText("Project Name", PackageProjectName, sizeof(PackageProjectName));
+		ImGui::InputText("Output Directory", PackageOutputDirectory, sizeof(PackageOutputDirectory));
+		ImGui::InputText("Client Executable", PackageClientExecutablePath, sizeof(PackageClientExecutablePath));
+		ImGui::InputText("Build Configuration", PackageBuildConfiguration, sizeof(PackageBuildConfiguration));
+	}
+
+	if (ImGui::CollapsingHeader("Startup", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::InputText("Start Scene Name", PackageStartSceneName, sizeof(PackageStartSceneName));
+		ImGui::InputText("Start Scene Path", PackageStartScenePackagePath, sizeof(PackageStartScenePackagePath));
+	}
+
+	if (ImGui::CollapsingHeader("Window", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::DragInt("Width", &PackageSettings.WindowWidth, 1.0f, 320, 7680);
+		ImGui::DragInt("Height", &PackageSettings.WindowHeight, 1.0f, 240, 4320);
+		ImGui::Checkbox("Fullscreen", &PackageSettings.bFullscreen);
+	}
+
+	if (ImGui::CollapsingHeader("Runtime", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Require Startup Scene", &PackageSettings.bRequireStartupScene);
+		ImGui::Checkbox("Enable Overlay", &PackageSettings.bEnableOverlay);
+		ImGui::Checkbox("Enable Debug Draw", &PackageSettings.bEnableDebugDraw);
+		ImGui::Checkbox("Enable Lua Hot Reload", &PackageSettings.bEnableLuaHotReload);
+		ImGui::Checkbox("Run Smoke Test", &PackageSettings.bRunSmokeTest);
+	}
+
+	ImGui::Separator();
+	if (ImGui::Button("Build Package"))
+	{
+		CopyTextBuffersToPackageSettings();
+		BuildGamePackageFromSettings();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Defaults"))
+	{
+		PackageSettings = FEditorPackageSettings();
+		CopyPackageSettingsToTextBuffers();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Close"))
+	{
+		bPackageSettingsOpen = false;
+	}
 
 	ImGui::End();
 }
@@ -468,6 +550,57 @@ void FEditorMainPanel::RenderEditorDebugPanel()
 	}
 
 	ImGui::End();
+}
+
+void FEditorMainPanel::OpenPackageSettingsWindow()
+{
+	CopyPackageSettingsToTextBuffers();
+	bPackageSettingsOpen = true;
+}
+
+void FEditorMainPanel::BuildGamePackageFromSettings()
+{
+	if (!EditorEngine)
+	{
+		return;
+	}
+
+	FGamePackageBuilder Builder;
+	FGamePackageBuildResult PackageResult = Builder.Build(EditorEngine, PackageSettings);
+	if (PackageResult.bSuccess)
+	{
+		FNotificationManager::Get().AddNotification(
+			"Game package created: " + PackageResult.OutputDirectory,
+			ENotificationType::Success,
+			4.0f);
+	}
+	else
+	{
+		FNotificationManager::Get().AddNotification(
+			"Game package failed: " + PackageResult.ErrorMessage,
+			ENotificationType::Error,
+			8.0f);
+	}
+}
+
+void FEditorMainPanel::CopyPackageSettingsToTextBuffers()
+{
+	CopyToTextBuffer(PackageProjectName, PackageSettings.ProjectName);
+	CopyToTextBuffer(PackageOutputDirectory, PackageSettings.OutputDirectory);
+	CopyToTextBuffer(PackageClientExecutablePath, PackageSettings.ClientExecutablePath);
+	CopyToTextBuffer(PackageStartSceneName, PackageSettings.StartSceneName);
+	CopyToTextBuffer(PackageStartScenePackagePath, PackageSettings.StartScenePackagePath);
+	CopyToTextBuffer(PackageBuildConfiguration, PackageSettings.BuildConfiguration);
+}
+
+void FEditorMainPanel::CopyTextBuffersToPackageSettings()
+{
+	PackageSettings.ProjectName = PackageProjectName;
+	PackageSettings.OutputDirectory = PackageOutputDirectory;
+	PackageSettings.ClientExecutablePath = PackageClientExecutablePath;
+	PackageSettings.StartSceneName = PackageStartSceneName;
+	PackageSettings.StartScenePackagePath = PackageStartScenePackagePath;
+	PackageSettings.BuildConfiguration = PackageBuildConfiguration;
 }
 
 void FEditorMainPanel::RenderConsoleDrawer(float DeltaTime)

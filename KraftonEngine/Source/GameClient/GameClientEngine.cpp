@@ -1,7 +1,9 @@
-﻿#include "GameClient/GameClientEngine.h"
+#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
+#include "GameClient/GameClientPackageValidator.h"
 #include "Core/Notification.h"
+#include "Engine/Platform/Paths.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
@@ -40,11 +42,42 @@ void UGameClientEngine::InitCameraManager()
 
 void UGameClientEngine::Init(FWindowsWindow* InWindow)
 {
-	UEngine::Init(InWindow);
-
 	Settings.Load();
 
-	Session.Initialize(this);
+	FString PackageValidationErrors;
+	if (!FGameClientPackageValidator::ValidateBeforeEngineInit(Settings, PackageValidationErrors))
+	{
+		::MessageBoxA(
+			InWindow ? InWindow->GetHWND() : nullptr,
+			PackageValidationErrors.c_str(),
+			"GameClient package validation failed",
+			MB_OK | MB_ICONERROR);
+		::PostQuitMessage(1);
+		return;
+	}
+
+	if (InWindow)
+	{
+		InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
+		InWindow->ResizeClient(static_cast<unsigned int>(Settings.WindowWidth), static_cast<unsigned int>(Settings.WindowHeight));
+		if (Settings.bFullscreen && !InWindow->IsFullscreen())
+		{
+			InWindow->ToggleFullscreen();
+		}
+	}
+
+	UEngine::Init(InWindow);
+
+	if (!Session.Initialize(this))
+	{
+		::MessageBoxA(
+			InWindow ? InWindow->GetHWND() : nullptr,
+			"Failed to initialize GameClient session.",
+			"GameClient startup failed",
+			MB_OK | MB_ICONERROR);
+		::PostQuitMessage(1);
+		return;
+	}
 
 	InitCameraManager();
 

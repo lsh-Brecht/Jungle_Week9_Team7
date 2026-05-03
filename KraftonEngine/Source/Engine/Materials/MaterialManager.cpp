@@ -1,4 +1,4 @@
-﻿#include "MaterialManager.h"
+#include "MaterialManager.h"
 #include <filesystem>
 #include <fstream>
 #include "Materials/Material.h"
@@ -117,7 +117,14 @@ UMaterial* FMaterialManager::GetOrCreateMaterial(const FString& MatFilePath)
 
 json::JSON FMaterialManager::ReadJsonFile(const FString& FilePath) const
 {
-	std::ifstream File(FPaths::ToWide(FilePath).c_str());
+	std::wstring DiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(FilePath, DiskPath, &Error))
+	{
+		return json::JSON();
+	}
+
+	std::ifstream File(std::filesystem::path(DiskPath), std::ios::binary);
 	if (!File.is_open()) return json::JSON(); // Null JSON 반환
 
 	std::stringstream Buffer;
@@ -273,8 +280,20 @@ ERasterizerState FMaterialManager::StringToRasterizerState(const FString& Str, E
 
 void FMaterialManager::SaveToJSON(json::JSON& JsonData, const FString& MatFilePath)
 {
-	std::ofstream File(FPaths::ToWide(MatFilePath));
+#if IS_GAME_CLIENT
+	(void)JsonData;
+	(void)MatFilePath;
+#else
+	std::wstring DiskPath;
+	FString Error;
+	if (!FPaths::TryResolvePackagePath(MatFilePath, DiskPath, &Error))
+	{
+		return;
+	}
+
+	std::ofstream File(std::filesystem::path(DiskPath), std::ios::binary);
 	File << JsonData.dump();
+#endif
 }
 
 bool FMaterialManager::InjectDefaultParameters(json::JSON& JsonData, FMaterialTemplate* Template, UMaterial* Material)

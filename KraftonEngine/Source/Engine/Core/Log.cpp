@@ -1,4 +1,4 @@
-﻿#include "Core/Log.h"
+#include "Core/Log.h"
 #include "Platform/Paths.h"
 
 #include <Windows.h>
@@ -26,7 +26,12 @@ class FFileOutputDevice : public ILogOutputDevice
 public:
 	FFileOutputDevice()
 	{
-		std::wstring LogPath = FPaths::LogDir() + L"Engine.log";
+		std::wstring LogPath = FPaths::LogDir()
+#if IS_GAME_CLIENT
+			+ L"GameClient.log";
+#else
+			+ L"Engine.log";
+#endif
 		FPaths::CreateDir(FPaths::LogDir());
 		_wfopen_s(&File, LogPath.c_str(), L"w");
 	}

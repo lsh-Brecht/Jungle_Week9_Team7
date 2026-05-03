@@ -1,4 +1,4 @@
-﻿#include "LuaScriptSubsystem.h"
+#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -200,6 +200,12 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 
 	const FString NormalizedPath = ResolveScriptPath(ScriptPath);
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
+
+	if (AbsolutePath.empty())
+	{
+		UE_LOG("[Lua] Invalid script path: %s", ScriptPath.c_str());
+		return false;
+	}
 
 	if (!std::filesystem::exists(FPaths::ToWide(AbsolutePath)))
 	{
@@ -747,6 +753,11 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment)
 {
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
+	if (AbsolutePath.empty())
+	{
+		UE_LOG("[Lua] Lua File Execution Error (%s): Invalid path", NormalizedPath.c_str());
+		return false;
+	}
 
 	std::ifstream File(FPaths::ToWide(AbsolutePath), std::ios::binary);
 	if (!File)
@@ -785,6 +796,11 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 bool FLuaScriptSubsystem::CompileFile(sol::state_view LuaView, const FString& NormalizedPath)
 {
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
+	if (AbsolutePath.empty())
+	{
+		UE_LOG("[Lua] Lua File Compile Error (%s): Invalid path", NormalizedPath.c_str());
+		return false;
+	}
 
 	std::ifstream File(FPaths::ToWide(AbsolutePath), std::ios::binary);
 	if (!File)
@@ -865,6 +881,22 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 
 FString FLuaScriptSubsystem::ResolveScriptPath(const FString& Path) const
 {
+#if IS_GAME_CLIENT
+	FString Normalized = Path;
+	std::replace(Normalized.begin(), Normalized.end(), '\\', '/');
+	if (Normalized.rfind("LuaScripts/", 0) != 0)
+	{
+		Normalized = "LuaScripts/" + Normalized;
+	}
+
+	std::filesystem::path ScriptPath(FPaths::ToWide(Normalized));
+	if (!ScriptPath.has_extension())
+	{
+		ScriptPath.replace_extension(L".lua");
+	}
+
+	return FPaths::ToUtf8(ScriptPath.generic_wstring());
+#else
 	std::filesystem::path InputPath(FPaths::ToWide(Path));
 	if (InputPath.is_absolute())
 	{
@@ -891,6 +923,7 @@ FString FLuaScriptSubsystem::ResolveScriptPath(const FString& Path) const
 	}
 
 	return NormalizeScriptPath(Candidate);
+#endif
 }
 
 FString FLuaScriptSubsystem::ResolveModulePath(const FString& ModuleName) const
@@ -899,6 +932,34 @@ FString FLuaScriptSubsystem::ResolveModulePath(const FString& ModuleName) const
 	std::replace(RelativePath.begin(), RelativePath.end(), '.', '/');
 	std::replace(RelativePath.begin(), RelativePath.end(), '\\', '/');
 
+#if IS_GAME_CLIENT
+	std::filesystem::path ModulePath(FPaths::ToWide(RelativePath));
+	if (!ModulePath.has_extension())
+	{
+		ModulePath.replace_extension(L".lua");
+	}
+
+	FString Candidate = FPaths::ToUtf8(ModulePath.generic_wstring());
+	std::wstring DiskPath;
+	FString Error;
+	if (FPaths::TryResolveScriptPath(Candidate, DiskPath, &Error) && std::filesystem::exists(std::filesystem::path(DiskPath)))
+	{
+		return ResolveScriptPath(Candidate);
+	}
+
+	if (ModulePath.extension() == L".lua")
+	{
+		std::filesystem::path ModuleDir = ModulePath;
+		ModuleDir.replace_extension();
+		Candidate = FPaths::ToUtf8((ModuleDir / L"init.lua").generic_wstring());
+		if (FPaths::TryResolveScriptPath(Candidate, DiskPath, &Error) && std::filesystem::exists(std::filesystem::path(DiskPath)))
+		{
+			return ResolveScriptPath(Candidate);
+		}
+	}
+
+	return ResolveScriptPath(RelativePath);
+#else
 	std::filesystem::path ModulePath(FPaths::ToWide(RelativePath));
 	if (!ModulePath.has_extension())
 	{
@@ -923,16 +984,27 @@ FString FLuaScriptSubsystem::ResolveModulePath(const FString& ModuleName) const
 	}
 
 	return ResolveScriptPath(RelativePath);
+#endif
 }
 
 FString FLuaScriptSubsystem::MakeAbsoluteScriptPath(const FString& NormalizedPath) const
 {
+#if IS_GAME_CLIENT
+	std::wstring DiskPath;
+	FString Error;
+	if (FPaths::TryResolveScriptPath(NormalizedPath, DiskPath, &Error))
+	{
+		return FPaths::ToUtf8(std::filesystem::path(DiskPath).generic_wstring());
+	}
+	return "";
+#else
 	std::filesystem::path Path(FPaths::ToWide(NormalizedPath));
 	if (Path.is_absolute())
 	{
 		return ToGenericUtf8(Path.lexically_normal());
 	}
 	return ToGenericUtf8((std::filesystem::path(FPaths::RootDir()) / Path).lexically_normal());
+#endif
 }
 
 void FLuaScriptSubsystem::RecordIncludeDependency(const FString& IncludePath)

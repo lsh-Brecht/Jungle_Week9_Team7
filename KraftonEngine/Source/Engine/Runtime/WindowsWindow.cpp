@@ -16,6 +16,38 @@ void FWindowsWindow::OnResized(unsigned int InWidth, unsigned int InHeight)
 	Height = static_cast<float>(InHeight);
 }
 
+void FWindowsWindow::SetTitle(const wchar_t* Title)
+{
+	if (HWindow)
+	{
+		SetWindowTextW(HWindow, Title ? Title : L"");
+	}
+}
+
+void FWindowsWindow::ResizeClient(unsigned int InWidth, unsigned int InHeight)
+{
+	if (!HWindow || InWidth == 0 || InHeight == 0)
+	{
+		return;
+	}
+
+	RECT Rect = { 0, 0, static_cast<LONG>(InWidth), static_cast<LONG>(InHeight) };
+	const DWORD Style = static_cast<DWORD>(GetWindowLongPtr(HWindow, GWL_STYLE));
+	const DWORD ExStyle = static_cast<DWORD>(GetWindowLongPtr(HWindow, GWL_EXSTYLE));
+	AdjustWindowRectEx(&Rect, Style, FALSE, ExStyle);
+
+	SetWindowPos(
+		HWindow,
+		nullptr,
+		0,
+		0,
+		Rect.right - Rect.left,
+		Rect.bottom - Rect.top,
+		SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+	OnResized(InWidth, InHeight);
+}
+
 POINT FWindowsWindow::ScreenToClientPoint(POINT ScreenPoint) const
 {
 	ScreenToClient(HWindow, &ScreenPoint);
