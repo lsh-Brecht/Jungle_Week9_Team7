@@ -95,6 +95,7 @@ public:
 	void CleanupComponentReferences(UActorComponent* Component);
 	UCameraComponent* FindFirstCamera() const;
 	APawn* FindFirstPawn() const;
+	AActor* FindFirstPossessableActor() const;
 	APlayerController* FindOrCreatePlayerController();
 	void AutoWirePlayerController(APlayerController* PreferredController = nullptr);
 	UCameraComponent* ResolveGameplayViewCamera(APlayerController* PreferredController = nullptr) const;

@@ -11,6 +11,9 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Component/ActorComponent.h"
+#include "Component/Movement/PawnMovementComponent.h"
+#include "Component/ControllerInputComponent.h"
+#include "Object/Object.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
 
@@ -461,7 +464,7 @@ void UWorld::CleanupActorReferences(AActor* Actor)
 			continue;
 		}
 
-		if (Controller->GetPawn() == Actor)
+		if (Controller->GetPossessedActor() == Actor)
 		{
 			Controller->UnPossess();
 		}
@@ -549,6 +552,19 @@ APawn* UWorld::FindFirstPawn() const
 	return nullptr;
 }
 
+AActor* UWorld::FindFirstPossessableActor() const
+{
+	if (!PersistentLevel) return nullptr;
+	for (AActor* Actor : PersistentLevel->GetActors())
+	{
+		for (UActorComponent* Comp : Actor->GetComponents())
+		{
+			if (Cast<UPawnMovementComponent>(Comp)) return Actor;
+		}
+	}
+	return nullptr;
+}
+
 APlayerController* UWorld::CreatePlayerController()
 {
 	APlayerController* Controller = SpawnActor<APlayerController>();
@@ -579,19 +595,31 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 		return;
 	}
 
-	if (!Controller->GetPawn())
+	if (!Controller->GetPossessedActor())
 	{
-		if (APawn* Pawn = FindFirstPawn())
+		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
 		{
-			Controller->Possess(Pawn);
+			if (Input->PossessedActorUUID != 0)
+			{
+				if (UObject* Obj = UObjectManager::Get().FindByUUID(Input->PossessedActorUUID))
+				{
+					if (AActor* Target = Cast<AActor>(Obj))
+						Controller->Possess(Target);
+				}
+			}
+		}
+		if (!Controller->GetPossessedActor())
+		{
+			if (AActor* Target = FindFirstPossessableActor())
+				Controller->Possess(Target);
 		}
 	}
 
 	if (!Controller->GetViewTarget())
 	{
-		if (APawn* Pawn = Controller->GetPawn())
+		if (AActor* Target = Controller->GetPossessedActor())
 		{
-			Controller->SetViewTarget(Pawn);
+			Controller->SetViewTarget(Target);
 		}
 		else
 		{

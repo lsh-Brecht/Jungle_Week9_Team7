@@ -47,47 +47,50 @@ static FRotator MakeControlRotationFromCamera(const UCameraComponent* Camera)
 	return Rotation;
 }
 
-void APlayerController::Possess(APawn* InPawn)
+void APlayerController::Possess(AActor* InActor)
 {
-	if (Pawn == InPawn)
+	if (PossessedActor == InActor)
 	{
-		ViewTarget = InPawn;
+		ViewTarget = InActor;
 		return;
 	}
 	UnPossess();
-	Pawn = InPawn;
-	ViewTarget = InPawn;
-	if (Pawn)
+	PossessedActor = InActor;
+	ViewTarget = InActor;
+	if (PossessedActor)
 	{
-		Pawn->SetController(this);
-		if (UCameraComponent* Camera = Pawn->FindPawnCamera())
-		{
+		if (APawn* Pawn = Cast<APawn>(PossessedActor))
+			Pawn->SetController(this);
+		if (UCameraComponent* Camera = FindCameraOnActor(PossessedActor))
 			ControlRotation = MakeControlRotationFromCamera(Camera);
-		}
 	}
+	if (UControllerInputComponent* Input = FindControllerInputComponent())
+		Input->PossessedActorUUID = InActor ? InActor->GetUUID() : 0;
 }
 
 void APlayerController::UnPossess()
 {
-	APawn* CurrentPawn = GetPawn();
-	if (CurrentPawn && CurrentPawn->GetController() == this)
+	if (APawn* Pawn = Cast<APawn>(PossessedActor))
 	{
-		CurrentPawn->SetController(nullptr);
+		if (Pawn->GetController() == this)
+			Pawn->SetController(nullptr);
 	}
-	Pawn = nullptr;
+	PossessedActor = nullptr;
+	if (UControllerInputComponent* Input = FindControllerInputComponent())
+		Input->PossessedActorUUID = 0;
 }
 
-APawn* APlayerController::GetPawn() const
+AActor* APlayerController::GetPossessedActor() const
 {
-	if (!Pawn || !IsAliveObject(Pawn))
+	if (!PossessedActor || !IsAliveObject(PossessedActor))
 	{
 		return nullptr;
 	}
 	if (UWorld* World = GetWorld())
 	{
-		return World->IsActorInWorld(Pawn) ? Pawn : nullptr;
+		return World->IsActorInWorld(PossessedActor) ? PossessedActor : nullptr;
 	}
-	return Pawn;
+	return PossessedActor;
 }
 
 void APlayerController::SetViewTarget(AActor* InViewTarget)
@@ -134,12 +137,9 @@ UCameraComponent* APlayerController::ResolveViewCamera() const
 	{
 		return Camera;
 	}
-	if (APawn* CurrentPawn = GetPawn())
+	if (UCameraComponent* Camera = FindCameraOnActor(GetPossessedActor()))
 	{
-		if (UCameraComponent* Camera = CurrentPawn->FindPawnCamera())
-		{
-			return Camera;
-		}
+		return Camera;
 	}
 	return nullptr;
 }

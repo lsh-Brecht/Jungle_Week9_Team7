@@ -256,7 +256,7 @@ void FGameClientOverlay::DrawOverlay(float DeltaTime)
 		{
 			Controller = World->GetPlayerController(0);
 		}
-		APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
+		AActor* Pawn = Controller ? Controller->GetPossessedActor() : nullptr;
 		AActor* ViewTarget = Controller ? Controller->GetViewTarget() : nullptr;
 		UCameraComponent* ActiveCamera = World->GetActiveCamera();
 		UCameraComponent* ViewCamera = World->GetViewCamera();

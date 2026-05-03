@@ -19,9 +19,9 @@ public:
 	void InitDefaultComponents() override;
 	void EndPlay() override;
 
-	void Possess(APawn* InPawn);
+	void Possess(AActor* InActor);
 	void UnPossess();
-	APawn* GetPawn() const;
+	AActor* GetPossessedActor() const;
 
 	void SetViewTarget(AActor* InViewTarget);
 	AActor* GetViewTarget() const;
@@ -33,7 +33,7 @@ public:
 	void SetControlRotation(const FRotator& InRotation) { ControlRotation = InRotation; }
 
 private:
-	APawn* Pawn = nullptr;
+	AActor* PossessedActor = nullptr;
 	AActor* ViewTarget = nullptr;
 	FRotator ControlRotation;
 };

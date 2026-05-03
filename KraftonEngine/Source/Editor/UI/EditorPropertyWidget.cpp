@@ -9,6 +9,7 @@
 #include "Component/BillboardComponent.h"
 #include "Component/MeshComponent.h"
 #include "Component/Movement/MovementComponent.h"
+#include "Component/Movement/PawnMovementComponent.h"
 #include "Component/GizmoComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -482,12 +483,11 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 
 		ImGui::TextDisabled("Auto: pawn-owned view camera = pawn, separated view camera = camera.");
 
-		// 현재 Possess 중인 Pawn 표시
-		APawn* CurPawn = PC->GetPawn();
-		if (CurPawn)
+		AActor* CurActor = PC->GetPossessedActor();
+		if (CurActor)
 		{
-			const FString& N = CurPawn->GetFName().ToString();
-			ImGui::Text("Possessed: %s", N.empty() ? "Pawn" : N.c_str());
+			const FString& N = CurActor->GetFName().ToString();
+			ImGui::Text("Possessed: %s", N.empty() ? "Actor" : N.c_str());
 			ImGui::SameLine();
 			if (ImGui::SmallButton("UnPossess"))
 				PC->UnPossess();
@@ -497,8 +497,7 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 			ImGui::TextDisabled("Possessed: (none)");
 		}
 
-		// Pawn 선택해서 Possess
-		if (ImGui::Button("Possess Pawn..."))
+		if (ImGui::Button("Possess Actor..."))
 			ImGui::OpenPopup("##PawnPicker");
 		if (ImGui::BeginPopup("##PawnPicker"))
 		{
@@ -506,18 +505,24 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 			bool bAny = false;
 			for (AActor* A : World->GetActors())
 			{
-				if (APawn* P = Cast<APawn>(A))
+				bool bPossessable = Cast<APawn>(A) != nullptr;
+				if (!bPossessable)
 				{
-					bAny = true;
-					const FString& N = P->GetFName().ToString();
-					if (ImGui::MenuItem(N.empty() ? "Pawn" : N.c_str()))
+					for (UActorComponent* Comp : A->GetComponents())
 					{
-						PC->Possess(P);
-						ImGui::CloseCurrentPopup();
+						if (Cast<UPawnMovementComponent>(Comp)) { bPossessable = true; break; }
 					}
 				}
+				if (!bPossessable) continue;
+				bAny = true;
+				const FString& N = A->GetFName().ToString();
+				if (ImGui::MenuItem(N.empty() ? "Actor" : N.c_str()))
+				{
+					PC->Possess(A);
+					ImGui::CloseCurrentPopup();
+				}
 			}
-			if (!bAny) ImGui::TextDisabled("No Pawns in world");
+			if (!bAny) ImGui::TextDisabled("No possessable actors in world");
 			ImGui::EndPopup();
 		}
 

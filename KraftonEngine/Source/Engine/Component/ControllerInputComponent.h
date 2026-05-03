@@ -43,6 +43,8 @@ public:
 	EControllerLookMode GetLookMode() const { return static_cast<EControllerLookMode>(LookMode); }
 	void SetLookMode(EControllerLookMode InMode);
 
+	uint32 PossessedActorUUID = 0;
+
 private:
 	UCameraComponent* ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const;
 	void NormalizeOptions();

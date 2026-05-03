@@ -19,7 +19,7 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 		LUA_HANDLE_COMMON(FLuaPlayerControllerHandle),
 
 		"Possess",
-		[](const FLuaPlayerControllerHandle& Self, const FLuaPawnHandle& PawnHandle)
+		[](const FLuaPlayerControllerHandle& Self, const FLuaGameObjectHandle& ActorHandle)
 		{
 			APlayerController* Controller = Self.Resolve();
 			if (!Controller)
@@ -27,7 +27,7 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 				UE_LOG("[Lua] Invalid PlayerController.Possess Call.");
 				return;
 			}
-			Controller->Possess(PawnHandle.Resolve());
+			Controller->Possess(ActorHandle.Resolve());
 		},
 
 		"UnPossess",
@@ -42,15 +42,15 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			Controller->UnPossess();
 		},
 
-		"GetPawn",
-		[](const FLuaPlayerControllerHandle& Self) -> FLuaPawnHandle
+		"GetPossessedActor",
+		[](const FLuaPlayerControllerHandle& Self) -> FLuaGameObjectHandle
 		{
-			FLuaPawnHandle Handle;
+			FLuaGameObjectHandle Handle;
 			APlayerController* Controller = Self.Resolve();
-			APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
-			if (Pawn)
+			AActor* Actor = Controller ? Controller->GetPossessedActor() : nullptr;
+			if (Actor)
 			{
-				Handle.UUID = Pawn->GetUUID();
+				Handle.UUID = Actor->GetUUID();
 			}
 			return Handle;
 		},

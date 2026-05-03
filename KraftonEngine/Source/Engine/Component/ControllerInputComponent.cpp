@@ -3,7 +3,6 @@
 #include "Component/CameraComponent.h"
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Engine/Input/InputSystem.h"
-#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Math/MathUtils.h"
 #include "Object/ObjectFactory.h"
@@ -54,6 +53,7 @@ void UControllerInputComponent::Serialize(FArchive& Ar)
 	Ar << LookSensitivity;
 	Ar << MinPitch;
 	Ar << MaxPitch;
+	Ar << PossessedActorUUID;
 
 	if (Ar.IsLoading())
 	{
@@ -70,6 +70,7 @@ void UControllerInputComponent::GetEditableProperties(TArray<FPropertyDescriptor
 
 	OutProps.push_back({ "Movement Frame", EPropertyType::Enum, &MovementFrame, 0.0f, 0.0f, 0.1f, MovementFrameNames, MovementFrameCount });
 	OutProps.push_back({ "Look Mode", EPropertyType::Enum, &LookMode, 0.0f, 0.0f, 0.1f, LookModeNames, LookModeCount });
+	OutProps.push_back({ "PossessedActorUUID",EPropertyType::ActorRef,&PossessedActorUUID });
 	OutProps.push_back({ "Move Speed", EPropertyType::Float, &MoveSpeed, 0.0f, 100000.0f, 0.1f });
 	OutProps.push_back({ "Sprint Multiplier", EPropertyType::Float, &SprintMultiplier, 0.0f, 100.0f, 0.1f });
 	OutProps.push_back({ "Look Sensitivity", EPropertyType::Float, &LookSensitivity, 0.0f, 100.0f, 0.01f });
@@ -143,15 +144,18 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 
 	if (Controller)
 	{
-		if (APawn* Pawn = Controller->GetPawn())
+		if (AActor* Actor = Controller->GetPossessedActor())
 		{
-			if (UPawnMovementComponent* Movement = Pawn->FindPawnMovementComponent())
+			for (UActorComponent* Comp : Actor->GetComponents())
 			{
-				Movement->AddMovementInput(WorldDelta, WorldDelta.Length());
-				Movement->ApplyPendingMovement();
-				return true;
+				if (UPawnMovementComponent* Movement = Cast<UPawnMovementComponent>(Comp))
+				{
+					Movement->AddMovementInput(WorldDelta, WorldDelta.Length());
+					Movement->ApplyPendingMovement();
+					return true;
+				}
 			}
-			Pawn->AddActorWorldOffset(WorldDelta);
+			Actor->AddActorWorldOffset(WorldDelta);
 			return true;
 		}
 	}
@@ -185,16 +189,27 @@ bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UC
 	if (Controller)
 	{
 		Controller->SetControlRotation(Rotation);
-		APawn* Pawn = Controller->GetPawn();
-		UCameraComponent* PawnCamera = Pawn ? Pawn->FindPawnCamera() : nullptr;
+		AActor* PossessedActor = Controller->GetPossessedActor();
+		UCameraComponent* PawnCamera = nullptr;
+		if (PossessedActor)
+		{
+			for (UActorComponent* Comp : PossessedActor->GetComponents())
+			{
+				if (UCameraComponent* CC = Cast<UCameraComponent>(Comp))
+				{
+					PawnCamera = CC;
+					break;
+				}
+			}
+		}
 		const EControllerLookMode Mode = GetLookMode();
-		const bool bUsePawnYawPawnPitch = Pawn != nullptr
+		const bool bUsePawnYawPawnPitch = PossessedActor != nullptr
 			&& (Mode == EControllerLookMode::PawnYawPawnPitch
 				|| (Mode == EControllerLookMode::Auto && PawnCamera == TargetCamera));
 
 		if (bUsePawnYawPawnPitch)
 		{
-			Pawn->SetActorRotation(FRotator(Rotation.Pitch, Rotation.Yaw, 0.0f));
+			PossessedActor->SetActorRotation(FRotator(Rotation.Pitch, Rotation.Yaw, 0.0f));
 			return true;
 		}
 	}

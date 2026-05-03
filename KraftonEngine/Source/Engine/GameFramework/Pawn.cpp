@@ -28,7 +28,7 @@ void APawn::EndPlay()
 {
 	if (APlayerController* CurrentController = GetController())
 	{
-		if (CurrentController->GetPawn() == this)
+		if (CurrentController->GetPossessedActor() == this)
 		{
 			CurrentController->UnPossess();
 		}
