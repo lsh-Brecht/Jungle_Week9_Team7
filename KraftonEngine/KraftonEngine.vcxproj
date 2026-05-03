@@ -285,7 +285,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
     <ClCompile Include="Source\Editor\Packaging\GamePackageAssetCollector.cpp" />
@@ -461,6 +460,7 @@
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\LoadingScreen.cpp" />
     <ClCompile Include="Source\Engine\Runtime\ObjectPoolSystem.cpp" />
     <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsApplication.cpp" />
@@ -482,6 +482,7 @@
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
+    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp" />
     <ClCompile Include="Source\Engine\UI\SSplitter.cpp" />
@@ -511,7 +512,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Editor\EditorEngine.h" />
     <ClInclude Include="Source\Editor\EditorRenderPipeline.h" />
     <ClInclude Include="Source\Editor\PIE\PIETypes.h" />
@@ -728,6 +728,7 @@
     <ClInclude Include="Source\Engine\Runtime\Engine.h" />
     <ClInclude Include="Source\Engine\Runtime\EngineLoop.h" />
     <ClInclude Include="Source\Engine\Runtime\Launch.h" />
+    <ClInclude Include="Source\Engine\Runtime\LoadingScreen.h" />
     <ClInclude Include="Source\Engine\Runtime\ObjectPoolSystem.h" />
     <ClInclude Include="Source\Engine\Runtime\PooledObjectInterface.h" />
     <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h" />
@@ -744,6 +745,7 @@
     <ClInclude Include="Source\Engine\Scripting\SolInclude.h" />
     <ClInclude Include="Source\Engine\Serialization\Archive.h" />
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h" />
+    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\SceneSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\WindowsArchive.h" />
     <ClInclude Include="Source\Engine\Texture\Texture2D.h" />

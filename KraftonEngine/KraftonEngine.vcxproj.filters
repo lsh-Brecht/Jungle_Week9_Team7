@@ -812,6 +812,9 @@
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Runtime\LoadingScreen.cpp">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Runtime\ObjectPoolSystem.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
@@ -874,6 +877,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp">
       <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
+      <Filter>Source\Engine\Serialization</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp">
       <Filter>Source\Engine\Serialization</Filter>
@@ -954,9 +960,6 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
-      <Filter>Source\Engine\Serialization</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1607,6 +1610,9 @@
     <ClInclude Include="Source\Engine\Runtime\Launch.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Runtime\LoadingScreen.h">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Runtime\ObjectPoolSystem.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
@@ -1653,6 +1659,9 @@
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h">
+      <Filter>Source\Engine\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\SceneSaveManager.h">
@@ -1744,9 +1753,6 @@
     </ClInclude>
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
-      <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
