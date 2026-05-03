@@ -4,10 +4,10 @@
   "Origin" : "ObjImport",
   "Parameters" : {
     "HasNormalMap" : 0.000000,
-    "SectionColor" : [0.132870, 0.603830, 0.603830, 1.000000],
+    "SectionColor" : [0.005610, 0.005610, 0.005610, 1.000000],
     "_pad" : [0.000000, 0.000000, 0.000000]
   },
-  "PathFileName" : "Asset/Materials/Auto/mat6.004.mat",
+  "PathFileName" : "Asset/Materials/Auto/blue_mat1.005.mat",
   "RasterizerState" : "",
   "RenderPass" : "Opaque",
   "ShaderPath" : "Shaders/Geometry/UberLit.hlsl"

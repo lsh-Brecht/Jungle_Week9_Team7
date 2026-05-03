@@ -1,7 +1,7 @@
 {
   "Name" : "TreeB",
   "RootActor" : {
-    "ActorUUID" : 170,
+    "ActorUUID" : 130,
     "ClassName" : "AActor",
     "NonSceneComponents" : [],
     "RootComponent" : {
@@ -13,9 +13,9 @@
             "Box Extent" : [0.500000, 0.500000, 0.500000],
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
-            "Location" : [0.000000, 0.000000, -1.360722],
+            "Location" : [0.000000, 0.076862, 0.340300],
             "Rotation" : [-0.000000, 0.000000, 0.000000],
-            "Scale" : [1.000000, 1.000000, 1.000000],
+            "Scale" : [0.761122, 0.744484, 0.677335],
             "Two Sided Shadow" : false,
             "Visible" : true,
             "bEditorOnly" : false,
@@ -29,9 +29,25 @@
             "Box Extent" : [0.500000, 0.500000, 0.500000],
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
-            "Location" : [0.000000, 0.000000, 0.000000],
+            "Location" : [0.000000, 0.081730, 1.415659],
             "Rotation" : [-0.000000, 0.000000, 0.000000],
-            "Scale" : [3.004203, 2.965188, 1.700811],
+            "Scale" : [2.203831, 2.217384, 1.285832],
+            "Two Sided Shadow" : false,
+            "Visible" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "Children" : [],
+          "ClassName" : "UBoxComponent",
+          "Properties" : {
+            "Blocks Movement" : true,
+            "Box Extent" : [0.500000, 0.500000, 0.500000],
+            "Cast Shadow" : true,
+            "Generate Overlap Events" : true,
+            "Location" : [0.000000, 0.062151, 2.589615],
+            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Scale" : [0.760952, 0.760777, 0.830838],
             "Two Sided Shadow" : false,
             "Visible" : true,
             "bEditorOnly" : false,
@@ -43,10 +59,10 @@
         "Blocks Movement" : true,
         "Cast Shadow" : true,
         "Element 0" : {
-          "Path" : "Asset/Materials/Auto/VoxelTreeBMat.mat"
+          "Path" : "Asset/Materials/Auto/VoxelTreeB.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [-5.845173, 4.762876, 4.642024],
+        "Location" : [-4.124097, -21.453951, 2.669216],
         "Rotation" : [-0.000000, 0.000000, 0.000000],
         "Scale" : [1.000000, 1.000000, 1.000000],
         "Static Mesh" : "Data/VoxelTrees/VoxelTreeB.obj",
