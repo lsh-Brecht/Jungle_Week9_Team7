@@ -68,3 +68,9 @@ public:
 private:
 	FEditorMaterialInspector MaterialInspector;
 };
+
+class LuaScriptElement final : public ContentBrowserElement
+{
+public:
+	virtual const char* GetDragItemType() override { return "LuaScriptContentItem"; }
+};

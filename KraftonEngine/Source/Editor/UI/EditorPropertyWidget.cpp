@@ -1264,6 +1264,20 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 			char Buf[512];
 			strncpy_s(Buf, sizeof(Buf), Val->c_str(), _TRUNCATE);
 			ImGui::InputText("##ScriptPath", Buf, sizeof(Buf), ImGuiInputTextFlags_ReadOnly);
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload("LuaScriptContentItem"))
+				{
+					const FContentItem* Item = reinterpret_cast<const FContentItem*>(Payload->Data);
+					const std::filesystem::path AbsPath = std::filesystem::path(Item->Path).lexically_normal();
+					if (IsLuaScriptFile(AbsPath))
+					{
+						*Val = MakeLuaScriptPropertyPath(AbsPath);
+						bChanged = true;
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 
 			ImGui::SameLine();
 			if (ImGui::Button("..."))

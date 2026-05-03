@@ -207,6 +207,11 @@ void FEditorContentBrowserWidget::RefreshContent()
 			element = std::make_shared<MaterialElement>();
 			element.get()->SetIcon(ICons[Extension].Get());
 		}
+		else if (Content.Path.extension() == ".lua")
+		{
+			element = std::make_shared<LuaScriptElement>();
+			element.get()->SetIcon(ICons["Default"].Get());
+		}
 		else if (Content.Path.extension() == ".png" || Content.Path.extension() == ".PNG")
 		{
 			element = std::make_shared<PNGElement>();
