@@ -285,6 +285,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Engine\Runtime\RowManager.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaRowManagerBindings.cpp" />
     <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
@@ -511,6 +513,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Engine\Runtime\RowManager.h" />
     <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Editor\EditorEngine.h" />
     <ClInclude Include="Source\Editor\EditorRenderPipeline.h" />
@@ -1012,6 +1015,7 @@
     <ResourceCompile Include="KraftonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="LuaScripts\Game\RowGenerator.lua" />
     <None Include="VcpkgLua.props" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,4 +1,4 @@
-#include "GameClient/GameClientEngine.h"
+﻿#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "GameClient/GameClientPackageValidator.h"
@@ -7,6 +7,7 @@
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
+#include "Runtime/RowManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/World.h"
 #include "Scripting/LuaInputLibrary.h"
@@ -67,6 +68,7 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 	}
 
 	UEngine::Init(InWindow);
+	FRowManager::Get().Initialize();
 
 	if (!Session.Initialize(this))
 	{
@@ -98,6 +100,7 @@ void UGameClientEngine::Shutdown()
 	SetGameViewportClient(nullptr);
 	GameViewport.Shutdown();
 	Session.Shutdown();
+	FRowManager::Get().Shutdown();
 
 	UEngine::Shutdown();
 }
@@ -185,6 +188,7 @@ void UGameClientEngine::TickInGame(float DeltaTime)
 
 	TaskScheduler.Tick(DeltaTime);
 	WorldTick(DeltaTime);
+	FRowManager::Get().Tick(DeltaTime);
 
 	CameraManager.SyncWorldViewCamera();
 }
