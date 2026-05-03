@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-IMPLEMENT_LUA_COMPONENT(UPendulumMovementComponent, UMovementComponent)
+IMPLEMENT_CLASS(UPendulumMovementComponent, UMovementComponent)
 
 void UPendulumMovementComponent::BeginPlay()
 {

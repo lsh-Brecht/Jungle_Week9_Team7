@@ -16,10 +16,10 @@ public:
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
 	void Serialize(FArchive& Ar) override;
 
-	void AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f) override;
+	void AddMovementInput(const FVector& Direction, float Scale = 1.0f);
 	FVector ConsumeMovementInputVector();
 	FVector GetPendingMovementInputVector() const { return PendingMovementInput; }
-	void ApplyPendingMovement(float DeltaTime);
+	void ApplyPendingMovement();
 	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
 private:

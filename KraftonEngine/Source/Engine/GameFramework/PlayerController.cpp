@@ -3,13 +3,9 @@
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/ControllerInputComponent.h"
-#include "Component/Movement/MovementComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerCameraManager.h"
 #include "GameFramework/World.h"
-#include "Math/MathUtils.h"
-#include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
 
 IMPLEMENT_CLASS(APlayerController, AActor)
@@ -35,40 +31,10 @@ void APlayerController::InitDefaultComponents()
 	{
 		AddComponent<UControllerInputComponent>();
 	}
-
-	if (!PlayerCameraManager)
-	{
-		PlayerCameraManager = UObjectManager::Get().CreateObject<APlayerCameraManager>(this);
-		if (PlayerCameraManager)
-		{
-			PlayerCameraManager->SetOwningController(this);
-			PlayerCameraManager->InitDefaultComponents();
-		}
-	}
 }
 
 void APlayerController::EndPlay()
 {
-	if (UWorld* World = GetWorld())
-	{
-		UCameraComponent* OutputCamera = PlayerCameraManager ? PlayerCameraManager->GetOutputCameraComponent() : nullptr;
-		if (OutputCamera && World->GetActiveCamera() == OutputCamera)
-		{
-			World->SetActiveCamera(nullptr);
-		}
-		if (OutputCamera && World->GetViewCamera() == OutputCamera)
-		{
-			World->SetViewCamera(nullptr);
-		}
-	}
-
-	if (PlayerCameraManager)
-	{
-		PlayerCameraManager->EndPlay();
-		UObjectManager::Get().DestroyObject(PlayerCameraManager);
-		PlayerCameraManager = nullptr;
-	}
-
 	UnPossess();
 	ViewTarget = nullptr;
 	AActor::EndPlay();
@@ -97,10 +63,6 @@ void APlayerController::Possess(AActor* InActor)
 	if (PossessedActor == InActor)
 	{
 		ViewTarget = InActor;
-		if (PlayerCameraManager)
-		{
-			PlayerCameraManager->SetViewTarget(InActor);
-		}
 		return;
 	}
 
@@ -122,9 +84,9 @@ void APlayerController::Possess(AActor* InActor)
 		}
 	}
 
-	if (PlayerCameraManager)
+	if (UControllerInputComponent* Input = FindControllerInputComponent())
 	{
-		PlayerCameraManager->SetViewTarget(ViewTarget);
+		Input->PossessedActorUUID = InActor ? InActor->GetUUID() : 0;
 	}
 }
 
@@ -136,6 +98,8 @@ void APlayerController::UnPossess()
 			Pawn->SetController(nullptr);
 	}
 	PossessedActor = nullptr;
+	if (UControllerInputComponent* Input = FindControllerInputComponent())
+		Input->PossessedActorUUID = 0;
 }
 
 AActor* APlayerController::GetPossessedActor() const
@@ -153,21 +117,10 @@ AActor* APlayerController::GetPossessedActor() const
 
 void APlayerController::SetViewTarget(AActor* InViewTarget)
 {
-	FCameraBlendParams Params;
-	Params.BlendTime = 0.0f;
-	SetViewTargetWithBlend(InViewTarget, Params);
-}
-
-void APlayerController::SetViewTargetWithBlend(AActor* InViewTarget, const FCameraBlendParams& Params)
-{
 	ViewTarget = InViewTarget;
 	if (UCameraComponent* Camera = FindCameraOnActor(InViewTarget))
 	{
 		ControlRotation = MakeControlRotationFromCamera(Camera);
-	}
-	if (PlayerCameraManager)
-	{
-		PlayerCameraManager->SetViewTargetWithBlend(InViewTarget, Params);
 	}
 }
 
@@ -202,13 +155,6 @@ static UCameraComponent* FindCameraOnActor(AActor* Target)
 
 UCameraComponent* APlayerController::ResolveViewCamera() const
 {
-	if (PlayerCameraManager)
-	{
-		if (UCameraComponent* OutputCamera = PlayerCameraManager->GetOutputCameraComponent())
-		{
-			return OutputCamera;
-		}
-	}
 	if (UCameraComponent* Camera = FindCameraOnActor(GetViewTarget()))
 	{
 		return Camera;
@@ -218,63 +164,6 @@ UCameraComponent* APlayerController::ResolveViewCamera() const
 		return Camera;
 	}
 	return nullptr;
-}
-
-void APlayerController::SetCameraMode(ECameraModeId InMode, const FCameraBlendParams& Params)
-{
-	if (PlayerCameraManager)
-	{
-		PlayerCameraManager->SetCameraMode(InMode, Params);
-	}
-}
-
-ECameraModeId APlayerController::GetCameraMode() const
-{
-	return PlayerCameraManager ? PlayerCameraManager->GetCameraMode() : ECameraModeId::ThirdPerson;
-}
-
-void APlayerController::AddYawInput(float Value)
-{
-	ControlRotation.Yaw += Value;
-	ControlRotation.Roll = 0.0f;
-}
-
-void APlayerController::AddPitchInput(float Value, float MinPitch, float MaxPitch)
-{
-	ControlRotation.Pitch = Clamp(ControlRotation.Pitch + Value, MinPitch, MaxPitch);
-	ControlRotation.Roll = 0.0f;
-}
-
-bool APlayerController::ApplyControllerMovementInput(const FControllerMovementInput& Input)
-{
-	AActor* Actor = GetPossessedActor();
-	if (!Actor)
-	{
-		return false;
-	}
-
-	UMovementComponent* BestMovement = nullptr;
-	for (UActorComponent* Component : Actor->GetComponents())
-	{
-		UMovementComponent* Movement = Cast<UMovementComponent>(Component);
-		if (!Movement || !Movement->CanReceiveControllerInput())
-		{
-			continue;
-		}
-
-		if (!BestMovement || Movement->GetControllerInputPriority() > BestMovement->GetControllerInputPriority())
-		{
-			BestMovement = Movement;
-		}
-	}
-
-	if (BestMovement && BestMovement->ApplyControllerMovementInput(Input))
-	{
-		return true;
-	}
-
-	Actor->AddActorWorldOffset(Input.WorldDelta);
-	return true;
 }
 
 UControllerInputComponent* APlayerController::FindControllerInputComponent() const

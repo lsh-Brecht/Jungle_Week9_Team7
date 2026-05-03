@@ -11,10 +11,6 @@ enum EClassFlags : uint32
 	CF_Component = 1 << 1,
 	CF_Camera    = 1 << 2,
 	CF_HiddenInComponentList = 1 << 3,
-
-	CF_LuaExposed   = 1 << 4,
-	CF_LuaCreatable = 1 << 5,
-	CF_LuaRemovable = 1 << 6,
 };
 
 class UClass
@@ -43,11 +39,6 @@ public:
 	bool HasAnyClassFlags(uint32 Flags) const
 	{
 		return (ClassFlags & Flags) != 0;
-	}
-	
-	bool HasAllClassFlags(uint32 Flags) const
-	{
-		return (ClassFlags & Flags) == Flags;
 	}
 
 	// --- Global class registry ---

@@ -3,7 +3,7 @@
 #include <GameFramework/World.h>
 #include "Serialization/Archive.h"
 
-IMPLEMENT_LUA_COMPONENT(USceneComponent, UActorComponent)
+IMPLEMENT_CLASS(USceneComponent, UActorComponent)
 HIDE_FROM_COMPONENT_LIST(USceneComponent)
 
 static void NotifyOctreeTransformChanged(USceneComponent* Comp)
@@ -396,35 +396,6 @@ FVector USceneComponent::GetWorldLocation() const
 {
 	const FMatrix& WorldMatrix = GetWorldMatrix();
 	return FVector(WorldMatrix.M[3][0], WorldMatrix.M[3][1], WorldMatrix.M[3][2]);
-}
-
-FQuat USceneComponent::GetWorldRotationQuat() const
-{
-	const FMatrix& Matrix = GetWorldMatrix();
-	return FQuat::FromMatrix(Matrix).GetNormalized();
-}
-
-FRotator USceneComponent::GetWorldRotation() const
-{
-	return GetWorldRotationQuat().ToRotator();
-}
-
-void USceneComponent::SetWorldRotation(const FQuat& NewWorldRotation)
-{
-	FQuat NewRelativeRotation = NewWorldRotation;
-
-	if (ParentComponent)
-	{
-		const FQuat ParentWorldRotation = ParentComponent->GetWorldRotationQuat();
-		NewRelativeRotation = ParentWorldRotation.Inverse() * NewWorldRotation;
-	}
-
-	SetRelativeRotation(NewRelativeRotation.GetNormalized());
-}
-
-void USceneComponent::SetWorldRotation(const FRotator& NewWorldRotation)
-{
-	SetWorldRotation(NewWorldRotation.ToQuaternion());
 }
 
 FVector USceneComponent::GetWorldScale() const

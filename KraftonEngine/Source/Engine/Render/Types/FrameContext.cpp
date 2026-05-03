@@ -12,8 +12,8 @@ void FFrameContext::SetCameraInfo(const UCameraComponent* Camera)
 	CameraUp        = Camera->GetUpVector();
 	bIsOrtho        = Camera->IsOrthogonal();
 	OrthoWidth      = Camera->GetOrthoWidth();
-	NearClip        = Camera->GetNearPlane();
-	FarClip         = Camera->GetFarPlane();
+	NearClip        = Camera->GetCameraState().NearZ;
+	FarClip         = Camera->GetCameraState().FarZ;
 
 	// Per-viewport frustum — used by RenderCollector for inline frustum culling
 	FrustumVolume.UpdateFromMatrix(View * Proj);

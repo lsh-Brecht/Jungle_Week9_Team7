@@ -1,11 +1,10 @@
-#pragma once
+﻿#pragma once
 
-#include "Camera/CameraTypes.h"
-#include "Component/CameraModeComponent.h"
+#include "Component/ActorComponent.h"
 #include "Math/Vector.h"
 
 class AActor;
-class APlayerController;
+class UCameraComponent;
 
 enum class ECameraRigProjectionMode : uint8
 {
@@ -13,47 +12,45 @@ enum class ECameraRigProjectionMode : uint8
 	Perspective
 };
 
-class UCameraRigComponent : public UCameraModeComponent
+class UCameraRigComponent : public UActorComponent
 {
 public:
-	DECLARE_CLASS(UCameraRigComponent, UCameraModeComponent)
+	DECLARE_CLASS(UCameraRigComponent, UActorComponent)
 
 	UCameraRigComponent() = default;
 	~UCameraRigComponent() override = default;
 
 	void BeginPlay() override;
+	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void Serialize(FArchive& Ar) override;
-	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
 
-	ECameraModeId GetCameraModeId() const override;
-
-	bool CalcCameraView(
-		APlayerController* Controller,
-		AActor* ViewTarget,
-		float DeltaTime,
-		FCameraView& OutView) override;
-
+	void SetTargetActor(AActor* InTargetActor) { TargetActor = InTargetActor; }
+	AActor* GetTargetActor() const { return TargetActor; }
+	void SetCameraComponent(UCameraComponent* InCameraComponent) { CameraComponent = InCameraComponent; }
+	UCameraComponent* GetCameraComponent() const { return CameraComponent; }
 	void SetLookAheadInput(const FVector2& InInput);
 	void SetProjectionMode(ECameraRigProjectionMode InMode);
-	ECameraRigProjectionMode GetProjectionMode() const { return static_cast<ECameraRigProjectionMode>(ProjectionMode); }
-	bool IsOrthographic() const { return GetProjectionMode() == ECameraRigProjectionMode::Orthographic; }
-	bool IsPerspective() const { return GetProjectionMode() == ECameraRigProjectionMode::Perspective; }
+	ECameraRigProjectionMode GetProjectionMode() const { return ProjectionMode; }
+	bool IsOrthographic() const { return ProjectionMode == ECameraRigProjectionMode::Orthographic; }
+	bool IsPerspective() const { return ProjectionMode == ECameraRigProjectionMode::Perspective; }
 	void ToggleProjectionMode();
-	void SnapInternalState(AActor* ViewTarget);
+	void ApplyProjectionMode();
+	void SnapToTarget();
 
-private:
-	AActor* ResolveTargetActor(APlayerController* Controller, AActor* ViewTarget) const;
-	FVector ComputeFocusPoint(APlayerController* Controller, AActor* ViewTarget, float DeltaTime);
-	FVector ComputeDesiredCameraLocation(APlayerController* Controller, AActor* ViewTarget, const FVector& FocusPoint) const;
+protected:
+	UCameraComponent* ResolveCameraComponent();
+	AActor* ResolveTargetActor() const;
+	FVector ComputeFocusPoint(float DeltaTime);
+	FVector ComputeDesiredCameraLocation(const FVector& FocusPoint) const;
 	FVector ComputeOrthographicOffset() const;
-	FVector ComputePerspectiveOffset(AActor* Target) const;
-	FVector ComputeMouseLookAheadWorld(APlayerController* Controller) const;
-	FQuat MakeLookAtRotationQuat(const FVector& Location, const FVector& Target) const;
+	FVector ComputePerspectiveOffset() const;
+	FVector ComputeMouseLookAheadWorld() const;
+	void UpdateCamera(float DeltaTime);
 
-private:
-	int32 ProjectionMode = static_cast<int32>(ECameraRigProjectionMode::Perspective);
-	uint32 TargetActorUUID = 0;
+	ECameraRigProjectionMode ProjectionMode = ECameraRigProjectionMode::Orthographic;
+	AActor* TargetActor = nullptr;
+	UCameraComponent* CameraComponent = nullptr;
 
 	FVector TargetOffset = FVector(0.0f, 0.0f, 0.8f);
 
@@ -68,7 +65,9 @@ private:
 	float NearZ = 0.01f;
 	float FarZ = 200.0f;
 
+	float PositionLagSpeed = 6.0f;
 	float LookAheadLagSpeed = 8.0f;
+
 	bool bEnableMouseLookAhead = true;
 	float MouseLookAheadDistance = 1.0f;
 	FVector2 LookAheadInput = FVector2(0.0f, 0.0f);
@@ -81,4 +80,6 @@ private:
 	float VerticalDeadZone = 0.4f;
 	float VerticalFollowStrength = 0.15f;
 	float VerticalLagSpeed = 2.0f;
+
+	bool bSnapOnProjectionModeChange = false;
 };

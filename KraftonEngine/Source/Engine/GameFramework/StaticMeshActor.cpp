@@ -6,7 +6,7 @@
 #include "Component/Collision/BoxComponent.h"
 #include "Component/SubUVComponent.h"
 
-IMPLEMENT_LUA_COMPONENT(AStaticMeshActor, AActor)
+IMPLEMENT_CLASS(AStaticMeshActor, AActor)
 
 void AStaticMeshActor::InitDefaultComponents(const FString& UStaticMeshFileName)
 {

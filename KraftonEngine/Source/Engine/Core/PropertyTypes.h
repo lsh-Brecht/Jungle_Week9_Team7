@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "Core/CoreTypes.h"
-
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -27,13 +25,6 @@ enum class EPropertyType : uint8_t
 	ActorRef,
 };
 
-enum EPropertyFlags : uint32
-{
-	PF_None = 0,
-	PF_ReadOnly = 1 << 0,
-	PF_Advanced = 1 << 1,
-};
-
 // 머티리얼 슬롯: 경로를 하나의 단위로 관리
 struct FMaterialSlot
 {
@@ -55,10 +46,4 @@ struct FPropertyDescriptor
 	// Enum Metadata
 	const char** EnumNames = nullptr;
 	uint32		 EnumCount = 0;
-
-	std::string Category = "Default";
-	std::string Tooltip;
-	uint32 Flags = PF_None;
 };
-
-

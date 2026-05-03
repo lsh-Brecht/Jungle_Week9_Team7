@@ -46,13 +46,7 @@ public:
 	FString BuildUpdatedComponentPath(const USceneComponent* TargetComponent) const;
 	void ClearUpdatedComponentIfMatches(const USceneComponent* RemovedComponent);
 	virtual bool CanReceiveControllerInput() const { return bReceiveControllerInput; }
-	virtual void AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f);
 	virtual bool ApplyControllerMovementInput(const FControllerMovementInput& Input);
-	virtual const FVector& GetLastMovementInput() const { return LastMovementInput; }
-	virtual const FVector& GetVelocity() const { return Velocity; }
-	virtual bool HasMovementInput() const { return !LastMovementInput.IsNearlyZero(); }
-	virtual bool IsMoving() const { return !Velocity.IsNearlyZero(); }
-	virtual void ClearMovementInputState();
 	int32 GetControllerInputPriority() const { return ControllerInputPriority; }
 
 protected:
@@ -64,6 +58,4 @@ protected:
 	FString UpdatedComponentPath;
 	bool bReceiveControllerInput = false;
 	int32 ControllerInputPriority = 0;
-	FVector LastMovementInput = FVector::ZeroVector;
-	FVector Velocity = FVector::ZeroVector;
 };

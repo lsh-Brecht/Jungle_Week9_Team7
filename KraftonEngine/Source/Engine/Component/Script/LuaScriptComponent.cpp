@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-IMPLEMENT_LUA_COMPONENT(ULuaScriptComponent, UActorComponent)
+IMPLEMENT_CLASS(ULuaScriptComponent, UActorComponent)
 
 void ULuaScriptComponent::BeginPlay()
 {

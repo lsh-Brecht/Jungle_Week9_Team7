@@ -3,7 +3,7 @@
 #include "Render/Scene/FScene.h"
 #include "Serialization/Archive.h"
 
-IMPLEMENT_LUA_COMPONENT(USphereComponent, UShapeComponent)
+IMPLEMENT_CLASS(USphereComponent, UShapeComponent)
 
 namespace
 {

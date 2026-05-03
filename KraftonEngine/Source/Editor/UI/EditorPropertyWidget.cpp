@@ -16,15 +16,12 @@
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/SceneComponent.h"
-#include "Component/PawnOrientationComponent.h"
 #include "Component/TextRenderComponent.h"
 #include "Component/Light/LightComponentBase.h"
 #include "Component/DecalComponent.h"
 #include "Component/HeightFogComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Component/CameraComponent.h"
-#include "Component/CameraModeComponent.h"
-#include "GameFramework/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/World.h"
@@ -67,33 +64,19 @@ namespace
 	struct FComponentClassGroup
 	{
 		const char* Label = nullptr;
-		TArray<UClass*> AnchorClasses;
+		UClass* AnchorClass = nullptr;
 		TArray<UClass*> Classes;
 	};
 
 	void AddComponentClassGroup(TArray<FComponentClassGroup>& Groups, const char* Label, UClass* AnchorClass)
 	{
-		if (!AnchorClass)
-		{
-			return;
-		}
-
-		for (FComponentClassGroup& Group : Groups)
-		{
-			if (strcmp(Group.Label, Label) == 0)
-			{
-				Group.AnchorClasses.push_back(AnchorClass);
-				return;
-			}
-		}
-
 		FComponentClassGroup Group;
 		Group.Label = Label;
-		Group.AnchorClasses.push_back(AnchorClass);
+		Group.AnchorClass = AnchorClass;
 		Groups.push_back(Group);
 	}
 
-	FComponentClassGroup* FindComponentClassGroup(UClass* ComponentClass, TArray<FComponentClassGroup>& Groups)
+	UClass* FindComponentClassGroupAnchor(UClass* ComponentClass, const TArray<FComponentClassGroup>& Groups)
 	{
 		if (!ComponentClass)
 		{
@@ -101,18 +84,16 @@ namespace
 		}
 
 		// UTextRenderComponent는 C++ 상속은 Billboard지만 RTTI 등록 부모가 Primitive라서 명시적으로 묶는다.
-		UClass* EffectiveClass = ComponentClass == UTextRenderComponent::StaticClass()
-			? UBillboardComponent::StaticClass()
-			: ComponentClass;
-
-		for (FComponentClassGroup& Group : Groups)
+		if (ComponentClass == UTextRenderComponent::StaticClass())
 		{
-			for (UClass* AnchorClass : Group.AnchorClasses)
+			return UBillboardComponent::StaticClass();
+		}
+
+		for (const FComponentClassGroup& Group : Groups)
+		{
+			if (Group.AnchorClass && ComponentClass->IsA(Group.AnchorClass))
 			{
-				if (AnchorClass && EffectiveClass->IsA(AnchorClass))
-				{
-					return &Group;
-				}
+				return Group.AnchorClass;
 			}
 		}
 
@@ -612,41 +593,6 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 			}
 			ImGui::EndPopup();
 		}
-
-		if (APlayerCameraManager* CameraManager = PC->GetPlayerCameraManager())
-		{
-			SEPARATOR();
-			ImGui::Text("Camera Manager");
-			ImGui::Separator();
-
-			TArray<FPropertyDescriptor> CameraManagerProps;
-			CameraManager->GetEditableProperties(CameraManagerProps);
-			for (int32 i = 0; i < (int32)CameraManagerProps.size(); ++i)
-			{
-				if (RenderPropertyWidget(CameraManagerProps, i))
-				{
-					CameraManager->PostEditProperty(CameraManagerProps[i].Name.c_str());
-				}
-			}
-
-			if (ImGui::Button("Snap To Target"))
-			{
-				CameraManager->SnapToTarget();
-			}
-
-			ImGui::SameLine();
-			if (ImGui::Button("Preview Output Camera"))
-			{
-				if (UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr)
-				{
-					if (UCameraComponent* OutputCamera = CameraManager->GetOutputCameraComponent())
-					{
-						World->SetActiveCamera(OutputCamera);
-						World->SetViewCamera(OutputCamera);
-					}
-				}
-			}
-		}
 	}
 	// Pawn — 현재 Controller 표시
 	else if (APawn* Pawn = Cast<APawn>(PrimaryActor))
@@ -714,15 +660,10 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 				if (APlayerController* Controller = World->FindOrCreatePlayerController())
 				{
 					Controller->SetViewTarget(Pawn);
-					if (APlayerCameraManager* CameraManager = Controller->GetPlayerCameraManager())
+					if (UCameraComponent* Camera = Pawn->FindPawnCamera())
 					{
-						CameraManager->SetViewTarget(Pawn);
-						CameraManager->SnapToTarget();
-						if (UCameraComponent* OutputCamera = CameraManager->GetOutputCameraComponent())
-						{
-							World->SetActiveCamera(OutputCamera);
-							World->SetViewCamera(OutputCamera);
-						}
+						World->SetActiveCamera(Camera);
+						World->SetViewCamera(Camera);
 					}
 				}
 			}
@@ -763,22 +704,27 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 	AddComponentClassGroup(ComponentGroups, "Movement", UMovementComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Input", UControllerInputComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Collision", UShapeComponent::StaticClass());
-	AddComponentClassGroup(ComponentGroups, "Orientation", UPawnOrientationComponent::StaticClass());
-	AddComponentClassGroup(ComponentGroups, "Camera", UCameraModeComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Camera", UCameraComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Primitive", UPrimitiveComponent::StaticClass());
 
 	TArray<UClass*> OtherClasses;
 	for (UClass* Cls : ComponentClasses)
 	{
-		FComponentClassGroup* Group = FindComponentClassGroup(Cls, ComponentGroups);
-		if (!Group)
+		UClass* AnchorClass = FindComponentClassGroupAnchor(Cls, ComponentGroups);
+		if (!AnchorClass)
 		{
 			OtherClasses.push_back(Cls);
 			continue;
 		}
 
-		Group->Classes.push_back(Cls);
+		for (FComponentClassGroup& Group : ComponentGroups)
+		{
+			if (Group.AnchorClass == AnchorClass)
+			{
+				Group.Classes.push_back(Cls);
+				break;
+			}
+		}
 	}
 
 	for (FComponentClassGroup& Group : ComponentGroups)
@@ -953,7 +899,12 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 		{
 			if (UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr)
 			{
+				World->SetActiveCamera(Camera);
 				World->SetViewCamera(Camera);
+				if (APlayerController* Controller = World->GetPlayerController(0))
+				{
+					Controller->SetViewTarget(Actor);
+				}
 			}
 		}
 	}
@@ -1110,30 +1061,15 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 		UWorld* World = EditorEngine->GetWorld();
 		if (World)
 		{
-			if (World->GetViewCamera() == Cam)
+			if (World->GetActiveCamera() == Cam)
+				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Active Camera]");
+			else if (ImGui::Button("Set as Active Camera"))
 			{
-				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Preview Camera]");
-			}
-			else if (ImGui::Button("Preview Through This Camera"))
-			{
+				World->SetActiveCamera(Cam);
 				World->SetViewCamera(Cam);
-			}
-
-			if (ImGui::Button("Set Player ViewTarget"))
-			{
-				if (APlayerController* Controller = World->FindOrCreatePlayerController())
+				if (APlayerController* Controller = World->GetPlayerController(0))
 				{
 					Controller->SetViewTarget(Cam->GetOwner());
-					if (APlayerCameraManager* CameraManager = Controller->GetPlayerCameraManager())
-					{
-						CameraManager->SetViewTarget(Cam->GetOwner());
-						CameraManager->SnapToTarget();
-						if (UCameraComponent* OutputCamera = CameraManager->GetOutputCameraComponent())
-						{
-							World->SetActiveCamera(OutputCamera);
-							World->SetViewCamera(OutputCamera);
-						}
-					}
 				}
 			}
 		}
@@ -1252,7 +1188,6 @@ void FEditorPropertyWidget::PropagatePropertyChange(const FString& PropName, con
 				case EPropertyType::MaterialSlot:   *static_cast<FMaterialSlot*>(DstProp.ValuePtr) = *static_cast<FMaterialSlot*>(SrcProp->ValuePtr); break;
 				case EPropertyType::Enum:           Size = sizeof(int32); break;
 				case EPropertyType::Vec3Array:      *static_cast<TArray<FVector>*>(DstProp.ValuePtr) = *static_cast<TArray<FVector>*>(SrcProp->ValuePtr); break;
-				case EPropertyType::ActorRef:       Size = sizeof(uint32); break;
 				}
 				if (Size > 0)
 					memcpy(DstProp.ValuePtr, SrcProp->ValuePtr, Size);
@@ -1294,9 +1229,9 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 	{
 		int32* Val = static_cast<int32*>(Prop.ValuePtr);
 		if (Prop.Min != 0.0f || Prop.Max != 0.0f)
-			bChanged = ImGui::DragInt(Prop.Name.c_str(), Val, Prop.Speed, (int32)Prop.Min, (int32)Prop.Max);
+			bChanged = ImGui::DragInt(Prop.Name.c_str(), Val, (int32)Prop.Speed, (int32)Prop.Min, (int32)Prop.Max);
 		else
-			bChanged = ImGui::DragInt(Prop.Name.c_str(), Val, Prop.Speed);
+			bChanged = ImGui::DragInt(Prop.Name.c_str(), Val, (int32)Prop.Speed);
 		break;
 	}
 	case EPropertyType::Float:
@@ -1525,65 +1460,6 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 		}
 		break;
 	}
-	case EPropertyType::ActorRef:
-	{
-		uint32* ActorUUID = static_cast<uint32*>(Prop.ValuePtr);
-		UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr;
-
-		FString Preview = "None";
-		if (World && *ActorUUID != 0)
-		{
-			if (AActor* Actor = World->FindActorByUUIDInWorld(*ActorUUID))
-			{
-				FString Name = Actor->GetFName().ToString();
-				Preview = Name.empty() ? Actor->GetClass()->GetName() : Name;
-			}
-			else
-			{
-				Preview = "Missing Actor";
-			}
-		}
-
-		if (ImGui::BeginCombo(Prop.Name.c_str(), Preview.c_str()))
-		{
-			if (ImGui::Selectable("None", *ActorUUID == 0))
-			{
-				*ActorUUID = 0;
-				bChanged = true;
-			}
-
-			if (World)
-			{
-				for (AActor* Actor : World->GetActors())
-				{
-					if (!Actor)
-					{
-						continue;
-					}
-
-					FString Name = Actor->GetFName().ToString();
-					FString Label = Name.empty()
-						? Actor->GetClass()->GetName()
-						: Name + " (" + Actor->GetClass()->GetName() + ")";
-
-					const bool bSelected = *ActorUUID == Actor->GetUUID();
-					if (ImGui::Selectable(Label.c_str(), bSelected))
-					{
-						*ActorUUID = Actor->GetUUID();
-						bChanged = true;
-					}
-
-					if (bSelected)
-					{
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-			}
-
-			ImGui::EndCombo();
-		}
-		break;
-	}
 	case EPropertyType::MaterialSlot:
 	{
 		FMaterialSlot* Slot = static_cast<FMaterialSlot*>(Prop.ValuePtr);
@@ -1754,7 +1630,7 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 	}
 	}
 
-	if (bChanged && SelectedComponent && !bActorSelected)
+	if (bChanged && SelectedComponent)
 	{
 		SelectedComponent->PostEditProperty(Prop.Name.c_str());
 	}

@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-IMPLEMENT_LUA_COMPONENT(UPawnMovementComponent, UMovementComponent)
+IMPLEMENT_CLASS(UPawnMovementComponent, UMovementComponent)
 
 UPawnMovementComponent::UPawnMovementComponent()
 {
@@ -17,7 +17,7 @@ UPawnMovementComponent::UPawnMovementComponent()
 void UPawnMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
 {
 	UMovementComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	ApplyPendingMovement(DeltaTime);
+	ApplyPendingMovement();
 }
 
 void UPawnMovementComponent::Serialize(FArchive& Ar)
@@ -25,16 +25,21 @@ void UPawnMovementComponent::Serialize(FArchive& Ar)
 	UMovementComponent::Serialize(Ar);
 }
 
-void UPawnMovementComponent::AddMovementInput(const FVector& WorldDirection, float Scale)
+void UPawnMovementComponent::AddMovementInput(const FVector& Direction, float Scale)
 {
-	if (Scale == 0.0f || WorldDirection.IsNearlyZero())
+	if (Scale == 0.0f)
 	{
 		return;
 	}
-
-	const FVector Direction = WorldDirection.Normalized();
-	PendingMovementInput += Direction * Scale;
-	LastMovementInput = Direction;
+	const float LenSq = Direction.X * Direction.X + Direction.Y * Direction.Y + Direction.Z * Direction.Z;
+	if (LenSq < 1e-8f)
+	{
+		return;
+	}
+	const float InvLen = 1.0f / sqrtf(LenSq);
+	PendingMovementInput.X += Direction.X * InvLen * Scale;
+	PendingMovementInput.Y += Direction.Y * InvLen * Scale;
+	PendingMovementInput.Z += Direction.Z * InvLen * Scale;
 }
 
 FVector UPawnMovementComponent::ConsumeMovementInputVector()
@@ -46,32 +51,29 @@ FVector UPawnMovementComponent::ConsumeMovementInputVector()
 
 bool UPawnMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
 {
-	if (Input.WorldDirection.IsNearlyZero())
+	if (Input.WorldDelta.IsNearlyZero())
 	{
 		return false;
 	}
 
-	const float Distance = Input.MoveSpeed * Input.SpeedMultiplier * Input.DeltaTime;
-	AddMovementInput(Input.WorldDirection, Distance);
+	AddMovementInput(Input.WorldDelta, Input.WorldDelta.Length());
+	ApplyPendingMovement();
 	return true;
 }
 
-void UPawnMovementComponent::ApplyPendingMovement(float DeltaTime)
+void UPawnMovementComponent::ApplyPendingMovement()
 {
 	const FVector Delta = ConsumeMovementInputVector();
 	if (Delta.IsNearlyZero())
 	{
-		Velocity = FVector::ZeroVector;
 		return;
 	}
 	if (!ResolveUpdatedComponent())
 	{
-		Velocity = FVector::ZeroVector;
 		return;
 	}
 	if (USceneComponent* Scene = GetUpdatedComponent())
 	{
 		Scene->AddWorldOffset(Delta);
-		Velocity = DeltaTime > 0.0f ? Delta / DeltaTime : FVector::ZeroVector;
 	}
 }

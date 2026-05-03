@@ -21,7 +21,7 @@ void FDefaultRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 	FDrawCommandBuilder& Builder = Renderer.GetBuilder();
 
 	UWorld* World = Engine->GetWorld();
-	UCameraComponent* Camera = World ? World->GetViewCamera() : nullptr;
+	UCameraComponent* Camera = World ? World->GetActiveCamera() : nullptr;
 	FScene* Scene = nullptr;
 	if (Camera)
 	{

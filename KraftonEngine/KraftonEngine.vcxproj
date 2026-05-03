@@ -285,6 +285,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
     <ClCompile Include="Source\Editor\Packaging\GamePackageAssetCollector.cpp" />
@@ -329,7 +330,6 @@
     <ClCompile Include="Source\Engine\Component\ActorComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\BillboardComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\CameraModeComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CameraRigComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp" />
@@ -354,7 +354,6 @@
     <ClCompile Include="Source\Engine\Component\Movement\PendulumMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp" />
@@ -378,7 +377,6 @@
     <ClCompile Include="Source\Engine\GameFramework\Light\PointLightActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\Light\SpotLightActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\Pawn.cpp" />
-    <ClCompile Include="Source\Engine\GameFramework\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\PlayerController.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\World.cpp" />
@@ -484,7 +482,6 @@
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
-    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp" />
     <ClCompile Include="Source\Engine\UI\SSplitter.cpp" />
@@ -514,6 +511,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Editor\EditorEngine.h" />
     <ClInclude Include="Source\Editor\EditorRenderPipeline.h" />
     <ClInclude Include="Source\Editor\PIE\PIETypes.h" />
@@ -550,7 +548,6 @@
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h" />
     <ClInclude Include="Source\Editor\Viewport\FLevelViewportLayout.h" />
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
-    <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
     <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h" />
     <ClInclude Include="Source\Engine\Collision\MeshTriangleBVH.h" />
@@ -566,7 +563,6 @@
     <ClInclude Include="Source\Engine\Component\ActorComponent.h" />
     <ClInclude Include="Source\Engine\Component\BillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\CameraComponent.h" />
-    <ClInclude Include="Source\Engine\Component\CameraModeComponent.h" />
     <ClInclude Include="Source\Engine\Component\CameraRigComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h" />
@@ -592,7 +588,6 @@
     <ClInclude Include="Source\Engine\Component\Movement\PendulumMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h" />
-    <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h" />
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h" />
@@ -624,7 +619,6 @@
     <ClInclude Include="Source\Engine\GameFramework\Light\PointLightActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\Light\SpotLightActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\Pawn.h" />
-    <ClInclude Include="Source\Engine\GameFramework\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\GameFramework\PlayerController.h" />
     <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\World.h" />
@@ -750,7 +744,6 @@
     <ClInclude Include="Source\Engine\Scripting\SolInclude.h" />
     <ClInclude Include="Source\Engine\Serialization\Archive.h" />
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h" />
-    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\SceneSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\WindowsArchive.h" />
     <ClInclude Include="Source\Engine\Texture\Texture2D.h" />

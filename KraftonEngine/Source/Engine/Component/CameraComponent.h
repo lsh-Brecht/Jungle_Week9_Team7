@@ -1,10 +1,21 @@
 #pragma once
-
-#include "Camera/CameraTypes.h"
-#include "Collision/ConvexVolume.h"
-#include "Component/SceneComponent.h"
 #include "Engine/Core/RayTypes.h"
+#include "Object/ObjectFactory.h"
+#include "Component/SceneComponent.h"
 #include "Math/Matrix.h"
+#include "Math/MathUtils.h"
+#include "Math/Vector.h"
+#include "Collision/ConvexVolume.h"
+
+struct FCameraState
+{
+	float FOV = 3.14159265358979f / 3.0f;
+	float AspectRatio = 16.0f / 9.0f;
+	float NearZ = 0.1f;
+	float FarZ = 1000.0f;
+	float OrthoWidth = 10.0f;
+	bool bIsOrthogonal = false;
+};
 
 class UCameraComponent : public USceneComponent
 {
@@ -17,19 +28,15 @@ public:
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 
 	void LookAt(const FVector& Target);
+	void SetCameraState(const FCameraState& NewState);
+	const FCameraState& GetCameraState() const { return CameraState; }
 
-	FCameraView GetCameraView() const;
-	void ApplyCameraView(const FCameraView& View);
-
-	void SetProjectionSettings(const FCameraProjectionSettings& NewSettings);
-	const FCameraProjectionSettings& GetProjectionSettings() const { return ProjectionSettings; }
-
-	void SetFOV(float InFOV) { ProjectionSettings.FOV = InFOV; }
-	void SetAspectRatio(float InAspectRatio) { if (InAspectRatio > 0.0f) ProjectionSettings.AspectRatio = InAspectRatio; }
-	void SetNearPlane(float InNearZ) { ProjectionSettings.NearZ = InNearZ; }
-	void SetFarPlane(float InFarZ) { ProjectionSettings.FarZ = InFarZ; }
-	void SetOrthoWidth(float InWidth) { ProjectionSettings.OrthoWidth = InWidth; }
-	void SetOrthographic(bool bOrtho) { ProjectionSettings.bIsOrthographic = bOrtho; }
+	void SetFOV(float InFOV) { CameraState.FOV = InFOV; }
+	void SetAspectRatio(float InAspectRatio) { if (InAspectRatio > 0.0f) CameraState.AspectRatio = InAspectRatio; }
+	void SetNearPlane(float InNearZ) { CameraState.NearZ = InNearZ; }
+	void SetFarPlane(float InFarZ) { CameraState.FarZ = InFarZ; }
+	void SetOrthoWidth(float InWidth) { CameraState.OrthoWidth = InWidth; }
+	void SetOrthographic(bool bOrtho) { CameraState.bIsOrthogonal = bOrtho; }
 
 	void OnResize(int32 Width, int32 Height);
 
@@ -38,15 +45,15 @@ public:
 	FMatrix GetViewProjectionMatrix() const;
 	FConvexVolume GetConvexVolume() const;
 
-	float GetFOV() const { return ProjectionSettings.FOV; }
-	float GetAspectRatio() const { return ProjectionSettings.AspectRatio; }
-	float GetNearPlane() const { return ProjectionSettings.NearZ; }
-	float GetFarPlane() const { return ProjectionSettings.FarZ; }
-	float GetOrthoWidth() const { return ProjectionSettings.OrthoWidth; }
-	bool IsOrthogonal() const { return ProjectionSettings.bIsOrthographic; }
+	float GetFOV() const { return CameraState.FOV; }
+	float GetAspectRatio() const { return CameraState.AspectRatio; }
+	float GetNearPlane() const { return CameraState.NearZ; }
+	float GetFarPlane() const { return CameraState.FarZ; }
+	float GetOrthoWidth() const { return CameraState.OrthoWidth; }
+	bool IsOrthogonal() const { return CameraState.bIsOrthogonal; }
 
 	FRay DeprojectScreenToWorld(float MouseX, float MouseY, float ScreenWidth, float ScreenHeight);
 
 private:
-	FCameraProjectionSettings ProjectionSettings;
+	FCameraState CameraState;
 };

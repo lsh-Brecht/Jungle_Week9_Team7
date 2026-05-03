@@ -16,7 +16,6 @@
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
 #include "Component/Movement/HopMovementComponent.h"
-#include "Component/PawnOrientationComponent.h"
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
@@ -308,22 +307,6 @@ struct FLuaCameraComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UCameraComponent>(Object);
-	}
-
-	bool IsValid() const
-	{
-		return Resolve() != nullptr;
-	}
-};
-
-struct FLuaPawnOrientationComponentHandle
-{
-	uint32 UUID = 0;
-
-	UPawnOrientationComponent* Resolve() const
-	{
-		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
-		return Cast<UPawnOrientationComponent>(Object);
 	}
 
 	bool IsValid() const

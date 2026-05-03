@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstring>
 
-IMPLEMENT_LUA_COMPONENT(UBoxComponent, UShapeComponent)
+IMPLEMENT_CLASS(UBoxComponent, UShapeComponent)
 
 namespace
 {

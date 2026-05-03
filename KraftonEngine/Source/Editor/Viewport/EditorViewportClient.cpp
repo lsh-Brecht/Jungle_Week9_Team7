@@ -397,8 +397,8 @@ void FEditorViewportClient::TickInput(float DeltaTime)
 	InputSystem& Input = InputSystem::Get();
 	const bool bCtrlHeld = Input.GetKey(VK_CONTROL);
 
-	const FCameraProjectionSettings& CameraState = Camera->GetProjectionSettings();
-	const bool bIsOrtho = CameraState.bIsOrthographic;
+	const FCameraState& CameraState = Camera->GetCameraState();
+	const bool bIsOrtho = CameraState.bIsOrthogonal;
 
 	const float MoveSensitivity = RenderOptions.CameraMoveSensitivity;
 	const float CameraSpeed = (Settings ? Settings->CameraSpeed : 10.f) * MoveSensitivity;

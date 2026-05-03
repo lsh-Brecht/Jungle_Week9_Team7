@@ -1,7 +1,7 @@
 ﻿#include "ShapeComponent.h"
 #include "Serialization/Archive.h"
 
-IMPLEMENT_LUA_QUERY_COMPONENT(UShapeComponent, UPrimitiveComponent)
+DEFINE_CLASS(UShapeComponent, UPrimitiveComponent)
 HIDE_FROM_COMPONENT_LIST(UShapeComponent)
 
 void UShapeComponent::ContributeSelectedVisuals(FScene& Scene) const

@@ -43,7 +43,7 @@ namespace
 	}
 }
 
-IMPLEMENT_LUA_COMPONENT(UProjectileMovementComponent, UMovementComponent)
+IMPLEMENT_CLASS(UProjectileMovementComponent, UMovementComponent)
 
 void UProjectileMovementComponent::BeginPlay()
 {

@@ -55,9 +55,6 @@
     <Filter Include="Source\Engine">
       <UniqueIdentifier>{d0b56061-5521-9f21-3d03-1e11f47e99a7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\Engine\Camera">
-      <UniqueIdentifier>{1a0cd112-6dba-ed82-ebfb-199f0bda9443}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\Engine\Collision">
       <UniqueIdentifier>{0a1ac0a6-fa86-45a3-c38e-91b60c7ce3cf}</UniqueIdentifier>
     </Filter>
@@ -422,9 +419,6 @@
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Component\CameraModeComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Component\CameraRigComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
@@ -497,9 +491,6 @@
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
@@ -567,9 +558,6 @@
       <Filter>Source\Engine\GameFramework\Light</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\GameFramework\Pawn.cpp">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\GameFramework\PlayerCameraManager.cpp">
       <Filter>Source\Engine\GameFramework</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\GameFramework\PlayerController.cpp">
@@ -887,9 +875,6 @@
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
-      <Filter>Source\Engine\Serialization</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp">
       <Filter>Source\Engine\Serialization</Filter>
     </ClCompile>
@@ -969,6 +954,9 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
+      <Filter>Source\Engine\Serialization</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1079,9 +1067,6 @@
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h">
       <Filter>Source\Editor\Viewport</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Camera\CameraTypes.h">
-      <Filter>Source\Engine\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
@@ -1125,9 +1110,6 @@
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\CameraComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\CameraModeComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\CameraRigComponent.h">
@@ -1204,9 +1186,6 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h">
-      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
       <Filter>Source\Engine\Component</Filter>
@@ -1299,9 +1278,6 @@
       <Filter>Source\Engine\GameFramework\Light</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\Pawn.h">
-      <Filter>Source\Engine\GameFramework</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\GameFramework\PlayerCameraManager.h">
       <Filter>Source\Engine\GameFramework</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\GameFramework\PlayerController.h">
@@ -1679,9 +1655,6 @@
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
-      <Filter>Source\Engine\Serialization</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\SceneSaveManager.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
@@ -1771,6 +1744,9 @@
     </ClInclude>
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
+      <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
