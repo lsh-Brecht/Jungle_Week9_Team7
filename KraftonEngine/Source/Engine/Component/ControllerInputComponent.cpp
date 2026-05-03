@@ -3,8 +3,10 @@
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/Movement/MovementComponent.h"
+#include "Component/PawnOrientationComponent.h"
 #include "Engine/Input/InputSystem.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/AActor.h"
 #include "Math/MathUtils.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
@@ -32,7 +34,7 @@ namespace
 		case static_cast<int32>(EControllerMovementFrame::ViewCamera):
 			return Value;
 		default:
-			return static_cast<int32>(EControllerMovementFrame::ViewCamera);
+			return static_cast<int32>(EControllerMovementFrame::ControlRotation);
 		}
 	}
 
@@ -59,6 +61,35 @@ namespace
 			}
 		}
 		return BestMovement;
+	}
+
+	void RefreshControlRotationFacing(APlayerController* Controller, float DeltaTime)
+	{
+		if (!Controller)
+		{
+			return;
+		}
+
+		AActor* Actor = Controller->GetPossessedActor();
+		if (!Actor)
+		{
+			return;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			UPawnOrientationComponent* Orientation = Cast<UPawnOrientationComponent>(Component);
+			if (!Orientation)
+			{
+				continue;
+			}
+
+			if (Orientation->GetFacingMode() == EPawnFacingMode::ControlRotationYaw)
+			{
+				Orientation->RefreshFacing(DeltaTime);
+			}
+			return;
+		}
 	}
 
 	void RecordNoControllerMovement(APlayerController* Controller, float DeltaTime)
@@ -128,8 +159,11 @@ void UControllerInputComponent::PostEditProperty(const char* PropertyName)
 
 bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
 {
+	// Look must be applied before movement so W/A/S/D uses the camera/control yaw from
+	// the same frame. Applying movement first made movement and pawn facing lag behind
+	// when the mouse was moved while holding a movement key.
+	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, DeltaTime, Snapshot);
 	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, Snapshot);
-	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, Snapshot);
 	return bMoved || bLooked;
 }
 
@@ -170,10 +204,27 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 	}
 	else if (GetMovementFrame() == EControllerMovementFrame::ViewCamera && TargetCamera)
 	{
-		MoveForward = TargetCamera->GetForwardVector();
-		MoveRight = TargetCamera->GetRightVector();
-		MoveForward.Z = 0.0f;
-		MoveRight.Z = 0.0f;
+		UCameraComponent* ActiveCamera = Controller ? Controller->GetActiveCamera() : nullptr;
+		const bool bCameraUsesControlYaw = Controller
+			&& ActiveCamera
+			&& ActiveCamera->GetViewMode() == ECameraViewMode::ThirdPerson
+			&& ActiveCamera->UsesControlRotationYaw();
+
+		if (bCameraUsesControlYaw)
+		{
+			FRotator BasisRotation = Controller->GetControlRotation();
+			BasisRotation.Pitch = 0.0f;
+			BasisRotation.Roll = 0.0f;
+			MoveForward = BasisRotation.GetForwardVector();
+			MoveRight = BasisRotation.GetRightVector();
+		}
+		else
+		{
+			MoveForward = TargetCamera->GetForwardVector();
+			MoveRight = TargetCamera->GetRightVector();
+			MoveForward.Z = 0.0f;
+			MoveRight.Z = 0.0f;
+		}
 	}
 
 	MoveForward = !MoveForward.IsNearlyZero() ? MoveForward.Normalized() : FVector::ForwardVector;
@@ -188,7 +239,7 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 		: false;
 }
 
-bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
 {
 	if (Snapshot.bGuiUsingMouse || (Snapshot.MouseDeltaX == 0 && Snapshot.MouseDeltaY == 0))
 	{
@@ -208,6 +259,7 @@ bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UC
 	Rotation.Pitch = Clamp(Rotation.Pitch, MinPitch, MaxPitch);
 	Rotation.Roll = 0.0f;
 	Controller->SetControlRotation(Rotation);
+	RefreshControlRotationFacing(Controller, DeltaTime);
 	return true;
 }
 

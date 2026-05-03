@@ -26,6 +26,7 @@ public:
 	~UPawnOrientationComponent() override = default;
 
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
+	bool RefreshFacing(float DeltaTime);
 	void Serialize(FArchive& Ar) override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override;
@@ -50,7 +51,7 @@ private:
 	void ApplyFacingYaw(float TargetYaw, float DeltaTime);
 
 private:
-	int32 FacingMode = static_cast<int32>(EPawnFacingMode::MovementDirectionWithControlFallback);
+	int32 FacingMode = static_cast<int32>(EPawnFacingMode::ControlRotationYaw);
 	float RotationSpeed = 720.0f;
 	bool bYawOnly = true;
 	float MinFacingInputSize = 0.01f;

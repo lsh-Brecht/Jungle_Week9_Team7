@@ -71,12 +71,19 @@ namespace
 void UPawnOrientationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
 {
 	UActorComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	RefreshFacing(DeltaTime);
+}
 
+bool UPawnOrientationComponent::RefreshFacing(float DeltaTime)
+{
 	float DesiredYaw = 0.0f;
-	if (ComputeDesiredFacingYaw(DesiredYaw))
+	if (!ComputeDesiredFacingYaw(DesiredYaw))
 	{
-		ApplyFacingYaw(DesiredYaw, DeltaTime);
+		return false;
 	}
+
+	ApplyFacingYaw(DesiredYaw, DeltaTime);
+	return true;
 }
 
 void UPawnOrientationComponent::Serialize(FArchive& Ar)
