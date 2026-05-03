@@ -20,6 +20,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Materials/MaterialManager.h"
 #include "Engine/Platform/Paths.h"
+#include "Scripting/LuaInputLibrary.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
@@ -135,6 +136,9 @@ void UEditorEngine::Tick(float DeltaTime)
 	TaskScheduler.Tick(DeltaTime);
 	MainPanel.Update();
 	InputSystem::Get().RefreshSnapshot();
+
+	const FInputSystemSnapshot LuaInputSnapshot = InputSystem::Get().MakeSnapshot();
+	FLuaInputLibrary::SetFrameSnapshot(LuaInputSnapshot);
 
 	for (FEditorViewportClient* VC : ViewportLayout.GetAllViewportClients())
 	{

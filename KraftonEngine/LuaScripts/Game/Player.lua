@@ -404,10 +404,6 @@ local function DisableNativeControllerInput(controller)
     local input = GetControllerInputObject(controller)
 
     if input ~= nil then
-        input.MoveSpeed = 0.0
-        input.LookSensitivity = 0.0
-        input.SprintMultiplier = 1.0
-
         if DEBUG and Player.frame - Player.lastNativeInputDebugFrame >= DEBUG_NATIVE_INPUT_EVERY_FRAME then
             Player.lastNativeInputDebugFrame = Player.frame
 

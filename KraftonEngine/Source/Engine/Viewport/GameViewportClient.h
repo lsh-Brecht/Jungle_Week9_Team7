@@ -51,6 +51,8 @@ public:
 	bool HasPossessedTarget() const { return GetPossessedTarget() != nullptr; }
 	bool Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	bool ProcessPIEInput(const FInputSystemSnapshot& Snapshot, float DeltaTime);
+	void SetNativeControllerInputEnabled(bool bEnabled) { bNativeControllerInputEnabled = bEnabled; }
+	bool IsNativeControllerInputEnabled() const { return bNativeControllerInputEnabled; }
 
 private:
 	bool ApplyInputToCameraOrActor(float DeltaTime, const FInputSystemSnapshot& Snapshot);
@@ -65,4 +67,5 @@ private:
 	bool bHasCursorClipRect = false;
 	bool bPIEPossessedInputEnabled = false;
 	bool bCursorCaptured = false;
+	bool bNativeControllerInputEnabled = false;
 };

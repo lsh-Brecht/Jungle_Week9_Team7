@@ -146,6 +146,7 @@ bool UGameViewportClient::Tick(float DeltaTime, const FInputSystemSnapshot& Snap
 	{
 		return false;
 	}
+
 	if (!Snapshot.bWindowFocused)
 	{
 		InputSystem::Get().SetUseRawMouse(false);
@@ -153,8 +154,15 @@ bool UGameViewportClient::Tick(float DeltaTime, const FInputSystemSnapshot& Snap
 		ResetInputState();
 		return false;
 	}
+
 	InputSystem::Get().SetUseRawMouse(true);
 	SetCursorCaptured(true);
+
+	if (!bNativeControllerInputEnabled)
+	{
+		return true;
+	}
+
 	return ApplyInputToCameraOrActor(DeltaTime, Snapshot);
 }
 
