@@ -58,7 +58,7 @@ bool FEngineLoop::Init(HINSTANCE hInstance, int nShowCmd)
 	FLoadingScreen LoadingScreen;
 	LoadingScreen.Begin(Application.GetWindow().GetHWND());
 
-	LoadingScreen.Update(L"리소스 로딩 중...", 0.10f);
+	LoadingScreen.Update(L"리소스 로딩 중...");
 	{
 		SCOPE_STARTUP_STAT("Engine::Init");
 		GEngine->Init(&Application.GetWindow());
@@ -66,7 +66,7 @@ bool FEngineLoop::Init(HINSTANCE hInstance, int nShowCmd)
 
 	GEngine->SetTimer(&Timer);
 
-	LoadingScreen.Update(L"씬 불러오는 중...", 0.90f);
+	LoadingScreen.Update(L"씬 불러오는 중...");
 	{
 		SCOPE_STARTUP_STAT("Engine::BeginPlay");
 		GEngine->BeginPlay();
