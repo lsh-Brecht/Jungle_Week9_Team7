@@ -144,7 +144,7 @@ private:
 	float SideOffset = 0.0f;
 	FVector ViewOffset = FVector(-5.0f, 5.0f, 5.0f);
 	bool bUseTargetForward = true;
-	bool bUseControlRotationYaw = false;
+	bool bUseControlRotationYaw = true;
 
 	bool bEnableLookAhead = false;
 	float LookAheadDistance = 1.0f;

@@ -30,7 +30,7 @@ public:
 
 	bool ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	bool ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
-	bool ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, const FInputSystemSnapshot& Snapshot);
+	bool ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
 
 	EControllerMovementFrame GetMovementFrame() const { return static_cast<EControllerMovementFrame>(MovementFrame); }
 	void SetMovementFrame(EControllerMovementFrame InFrame);
@@ -58,7 +58,7 @@ public:
 	void NormalizeOptions();
 
 private:
-	int32 MovementFrame = static_cast<int32>(EControllerMovementFrame::ViewCamera);
+	int32 MovementFrame = static_cast<int32>(EControllerMovementFrame::ControlRotation);
 	float MoveSpeed = 10.0f;
 	float SprintMultiplier = 2.5f;
 	float LookSensitivity = 0.08f;
