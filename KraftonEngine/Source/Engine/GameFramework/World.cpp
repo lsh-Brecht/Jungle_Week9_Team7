@@ -1,4 +1,4 @@
-﻿#include "GameFramework/World.h"
+#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -40,6 +40,7 @@ static void RemapActor(UWorld* NewWorld, const TMap<uint32, uint32>& ActorUUIDRe
 				Component->RemapActorReferences(ActorUUIDRemap);
 			}
 		}
+		Actor->RemapActorReferences(ActorUUIDRemap);
 	}
 }
 
@@ -453,7 +454,28 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 
 	UpdateCollision();
 
+	UpdatePlayerCameraManagers(DeltaTime);
+
 	ApplyCollisionDebugVisualization();
+}
+
+
+void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
+{
+	for (APlayerController* Controller : PlayerControllers)
+	{
+		if (!Controller || !IsActorInWorld(Controller))
+		{
+			continue;
+		}
+
+		Controller->GetCameraManager().UpdateCamera(DeltaTime);
+		if (UCameraComponent* OutputCamera = Controller->ResolveViewCamera())
+		{
+			SetViewCamera(OutputCamera);
+			SetActiveCamera(OutputCamera);
+		}
+	}
 }
 
 void UWorld::SetActiveCamera(UCameraComponent* InCamera)
@@ -519,6 +541,7 @@ void UWorld::CleanupActorReferences(AActor* Actor)
 			continue;
 		}
 
+		Controller->ClearCameraReferencesForActor(Actor);
 		if (Controller->GetPossessedActor() == Actor)
 		{
 			Controller->UnPossess();
@@ -526,6 +549,22 @@ void UWorld::CleanupActorReferences(AActor* Actor)
 		if (Controller->GetViewTarget() == Actor)
 		{
 			Controller->SetViewTarget(nullptr);
+		}
+	}
+
+	for (AActor* OtherActor : GetActors())
+	{
+		if (!OtherActor)
+		{
+			continue;
+		}
+
+		for (UActorComponent* Component : OtherActor->GetComponents())
+		{
+			if (UCameraComponent* Camera = Cast<UCameraComponent>(Component))
+			{
+				Camera->ClearTargetActorIfMatches(Actor);
+			}
 		}
 	}
 
@@ -551,6 +590,14 @@ void UWorld::CleanupComponentReferences(UActorComponent* Component)
 		return;
 	}
 
+	for (APlayerController* Controller : PlayerControllers)
+	{
+		if (Controller)
+		{
+			Controller->ClearCameraReferencesForComponent(Component);
+		}
+	}
+
 	if (ViewCamera == Component)
 	{
 		ViewCamera = nullptr;
@@ -563,6 +610,22 @@ void UWorld::CleanupComponentReferences(UActorComponent* Component)
 	{
 		LastLODUpdateCamera = nullptr;
 		bHasLastFullLODUpdateCameraPos = false;
+	}
+
+	for (AActor* Actor : GetActors())
+	{
+		if (!Actor)
+		{
+			continue;
+		}
+
+		for (UActorComponent* OtherComponent : Actor->GetComponents())
+		{
+			if (UMovementComponent* Movement = Cast<UMovementComponent>(OtherComponent))
+			{
+				Movement->ClearUpdatedComponentIfMatches(Cast<USceneComponent>(Component));
+			}
+		}
 	}
 }
 
@@ -670,17 +733,9 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 
 	if (!Controller->GetPossessedActor())
 	{
-		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
+		if (AActor* Target = FindFirstPossessableActor())
 		{
-			if (AActor* Target = FindActorByUUIDInWorld(Input->PossessedActorUUID))
-			{
-				Controller->Possess(Target);
-			}
-		}
-		if (!Controller->GetPossessedActor())
-		{
-			if (AActor* Target = FindFirstPossessableActor())
-				Controller->Possess(Target);
+			Controller->Possess(Target);
 		}
 	}
 

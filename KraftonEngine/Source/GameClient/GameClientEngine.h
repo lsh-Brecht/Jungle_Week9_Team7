@@ -15,7 +15,6 @@ public:
 	UGameClientEngine() = default;
 	~UGameClientEngine() override = default;
 
-	void ConfigureWindow(FWindowsWindow* InWindow) override;
 	void Init(FWindowsWindow* InWindow) override;
 	void Shutdown() override;
 	void Tick(float DeltaTime) override;

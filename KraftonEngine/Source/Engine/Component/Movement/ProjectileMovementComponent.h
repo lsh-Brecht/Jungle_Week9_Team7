@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/Movement/MovementComponent.h"
 #include "Core/CollisionTypes.h"
@@ -27,7 +27,8 @@ public:
 	void ContributeSelectedVisuals(FScene& Scene) const override;
 
 	void SetVelocity(const FVector& InVelocity) { Velocity = InVelocity; }
-	const FVector& GetVelocity() const { return Velocity; }
+	const FVector& GetVelocity() const override { return Velocity; }
+	FVector GetMovementVelocity() const override { return Velocity; }
 	void SetInitialSpeed(float InInitialSpeed) { InitialSpeed = InInitialSpeed; }
 	float GetInitialSpeed() const { return InitialSpeed; }
 	float GetMaxSpeed() const { return MaxSpeed; }

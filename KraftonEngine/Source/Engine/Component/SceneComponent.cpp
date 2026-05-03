@@ -1,4 +1,4 @@
-﻿#include "SceneComponent.h"
+#include "SceneComponent.h"
 #include "Object/ObjectFactory.h"
 #include <GameFramework/World.h>
 #include "Serialization/Archive.h"
@@ -396,6 +396,34 @@ FVector USceneComponent::GetWorldLocation() const
 {
 	const FMatrix& WorldMatrix = GetWorldMatrix();
 	return FVector(WorldMatrix.M[3][0], WorldMatrix.M[3][1], WorldMatrix.M[3][2]);
+}
+
+FQuat USceneComponent::GetWorldRotationQuat() const
+{
+	return GetWorldMatrix().ToQuat();
+}
+
+FRotator USceneComponent::GetWorldRotation() const
+{
+	return GetWorldMatrix().ToRotator();
+}
+
+void USceneComponent::SetWorldRotation(const FQuat& NewWorldRotation)
+{
+	if (ParentComponent)
+	{
+		const FQuat ParentWorldRotation = ParentComponent->GetWorldRotationQuat();
+		SetRelativeRotation(ParentWorldRotation.Inverse() * NewWorldRotation);
+	}
+	else
+	{
+		SetRelativeRotation(NewWorldRotation);
+	}
+}
+
+void USceneComponent::SetWorldRotation(const FRotator& NewWorldRotation)
+{
+	SetWorldRotation(NewWorldRotation.ToQuaternion());
 }
 
 FVector USceneComponent::GetWorldScale() const

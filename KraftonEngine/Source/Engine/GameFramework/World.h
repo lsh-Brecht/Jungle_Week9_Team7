@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Object/Object.h"
 #include "Core/RayTypes.h"
 #include "Core/CollisionTypes.h"
@@ -120,6 +120,7 @@ public:
 
 	void UpdateCollision();
 	void ApplyCollisionDebugVisualization();
+	void UpdatePlayerCameraManagers(float DeltaTime);
 
 private:
 	//TArray<AActor*> Actors;

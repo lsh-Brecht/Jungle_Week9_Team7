@@ -28,6 +28,9 @@
 #include "ImGui/imgui.h"
 #include "WICTextureLoader.h"
 #include "Component/CameraComponent.h"
+#include "Camera/CameraTypes.h"
+#include "Component/PawnOrientationComponent.h"
+#include "Component/Movement/PawnMovementComponent.h"
 #include "Component/GizmoComponent.h"
 #include "Component/Light/LightComponentBase.h"
 #include "Serialization/PrefabSaveManager.h"
@@ -38,6 +41,23 @@
 
 namespace
 {
+
+template <typename TComponent>
+TComponent* FindActorComponent(AActor* Actor)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		if (TComponent* Typed = Cast<TComponent>(Component))
+		{
+			return Typed;
+		}
+	}
+	return nullptr;
+}
 enum class EToolbarIcon : int32
 {
 	Menu = 0,
@@ -1879,7 +1899,9 @@ void FLevelViewportLayout::RenderViewportPlaceActorPopup()
 		PlaceActorMenuItem("Spot Light", EViewportPlaceActorType::SpotLight);
 		PlaceActorMenuItem("Camera", EViewportPlaceActorType::Camera);
 		PlaceActorMenuItem("Pawn", EViewportPlaceActorType::Pawn);
+		PlaceActorMenuItem("Playable Pawn", EViewportPlaceActorType::PlayablePawn);
 		PlaceActorMenuItem("PlayerController", EViewportPlaceActorType::PlayerController);
+		PlaceActorMenuItem("Third Person Player Setup", EViewportPlaceActorType::ThirdPersonPlayerSetup);
 
 		ImGui::EndMenu();
 	}
@@ -2108,6 +2130,39 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 		}
 		break;
 	}
+	case EViewportPlaceActorType::PlayablePawn:
+	{
+		APawn* Actor = World->SpawnActor<APawn>();
+		if (Actor)
+		{
+			Actor->InitDefaultComponents();
+			if (!FindActorComponent<UPawnMovementComponent>(Actor))
+			{
+				Actor->AddComponent<UPawnMovementComponent>();
+			}
+			if (!FindActorComponent<UPawnOrientationComponent>(Actor))
+			{
+				Actor->AddComponent<UPawnOrientationComponent>();
+			}
+			UCameraComponent* Camera = FindActorComponent<UCameraComponent>(Actor);
+			if (!Camera)
+			{
+				Camera = Actor->AddComponent<UCameraComponent>();
+			}
+			if (Camera)
+			{
+				Camera->SetViewMode(ECameraViewMode::ThirdPerson);
+				Camera->SetOrthographic(false);
+				Camera->SetUseOwnerAsTarget(true);
+				Camera->SetUseTargetForward(false);
+				Camera->SetUseControlRotationYaw(true);
+				Camera->SetBackDistance(5.0f);
+				Camera->SetHeight(2.0f);
+			}
+			SpawnedActor = Actor;
+		}
+		break;
+	}
 	case EViewportPlaceActorType::PlayerController:
 	{
 		APlayerController* Actor = World->SpawnActor<APlayerController>();
@@ -2116,6 +2171,39 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 			Actor->InitDefaultComponents();
 			SpawnedActor = Actor;
 		}
+		break;
+	}
+	case EViewportPlaceActorType::ThirdPersonPlayerSetup:
+	{
+		APawn* Pawn = World->SpawnActor<APawn>();
+		APlayerController* Controller = World->SpawnActor<APlayerController>();
+		if (Pawn)
+		{
+			Pawn->InitDefaultComponents();
+			Pawn->AddComponent<UPawnMovementComponent>();
+			Pawn->AddComponent<UPawnOrientationComponent>();
+			UCameraComponent* Camera = Pawn->AddComponent<UCameraComponent>();
+			if (Camera)
+			{
+				Camera->SetViewMode(ECameraViewMode::ThirdPerson);
+				Camera->SetOrthographic(false);
+				Camera->SetUseOwnerAsTarget(true);
+				Camera->SetUseTargetForward(false);
+				Camera->SetUseControlRotationYaw(true);
+				Camera->SetBackDistance(5.0f);
+				Camera->SetHeight(2.0f);
+			}
+		}
+		if (Controller)
+		{
+			Controller->InitDefaultComponents();
+			Controller->Possess(Pawn);
+			if (Pawn)
+			{
+				Controller->SetActiveCamera(Pawn->FindPawnCamera());
+			}
+		}
+		SpawnedActor = Pawn ? static_cast<AActor*>(Pawn) : static_cast<AActor*>(Controller);
 		break;
 	}
 	default:

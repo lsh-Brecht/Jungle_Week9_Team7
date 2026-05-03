@@ -1,4 +1,4 @@
-﻿// LuaGameObjectBindings.cpp
+// LuaGameObjectBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -20,6 +20,7 @@
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/Script/LuaScriptComponent.h"
+#include "Component/PawnOrientationComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
@@ -299,6 +300,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveCamera",
 			UCameraComponent
+		),
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"PawnOrientation",
+			FLuaPawnOrientationComponentHandle,
+			UPawnOrientationComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddPawnOrientation",
+			FLuaPawnOrientationComponentHandle,
+			UPawnOrientationComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemovePawnOrientation",
+			UPawnOrientationComponent
 		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(

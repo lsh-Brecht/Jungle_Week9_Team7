@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/ActorComponent.h"
 #include "Math/Vector.h"
@@ -46,6 +46,15 @@ public:
 	FString BuildUpdatedComponentPath(const USceneComponent* TargetComponent) const;
 	void ClearUpdatedComponentIfMatches(const USceneComponent* RemovedComponent);
 	virtual bool CanReceiveControllerInput() const { return bReceiveControllerInput; }
+	void RecordControllerMovementInput(const FControllerMovementInput& Input);
+	const FVector& GetLastControllerWorldDirection() const { return LastControllerWorldDirection; }
+	const FVector& GetLastMovementInput() const { return LastControllerWorldDirection; }
+	const FVector& GetLastControllerWorldDelta() const { return LastControllerWorldDelta; }
+	float GetLastControllerInputTime() const { return LastControllerInputTime; }
+	virtual const FVector& GetVelocity() const { return MovementVelocity; }
+	virtual FVector GetMovementVelocity() const { return GetVelocity(); }
+	bool HasMovementInput() const { return !LastControllerWorldDirection.IsNearlyZero(); }
+	bool IsMoving() const { return !GetVelocity().IsNearlyZero(); }
 	virtual bool ApplyControllerMovementInput(const FControllerMovementInput& Input);
 	int32 GetControllerInputPriority() const { return ControllerInputPriority; }
 
@@ -58,4 +67,9 @@ protected:
 	FString UpdatedComponentPath;
 	bool bReceiveControllerInput = false;
 	int32 ControllerInputPriority = 0;
+
+	FVector LastControllerWorldDirection = FVector::ZeroVector;
+	FVector LastControllerWorldDelta = FVector::ZeroVector;
+	float LastControllerInputTime = 0.0f;
+	FVector MovementVelocity = FVector::ZeroVector;
 };

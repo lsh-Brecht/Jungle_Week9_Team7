@@ -326,14 +326,15 @@
     <ClCompile Include="Source\Engine\Collision\WorldCollisionBVH.cpp" />
     <ClCompile Include="Source\Engine\Collision\WorldCollisionSystem.cpp" />
     <ClCompile Include="Source\Engine\Collision\WorldPrimitivePickingBVH.cpp" />
+    <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Component\ActorComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\BillboardComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\CameraRigComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\ShapeComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp" />
+    <ClCompile Include="Source\Engine\Component\ComponentReferenceUtils.cpp" />
     <ClCompile Include="Source\Engine\Component\ControllerInputComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CylindricalBillboardComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\DecalComponent.cpp" />
@@ -353,6 +354,7 @@
     <ClCompile Include="Source\Engine\Component\Movement\PendulumMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp" />
+    <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp" />
@@ -475,6 +477,7 @@
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaPawnOrientationBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
@@ -548,6 +551,8 @@
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h" />
     <ClInclude Include="Source\Editor\Viewport\FLevelViewportLayout.h" />
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
+    <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
+    <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
     <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h" />
     <ClInclude Include="Source\Engine\Collision\MeshTriangleBVH.h" />
@@ -563,12 +568,12 @@
     <ClInclude Include="Source\Engine\Component\ActorComponent.h" />
     <ClInclude Include="Source\Engine\Component\BillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\CameraComponent.h" />
-    <ClInclude Include="Source\Engine\Component\CameraRigComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\CollisionTypes.h" />
     <ClInclude Include="Source\Engine\Component\Collision\ShapeComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h" />
+    <ClInclude Include="Source\Engine\Component\ComponentReferenceUtils.h" />
     <ClInclude Include="Source\Engine\Component\ControllerInputComponent.h" />
     <ClInclude Include="Source\Engine\Component\CylindricalBillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\DecalComponent.h" />
@@ -588,6 +593,7 @@
     <ClInclude Include="Source\Engine\Component\Movement\PendulumMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h" />
+    <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h" />
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h" />

@@ -40,26 +40,10 @@ void UGameClientEngine::InitCameraManager()
 	CameraManager.SyncWorldViewCamera();
 }
 
-void UGameClientEngine::ConfigureWindow(FWindowsWindow* InWindow)
+void UGameClientEngine::Init(FWindowsWindow* InWindow)
 {
 	Settings.Load();
 
-	if (!InWindow)
-	{
-		return;
-	}
-
-	InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
-	InWindow->ResizeClient(static_cast<unsigned int>(Settings.WindowWidth), static_cast<unsigned int>(Settings.WindowHeight));
-	if (Settings.bFullscreen && !InWindow->IsFullscreen())
-	{
-		InWindow->ToggleFullscreen();
-	}
-}
-
-void UGameClientEngine::Init(FWindowsWindow* InWindow)
-{
-	// 윈도우 설정은 ConfigureWindow()에서 이미 완료됨
 	FString PackageValidationErrors;
 	if (!FGameClientPackageValidator::ValidateBeforeEngineInit(Settings, PackageValidationErrors))
 	{
@@ -70,6 +54,16 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 			MB_OK | MB_ICONERROR);
 		::PostQuitMessage(1);
 		return;
+	}
+
+	if (InWindow)
+	{
+		InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
+		InWindow->ResizeClient(static_cast<unsigned int>(Settings.WindowWidth), static_cast<unsigned int>(Settings.WindowHeight));
+		if (Settings.bFullscreen && !InWindow->IsFullscreen())
+		{
+			InWindow->ToggleFullscreen();
+		}
 	}
 
 	UEngine::Init(InWindow);

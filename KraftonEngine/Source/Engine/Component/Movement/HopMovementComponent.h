@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/Movement/MovementComponent.h"
 #include "Math/Vector.h"
@@ -48,7 +48,8 @@ public:
 	// Movement settings / state
 	// ---------------------------------------------------------------------
 	void SetVelocity(const FVector& InVelocity) { Velocity = InVelocity; }
-	const FVector& GetVelocity() const { return Velocity; }
+	const FVector& GetVelocity() const override { return Velocity; }
+	FVector GetMovementVelocity() const override { return Velocity; }
 
 	// 기존 Lua/에디터 호환용 이름. 플레이어 이동에서는 기본 이동 속도처럼 사용한다.
 	void SetInitialSpeed(float InInitialSpeed) { InitialSpeed = InInitialSpeed; }

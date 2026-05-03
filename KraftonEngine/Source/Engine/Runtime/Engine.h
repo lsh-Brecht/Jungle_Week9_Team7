@@ -23,7 +23,6 @@ public:
 	~UEngine() override = default;
 
 	// Lifecycle
-	virtual void ConfigureWindow(FWindowsWindow* InWindow) {}
 	virtual void Init(FWindowsWindow* InWindow);
 	virtual void Shutdown();
 	virtual void BeginPlay();
