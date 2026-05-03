@@ -14,6 +14,7 @@
 #endif
 #include <windows.h>
 
+#include <algorithm>
 #include <cstring>
 
 IMPLEMENT_CLASS(UControllerInputComponent, UActorComponent)
@@ -260,6 +261,33 @@ void UControllerInputComponent::SetLookMode(EControllerLookMode InMode)
 {
 	LookMode = NormalizeLookModeValue(static_cast<int32>(InMode));
 }
+void UControllerInputComponent::SetMoveSpeed(float InSpeed)
+{
+	MoveSpeed = InSpeed < 0.0f ? 0.0f : InSpeed;
+}
+
+void UControllerInputComponent::SetSprintMultiplier(float InMultiplier)
+{
+	SprintMultiplier = InMultiplier < 0.0f ? 0.0f : InMultiplier;
+}
+
+void UControllerInputComponent::SetLookSensitivity(float InSensitivity)
+{
+	LookSensitivity = InSensitivity < 0.0f ? 0.0f : InSensitivity;
+}
+
+void UControllerInputComponent::SetMinPitch(float InMinPitch)
+{
+	MinPitch = InMinPitch;
+	MaxPitch = (std::max)(MinPitch, MaxPitch);
+}
+
+void UControllerInputComponent::SetMaxPitch(float InMaxPitch)
+{
+	MaxPitch = InMaxPitch;
+	MinPitch = (std::min)(MinPitch, MaxPitch);
+}
+
 void UControllerInputComponent::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
 {
 	if (PossessedActorUUID == 0)

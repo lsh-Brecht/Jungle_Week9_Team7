@@ -655,11 +655,9 @@ void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext&
 	for (APlayerController* PC : World->GetPlayerControllers()) {
 		UControllerInputComponent* Input = PC->FindControllerInputComponent();
 		if (!Input || Input->PossessedActorUUID == 0) continue;
-		UObject* Obj = UObjectManager::Get().FindByUUID(Input->PossessedActorUUID);
-		if (AActor* Possessed = Cast<AActor>(Obj)) {
-			if (World->IsActorInWorld(Possessed)) {
-				PC->Possess(Possessed);
-			}
+		if (AActor* Possessed = World->FindActorByUUIDInWorld(Input->PossessedActorUUID))
+		{
+			PC->Possess(Possessed);
 		}
 	}
 

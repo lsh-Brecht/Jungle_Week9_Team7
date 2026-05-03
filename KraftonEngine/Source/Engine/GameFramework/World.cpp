@@ -35,7 +35,7 @@ static void RemapActor(UWorld* NewWorld, const TMap<uint32, uint32>& ActorUUIDRe
 
 		for (UActorComponent* Component : Actor->GetComponents())
 		{
-			if (!Component)
+			if (Component)
 			{
 				Component->RemapActorReferences(ActorUUIDRemap);
 			}
@@ -620,7 +620,7 @@ AActor* UWorld::FindActorByUUIDInWorld(uint32 ActorUUID) const
 	}
 	for (AActor* Actor : PersistentLevel->GetActors())
 	{
-		if (Actor->GetUUID() == ActorUUID)
+		if (Actor && Actor->GetUUID() == ActorUUID)
 		{
 			return Actor;
 		}

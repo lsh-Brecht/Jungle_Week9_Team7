@@ -13,6 +13,8 @@
 
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
@@ -173,6 +175,52 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			}
 
 			return FLuaWorldLibrary::ReleaseActorToPool(Actor);
+		},
+
+		"ReleaseToPool",
+		[](const FLuaGameObjectHandle& Self)
+		{
+			AActor* Actor = Self.Resolve();
+
+			if (!Actor)
+			{
+				UE_LOG("[Lua] Invalid GameObject.ReleaseToPool Call.");
+				return false;
+			}
+
+			return FLuaWorldLibrary::ReleaseActorToPool(Actor);
+		},
+
+		"AsPawn",
+		[](const FLuaGameObjectHandle& Self, sol::this_state State) -> sol::object
+		{
+			sol::state_view LuaView(State);
+
+			APawn* Pawn = Cast<APawn>(Self.Resolve());
+			if (!Pawn)
+			{
+				return sol::nil;
+			}
+
+			FLuaPawnHandle Handle;
+			Handle.UUID = Pawn->GetUUID();
+			return sol::make_object(LuaView, Handle);
+		},
+
+		"AsPlayerController",
+		[](const FLuaGameObjectHandle& Self, sol::this_state State) -> sol::object
+		{
+			sol::state_view LuaView(State);
+
+			APlayerController* Controller = Cast<APlayerController>(Self.Resolve());
+			if (!Controller)
+			{
+				return sol::nil;
+			}
+
+			FLuaPlayerControllerHandle Handle;
+			Handle.UUID = Controller->GetUUID();
+			return sol::make_object(LuaView, Handle);
 		},
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(

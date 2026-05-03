@@ -41,6 +41,58 @@ void RegisterWorldExtendedBinding(sol::state& Lua)
 			return sol::make_object(LuaView, Handle);
 		});
 
+	// World.GetOrCreatePlayerController()
+	World.set_function("GetOrCreatePlayerController",
+		[](sol::this_state TS) -> sol::object
+		{
+			sol::state_view LuaView(TS);
+
+			UWorld* W = FLuaWorldLibrary::GetActiveWorld();
+			if (!W)
+			{
+				UE_LOG("[Lua] World.GetOrCreatePlayerController: No active world.");
+				return sol::nil;
+			}
+
+			APlayerController* Controller = W->FindOrCreatePlayerController();
+			if (!Controller)
+			{
+				return sol::nil;
+			}
+
+			FLuaPlayerControllerHandle Handle;
+			Handle.UUID = Controller->GetUUID();
+			return sol::make_object(LuaView, Handle);
+		});
+
+	// World.AutoWirePlayerController([controller])
+	World.set_function("AutoWirePlayerController",
+		sol::overload(
+			[]()
+			{
+				UWorld* W = FLuaWorldLibrary::GetActiveWorld();
+				if (!W)
+				{
+					UE_LOG("[Lua] World.AutoWirePlayerController: No active world.");
+					return;
+				}
+
+				W->AutoWirePlayerController();
+			},
+			[](const FLuaPlayerControllerHandle& ControllerHandle)
+			{
+				UWorld* W = FLuaWorldLibrary::GetActiveWorld();
+				if (!W)
+				{
+					UE_LOG("[Lua] World.AutoWirePlayerController: No active world.");
+					return;
+				}
+
+				W->AutoWirePlayerController(ControllerHandle.Resolve());
+			}
+		)
+	);
+
 	// World.SpawnPawn([location])
 	World.set_function("SpawnPawn",
 		[](sol::optional<FVector> MaybeLocation, sol::this_state TS) -> sol::object

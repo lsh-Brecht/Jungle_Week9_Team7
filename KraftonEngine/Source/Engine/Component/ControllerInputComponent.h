@@ -43,10 +43,25 @@ public:
 	EControllerLookMode GetLookMode() const { return static_cast<EControllerLookMode>(LookMode); }
 	void SetLookMode(EControllerLookMode InMode);
 
+	float GetMoveSpeed() const { return MoveSpeed; }
+	void SetMoveSpeed(float InSpeed);
+
+	float GetSprintMultiplier() const { return SprintMultiplier; }
+	void SetSprintMultiplier(float InMultiplier);
+
+	float GetLookSensitivity() const { return LookSensitivity; }
+	void SetLookSensitivity(float InSensitivity);
+
+	float GetMinPitch() const { return MinPitch; }
+	void SetMinPitch(float InMinPitch);
+
+	float GetMaxPitch() const { return MaxPitch; }
+	void SetMaxPitch(float InMaxPitch);
+
 	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
 
 	uint32 PossessedActorUUID = 0;
-
+	
 private:
 	UCameraComponent* ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const;
 	void NormalizeOptions();

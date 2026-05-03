@@ -21,6 +21,7 @@
 #include "GameFramework/AActor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Component/ControllerInputComponent.h"
 
 // Lua가 Object에 직접 접근할 수 없도록 감쌈
 // nullptr일 경우를 대비
@@ -274,6 +275,22 @@ struct FLuaStaticMeshComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UStaticMeshComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaControllerInputComponentHandle
+{
+	uint32 UUID = 0;
+
+	UControllerInputComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UControllerInputComponent>(Object);
 	}
 
 	bool IsValid() const
