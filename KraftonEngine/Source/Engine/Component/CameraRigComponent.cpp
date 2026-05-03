@@ -6,7 +6,6 @@
 #include "Math/MathUtils.h"
 #include "Serialization/Archive.h"
 #include "GameFramework/PlayerController.h"
-#include "GameFramework/Pawn.h"
 #include "GameFramework/World.h"
 
 #include <cmath>
@@ -192,15 +191,15 @@ AActor* UCameraRigComponent::ResolveTargetActor() const
 	{
 		if (APlayerController* PC = World->GetPlayerController(0))
 		{
-			if (APawn* Pawn = PC->GetPawn())
+			if (AActor* Possessed = PC->GetPossessedActor())
 			{
-				return Pawn;
+				return Possessed;
 			}
 		}
 
-		if (APawn* Pawn = World->FindFirstPawn())
+		if (AActor* Possessable = World->FindFirstPossessableActor())
 		{
-			return Pawn;
+			return Possessable;
 		}
 	}
 
