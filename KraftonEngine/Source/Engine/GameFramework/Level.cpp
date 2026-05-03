@@ -87,20 +87,13 @@ void ULevel::BeginPlay()
 
 void ULevel::EndPlay()
 {
-	for (AActor* Actor : Actors)
+	TArray<AActor*> ActorSnapshot = Actors;
+
+	for (AActor* Actor : ActorSnapshot)
 	{
-		if (Actor)
+		if (Actor && IsAliveObject(Actor))
 		{
 			Actor->EndPlay();
 		}
 	}
-
-	for (AActor* Actor : Actors)
-	{
-		if (Actor)
-		{
-			UObjectManager::Get().DestroyObject(Actor);
-		}
-	}
-	Actors.clear();
 }

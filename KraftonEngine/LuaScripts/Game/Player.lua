@@ -10,7 +10,7 @@
 local Vec = FVector.new
 local Rot = FRotator.new
 
-local DEBUG = true
+local DEBUG = false
 
 -- 너무 많이 찍히면 콘솔이 느려지므로 주기 제한.
 local DEBUG_TICK_EVERY_FRAME = 60

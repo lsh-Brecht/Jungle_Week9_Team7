@@ -19,6 +19,13 @@ FWorldCollisionSystem::~FWorldCollisionSystem()
 {
 }
 
+void FWorldCollisionSystem::Reset()
+{
+	WorldCollisionBVH.Reset();
+	PreviousOverlapPairs.clear();
+	CurrentOverlapPairs.clear();
+}
+
 bool FWorldCollisionSystem::HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit)
 {
 	if (OutHit)
