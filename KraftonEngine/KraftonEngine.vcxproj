@@ -248,7 +248,20 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+        lua51.lib;
+sfml-audio.lib;sfml-window.lib;sfml-system.lib; %(AdditionalDependencies)
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+        $(VcpkgInstalledRoot)\lib;
+$(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>
+ xcopy /Y /D "$(VcpkgInstalledRoot)\bin\lua51.dll" 
+ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)"     </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">
     <ClCompile>
