@@ -10,12 +10,66 @@
 #include "GameFramework/CameraActor.h"
 #include "Component/CameraComponent.h"
 #include "Runtime/Engine.h"
+#include "Serialization/PrefabSaveManager.h"
 
 void RegisterWorldExtendedBinding(sol::state& Lua)
 {
 	// 기존 World 테이블이 있으면 가져오고, 없으면 생성
 	sol::table World = Lua.get_or("World", Lua.create_table());
 	Lua["World"] = World;
+
+	World.set_function("SpawnPrefab",
+		[](const std::string& PrefabName, sol::optional<FVector> MaybeLocation, sol::optional<FRotator> MaybeRotation, sol::this_state TS) -> sol::object
+		{
+			sol::state_view LuaView(TS);
+			UWorld* W = FLuaWorldLibrary::GetActiveWorld();
+			if (!W)
+			{
+				UE_LOG("[Lua] World.SpawnPrefab: No active world.");
+				return sol::nil;
+			}
+
+			FVector Location = MaybeLocation.value_or(FVector(0, 0, 0));
+			FRotator Rotation = MaybeRotation.value_or(FRotator());
+			AActor* Actor = FPrefabSaveManager::SpawnPrefab(W, FString(PrefabName), Location, Rotation);
+
+			if (!Actor)
+			{
+				UE_LOG("[Lua] World.SpawnPrefab: Failed to spawn prefab %s", PrefabName.c_str());
+				return sol::nil;
+			}
+
+			FLuaGameObjectHandle Handle;
+			Handle.UUID = Actor->GetUUID();
+			return sol::make_object(LuaView, Handle);
+		});
+
+
+
+	World.set_function("AcquirePrefab",
+		[](const std::string& PrefabName, sol::optional<FVector> MaybeLocation, sol::optional<FRotator> MaybeRotation, sol::this_state TS) -> sol::object
+		{
+			sol::state_view LuaView(TS);
+			FVector Location = MaybeLocation.value_or(FVector(0, 0, 0));
+			FRotator Rotation = MaybeRotation.value_or(FRotator());
+			AActor* Actor = FLuaWorldLibrary::AcquirePrefab(FString(PrefabName), Location, Rotation);
+
+			if (!Actor)
+			{
+				UE_LOG("[Lua] World.AcquirePrefab: Failed to acquire prefab %s", PrefabName.c_str());
+				return sol::nil;
+			}
+
+			FLuaGameObjectHandle Handle;
+			Handle.UUID = Actor->GetUUID();
+			return sol::make_object(LuaView, Handle);
+		});
+
+	World.set_function("WarmUpPrefabPool",
+		[](const std::string& PrefabName, int32 Count)
+		{
+			return FLuaWorldLibrary::WarmUpPrefabPool(FString(PrefabName), Count);
+		});
 
 	// World.GetPlayerController(index)
 	World.set_function("GetPlayerController",

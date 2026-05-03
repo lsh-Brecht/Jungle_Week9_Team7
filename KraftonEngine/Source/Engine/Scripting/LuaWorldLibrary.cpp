@@ -144,6 +144,23 @@ AActor* FLuaWorldLibrary::AcquireActorByClassName(const FString& ClassName, cons
 	return Actor;
 }
 
+
+AActor* FLuaWorldLibrary::AcquirePrefab(const FString& PrefabPath, const FVector& Location, const FRotator& Rotation)
+{
+	UWorld* World = GetActiveWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	AActor* Actor = FObjectPoolSystem::Get().AcquirePrefab(World, PrefabPath, Location, Rotation);
+	if (!Actor)
+	{
+		UE_LOG("[Lua] AcquirePrefab failed: prefab path = %s", PrefabPath.c_str());
+	}
+	return Actor;
+}
+
 bool FLuaWorldLibrary::ReleaseActorToPool(AActor* Actor)
 {
 	if (!Actor)
@@ -176,6 +193,18 @@ int32 FLuaWorldLibrary::WarmUpActorPool(const FString& ClassName, int32 Count)
 	}
 
 	return FObjectPoolSystem::Get().WarmUp(World, ActorClass, Count);
+}
+
+
+int32 FLuaWorldLibrary::WarmUpPrefabPool(const FString& PrefabPath, int32 Count)
+{
+	UWorld* World = GetActiveWorld();
+	if (!World)
+	{
+		return 0;
+	}
+
+	return FObjectPoolSystem::Get().WarmUpPrefab(World, PrefabPath, Count);
 }
 
 AActor* FLuaWorldLibrary::SpawnStaticMeshActor(const FString& StaticMeshPath, const FVector& Location)

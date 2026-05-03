@@ -16,9 +16,10 @@ enum class EControllerMovementFrame : int32
 
 enum class EControllerLookMode : int32
 {
-	Auto = 0,
-	CameraOnly = 1,
-	PawnYawPawnPitch = 2,
+	Auto               = 0,
+	CameraOnly         = 1,
+	PawnYawPawnPitch   = 2,
+	PawnYawCameraPitch = 3,
 };
 
 class UControllerInputComponent : public UActorComponent

@@ -2,7 +2,9 @@
 
 #include "Editor/EditorEngine.h"
 #include "Editor/UI/EditorFileUtils.h"
+#include "Serialization/PrefabSaveManager.h"
 
+#include <filesystem>
 #include "ImGui/imgui.h"
 #include "Component/ActorComponent.h"
 #include "Component/ControllerInputComponent.h"
@@ -320,6 +322,38 @@ void FEditorPropertyWidget::Render(float DeltaTime)
 			LastSelectedActor = nullptr;
 			ImGui::End();
 			return;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Save Prefab"))
+		{
+			std::wstring PrefabDir = FPaths::PrefabDir();
+			FPaths::CreateDir(PrefabDir);
+
+			FString DefaultName = PrimaryActor->GetFName().ToString();
+			if (DefaultName.empty()) DefaultName = PrimaryActor->GetClass()->GetName();
+
+			std::wstring WideDefaultName = FPaths::ToWide(DefaultName);
+
+			FEditorFileDialogOptions Options;
+			Options.Title = L"Save Prefab As...";
+			Options.Filter = L"Prefab Files (*.Prefab)\0*.Prefab\0All Files (*.*)\0*.*\0";
+			Options.DefaultExtension = L"Prefab";
+			Options.InitialDirectory = PrefabDir.c_str();
+			Options.DefaultFileName = WideDefaultName.c_str();
+			Options.bPromptOverwrite = true;
+			Options.bReturnRelativeToProjectRoot = false;
+
+			FString SavePath = FEditorFileUtils::SaveFileDialog(Options);
+			if (!SavePath.empty())
+			{
+				// Save to the exact path picked in the dialog, then refresh the content browser
+				// so newly-created prefabs appear without typing "cb refresh".
+				if (FPrefabSaveManager::SaveActorAsPrefab(PrimaryActor, SavePath) && EditorEngine)
+				{
+					EditorEngine->RefreshContentBrowser();
+				}
+			}
 		}
 	}
 
@@ -1264,6 +1298,20 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 			char Buf[512];
 			strncpy_s(Buf, sizeof(Buf), Val->c_str(), _TRUNCATE);
 			ImGui::InputText("##ScriptPath", Buf, sizeof(Buf), ImGuiInputTextFlags_ReadOnly);
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload("LuaScriptContentItem"))
+				{
+					const FContentItem* Item = reinterpret_cast<const FContentItem*>(Payload->Data);
+					const std::filesystem::path AbsPath = std::filesystem::path(Item->Path).lexically_normal();
+					if (IsLuaScriptFile(AbsPath))
+					{
+						*Val = MakeLuaScriptPropertyPath(AbsPath);
+						bChanged = true;
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 
 			ImGui::SameLine();
 			if (ImGui::Button("..."))

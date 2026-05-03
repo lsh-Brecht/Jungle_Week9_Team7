@@ -79,11 +79,44 @@ void RegisterActorLifecycleBinding(sol::state& Lua)
 		}
 	);
 
+
+	Lua.set_function(
+		"AcquirePrefab",
+		[](const FString& PrefabPath, const FVector& Location, sol::optional<FRotator> MaybeRotation, sol::this_state State) -> sol::object
+		{
+			sol::state_view LuaView(State);
+
+			AActor* Actor = FLuaWorldLibrary::AcquirePrefab(
+				PrefabPath,
+				Location,
+				MaybeRotation.value_or(FRotator())
+			);
+
+			if (!Actor)
+			{
+				return sol::nil;
+			}
+
+			FLuaGameObjectHandle Handle;
+			Handle.UUID = Actor->GetUUID();
+
+			return sol::make_object(LuaView, Handle);
+		}
+	);
+
 	Lua.set_function(
 		"WarmUpActorPool",
 		[](const FString& ClassName, int32 Count)
 		{
 			return FLuaWorldLibrary::WarmUpActorPool(ClassName, Count);
+		}
+	);
+
+	Lua.set_function(
+		"WarmUpPrefabPool",
+		[](const FString& PrefabPath, int32 Count)
+		{
+			return FLuaWorldLibrary::WarmUpPrefabPool(PrefabPath, Count);
 		}
 	);
 }

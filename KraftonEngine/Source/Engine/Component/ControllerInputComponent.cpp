@@ -22,7 +22,7 @@ IMPLEMENT_CLASS(UControllerInputComponent, UActorComponent)
 namespace
 {
 	constexpr int32 MovementFrameCount = 2;
-	constexpr int32 LookModeCount = 3;
+	constexpr int32 LookModeCount = 4;
 
 	int32 NormalizeMovementFrameValue(int32 Value)
 	{
@@ -39,6 +39,8 @@ namespace
 			return static_cast<int32>(EControllerLookMode::CameraOnly);
 		case static_cast<int32>(EControllerLookMode::PawnYawPawnPitch):
 			return static_cast<int32>(EControllerLookMode::PawnYawPawnPitch);
+		case static_cast<int32>(EControllerLookMode::PawnYawCameraPitch):
+			return static_cast<int32>(EControllerLookMode::PawnYawCameraPitch);
 		default:
 			return static_cast<int32>(EControllerLookMode::Auto);
 		}
@@ -92,7 +94,7 @@ void UControllerInputComponent::GetEditableProperties(TArray<FPropertyDescriptor
 	UActorComponent::GetEditableProperties(OutProps);
 
 	static const char* MovementFrameNames[] = { "World", "Camera" };
-	static const char* LookModeNames[] = { "Auto", "Camera Only", "Pawn Yaw + Pawn Pitch" };
+	static const char* LookModeNames[] = { "Auto","Camera Only","Pawn Yaw + Pawn Pitch","Pawn Yaw + Camera Pitch" };
 
 	OutProps.push_back({ "Movement Frame", EPropertyType::Enum, &MovementFrame, 0.0f, 0.0f, 0.1f, MovementFrameNames, MovementFrameCount });
 	OutProps.push_back({ "Look Mode", EPropertyType::Enum, &LookMode, 0.0f, 0.0f, 0.1f, LookModeNames, LookModeCount });
@@ -241,13 +243,32 @@ bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UC
 			&& (Mode == EControllerLookMode::PawnYawPawnPitch
 				|| (Mode == EControllerLookMode::Auto && PawnCamera == TargetCamera));
 
-		if (bUsePawnYawPawnPitch)
+		const bool bUsePawnYawCameraPitch = PossessedActor != nullptr && Mode == EControllerLookMode::PawnYawCameraPitch;
+		
+		if (bUsePawnYawCameraPitch)
+		{
+			FRotator ActorRotation = PossessedActor->GetActorRotation();
+			ActorRotation.Pitch = 0.0f;
+			ActorRotation.Yaw = Rotation.Yaw;
+			ActorRotation.Roll = 0.0f;
+			
+			PossessedActor->SetActorRotation(ActorRotation);
+			
+			if (PawnCamera == TargetCamera)
+			{
+				TargetCamera->SetRelativeRotation(FRotator(Rotation.Pitch, 0.0f, 0.0f));
+			}
+			
+			return true;
+		}
+		
+		if (bUsePawnYawCameraPitch)
 		{
 			PossessedActor->SetActorRotation(FRotator(Rotation.Pitch, Rotation.Yaw, 0.0f));
 			return true;
 		}
 	}
-
+	
 	TargetCamera->SetRelativeRotation(Rotation);
 	return true;
 }

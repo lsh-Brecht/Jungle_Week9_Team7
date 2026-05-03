@@ -480,6 +480,7 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\LoadingScreen.cpp" />
     <ClCompile Include="Source\Engine\Runtime\ObjectPoolSystem.cpp" />
     <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsApplication.cpp" />
@@ -501,6 +502,7 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
+    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Sound\SoundManager.cpp" />
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp" />
@@ -747,6 +749,7 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <ClInclude Include="Source\Engine\Runtime\Engine.h" />
     <ClInclude Include="Source\Engine\Runtime\EngineLoop.h" />
     <ClInclude Include="Source\Engine\Runtime\Launch.h" />
+    <ClInclude Include="Source\Engine\Runtime\LoadingScreen.h" />
     <ClInclude Include="Source\Engine\Runtime\ObjectPoolSystem.h" />
     <ClInclude Include="Source\Engine\Runtime\PooledObjectInterface.h" />
     <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h" />
@@ -763,6 +766,7 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <ClInclude Include="Source\Engine\Scripting\SolInclude.h" />
     <ClInclude Include="Source\Engine\Serialization\Archive.h" />
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h" />
+    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\SceneSaveManager.h" />
     <ClInclude Include="Source\Engine\Serialization\WindowsArchive.h" />
     <ClInclude Include="Source\Engine\Sound\SoundManager.h" />

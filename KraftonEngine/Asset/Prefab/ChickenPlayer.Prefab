@@ -1,0 +1,74 @@
+{
+  "Name" : "ChickenPlayer",
+  "RootActor" : {
+    "ActorUUID" : 108,
+    "ClassName" : "APawn",
+    "NonSceneComponents" : [{
+        "ClassName" : "UHopMovementComponent",
+        "Properties" : {
+          "Acceleration" : 2048.000000,
+          "Auto Register Updated" : true,
+          "Braking Deceleration" : 4096.000000,
+          "Hop Coefficient" : 1.000000,
+          "Hop Frequency" : 4.000000,
+          "Hop Height" : 0.300000,
+          "Hop Only When Moving" : true,
+          "Initial Speed" : 10.000000,
+          "Max Speed" : 15.000000,
+          "Reset Hop When Idle" : true,
+          "Simulating" : true,
+          "Updated Component" : "",
+          "Velocity" : [0.000000, 0.000000, 0.000000],
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }, {
+        "ClassName" : "UPawnMovementComponent",
+        "Properties" : {
+          "Auto Register Updated" : true,
+          "Updated Component" : "",
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }],
+    "RootComponent" : {
+      "Children" : [{
+          "Children" : [],
+          "ClassName" : "UBoxComponent",
+          "Properties" : {
+            "Blocks Movement" : true,
+            "Box Extent" : [0.500000, 0.300000, 0.500000],
+            "Cast Shadow" : true,
+            "Generate Overlap Events" : true,
+            "Location" : [0.000000, 0.000000, 0.000000],
+            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Scale" : [1.000000, 1.000000, 1.000000],
+            "Two Sided Shadow" : false,
+            "Visible" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "ClassName" : "UStaticMeshComponent",
+      "Properties" : {
+        "Blocks Movement" : true,
+        "Cast Shadow" : true,
+        "Element 0" : {
+          "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
+        },
+        "Generate Overlap Events" : true,
+        "Location" : [0.000000, 0.000000, 0.000000],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
+        "Scale" : [1.000000, 1.000000, 1.000000],
+        "Static Mesh" : "Data/Chicken/Chicken.obj",
+        "Two Sided Shadow" : false,
+        "Visible" : true,
+        "bEditorOnly" : false,
+        "bTickEnable" : true
+      }
+    },
+    "bVisible" : true
+  },
+  "Type" : "ActorPrefab",
+  "Version" : 1
+}

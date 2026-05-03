@@ -129,8 +129,8 @@ void InputSystem::ResetAllKeyStates()
 {
     for (int VK = 0; VK < 256; ++VK)
     {
-        CurrentStates[VK] = (GetAsyncKeyState(VK) & 0x8000) != 0;
-        PrevStates[VK] = CurrentStates[VK];
+        CurrentStates[VK] = false;
+        PrevStates[VK] = false;
     }
     UpdateCurrentSnapshot();
 }

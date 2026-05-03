@@ -133,7 +133,18 @@ void UHopMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 	const FVector HorizontalDelta = Velocity * DeltaTime;
 	const FVector VerticalDelta(0.0f, 0.0f, HopDelta);
-	UpdatedSceneComponent->SetWorldLocation(UpdatedSceneComponent->GetWorldLocation() + HorizontalDelta + VerticalDelta);
+
+	if (!HorizontalDelta.IsNearlyZero() && !SafeMoveUpdatedComponent(HorizontalDelta, nullptr))
+	{
+		Velocity = FVector::ZeroVector;
+	}
+
+	// 임시 유지: 현재 구조에서는 hop bobbing이 UpdatedComponent에 직접 적용된다.
+	// 장기적으로는 충돌 root가 아니라 visual child component에만 적용하는 편이 맞다.
+	if (!VerticalDelta.IsNearlyZero())
+	{
+		UpdatedSceneComponent->SetWorldLocation(UpdatedSceneComponent->GetWorldLocation() + VerticalDelta);
+	}
 }
 
 void UHopMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)

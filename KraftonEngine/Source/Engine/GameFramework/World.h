@@ -47,8 +47,10 @@ public:
 	T* AcquireActor(const FVector& Location, const FRotator& Rotation);
 	template<typename T>
 	T* AcquireActor(UClass* Class, const FVector& Location, const FRotator& Rotation);
+	AActor* AcquirePrefab(const FString& PrefabPath, const FVector& Location, const FRotator& Rotation = FRotator());
 	bool ReleaseActor(AActor* Actor);
 	int32 WarmUpActorPool(UClass* Class, int32 Count);
+	int32 WarmUpPrefabPool(const FString& PrefabPath, int32 Count);
 	void DestroyActor(AActor* Actor);
 	void AddActor(AActor* Actor);
 	void MarkWorldPrimitivePickingBVHDirty();
@@ -117,6 +119,7 @@ public:
 	void UpdateActorInOctree(AActor* actor);
 
 	void UpdateCollision();
+	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 	void ApplyCollisionDebugVisualization();
 
 private:

@@ -6,6 +6,7 @@
 #include "Resource/ResourceManager.h"
 
 #include <algorithm>
+#include <fstream>
 
 namespace
 {
@@ -74,6 +75,49 @@ namespace
 
 		return pIt == p.end(); // parent 끝까지 다 맞았으면 포함됨
 	}
+
+	constexpr const wchar_t* LuaTemplateContent =
+		L"function BeginPlay() print(\"[BeginPlay] \" .. obj.UUID) obj:PrintLocation() end\n"
+		L"function EndPlay() print(\"[EndPlay] \" .. obj.UUID) obj:PrintLocation() end\n"
+		L"function OnOverlap(OtherActor) OtherActor:PrintLocation(); end\n"
+		L"function Tick(dt) obj.Location = obj.Location + obj.Velocity * dt obj:PrintLocation() end\n";
+
+	std::filesystem::path MakeUniqueLuaTemplatePath(const std::filesystem::path& Directory)
+	{
+		std::filesystem::path Candidate = Directory / L"template.lua";
+		int32 Index = 1;
+
+		while (std::filesystem::exists(Candidate))
+		{
+			Candidate = Directory / (L"template" + std::to_wstring(Index) + L".lua");
+			++Index;
+		}
+
+		return Candidate;
+	}
+
+	bool CreateLuaTemplateScript(const std::filesystem::path& Directory)
+	{
+		if (!std::filesystem::exists(Directory) || !std::filesystem::is_directory(Directory))
+		{
+			return false;
+		}
+
+		const std::filesystem::path TargetPath = MakeUniqueLuaTemplatePath(Directory);
+		std::ofstream File(TargetPath, std::ios::out);
+		if (!File.is_open())
+		{
+			return false;
+		}
+
+		File <<
+			"function BeginPlay()\n    print(\"[BeginPlay] \" .. obj.UUID)\n    obj:PrintLocation()\nend\n\n"
+			"function EndPlay()\n    print(\"[EndPlay] \" .. obj.UUID)\n    obj:PrintLocation()\nend\n\n"
+			"function OnOverlap(OtherActor)\n    OtherActor:PrintLocation();\nend\n\n"
+			"function Tick(dt)\n    obj.Location = obj.Location + obj.Velocity * dt\n    obj:PrintLocation()\nend\n\n";
+
+		return true;
+	}
 }
 
 void FEditorContentBrowserWidget::Initialize(UEditorEngine* InEditor, ID3D11Device* InDevice)
@@ -86,6 +130,7 @@ void FEditorContentBrowserWidget::Initialize(UEditorEngine* InEditor, ID3D11Devi
 	ICons["Default"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"StartMerge_42x.png"));
 	ICons["Directory"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"Folder_Base_256x.png"));
 	ICons[".Scene"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"World_64x.png"));
+	ICons[".Prefab"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"World_64x.png"));
 	ICons[".obj"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"icon_MatEd_Mesh_40x.png"));
 	ICons[".mat"] = FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(IconDir + L"Sphere_64x.png"));
 
@@ -104,6 +149,12 @@ void FEditorContentBrowserWidget::Render(float DeltaTime)
 	{
 		ImGui::End();
 		return;
+	}
+
+	if (BrowserContext.bIsNeedRefresh)
+	{
+		RefreshContent();
+		BrowserContext.bIsNeedRefresh = false;
 	}
 
 	//if (ImGui::Button("Refresh") || BrowserContext.bIsNeedRefresh)
@@ -197,6 +248,11 @@ void FEditorContentBrowserWidget::RefreshContent()
 			element = std::make_shared<SceneElement>();
 			element.get()->SetIcon(ICons[Extension].Get());
 		}
+		else if (Content.Path.extension() == ".Prefab")
+		{
+			element = std::make_shared<PrefabElement>();
+			element.get()->SetIcon(ICons[Extension].Get());
+		}
 		else if (Content.Path.extension() == ".obj")
 		{
 			element = std::make_shared<ObjectElement>();
@@ -206,6 +262,11 @@ void FEditorContentBrowserWidget::RefreshContent()
 		{
 			element = std::make_shared<MaterialElement>();
 			element.get()->SetIcon(ICons[Extension].Get());
+		}
+		else if (Content.Path.extension() == ".lua")
+		{
+			element = std::make_shared<LuaScriptElement>();
+			element.get()->SetIcon(ICons["Default"].Get());
 		}
 		else if (Content.Path.extension() == ".png" || Content.Path.extension() == ".PNG")
 		{
@@ -290,6 +351,19 @@ void FEditorContentBrowserWidget::DrawContents()
 
 		ImGui::SetCursorPos(ImVec2(x, y));
 		CachedBrowserElements[i]->Render(BrowserContext);
+	}
+
+	if (ImGui::BeginPopupContextWindow("ContentBrowserContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+	{
+		if (ImGui::MenuItem("Create Lua Script"))
+		{
+			if (CreateLuaTemplateScript(std::filesystem::path(BrowserContext.CurrentPath)))
+			{
+				BrowserContext.bIsNeedRefresh = true;
+			}
+		}
+
+		ImGui::EndPopup();
 	}
 
 	int rowCount = (elementCount + columnCount - 1) / columnCount;

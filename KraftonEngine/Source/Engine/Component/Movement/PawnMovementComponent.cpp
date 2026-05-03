@@ -72,8 +72,5 @@ void UPawnMovementComponent::ApplyPendingMovement()
 	{
 		return;
 	}
-	if (USceneComponent* Scene = GetUpdatedComponent())
-	{
-		Scene->AddWorldOffset(Delta);
-	}
+	SafeMoveUpdatedComponent(Delta, nullptr);
 }

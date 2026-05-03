@@ -17,6 +17,7 @@ public:
 	static std::wstring ScriptDir();      // LuaScripts/
 	static std::wstring AssetDir();       // Asset/
 	static std::wstring SceneDir();       // Asset/Scene/
+	static std::wstring PrefabDir();      // Asset/Prefab/
 	static std::wstring DataDir();        // Data/
 	static std::wstring SaveDir();        // Saves/
 	static std::wstring DumpDir();        // Saves/Dump/
