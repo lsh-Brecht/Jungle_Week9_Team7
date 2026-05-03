@@ -11,7 +11,7 @@
               "Box Extent" : [0.500000, 0.500000, 0.500000],
               "Cast Shadow" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
@@ -83,10 +83,21 @@
     }, {
       "ClassName" : "APawn",
       "NonSceneComponents" : [{
-          "ClassName" : "UPawnMovementComponent",
+          "ClassName" : "UHopMovementComponent",
           "Properties" : {
+            "Acceleration" : 2048.000000,
             "Auto Register Updated" : true,
+            "Braking Deceleration" : 4096.000000,
+            "Hop Coefficient" : 1.000000,
+            "Hop Frequency" : 4.000000,
+            "Hop Height" : 0.300000,
+            "Hop Only When Moving" : true,
+            "Initial Speed" : 10.000000,
+            "Max Speed" : 15.000000,
+            "Reset Hop When Idle" : true,
+            "Simulating" : true,
             "Updated Component" : "",
+            "Velocity" : [0.000000, 0.000000, 0.000000],
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -100,7 +111,7 @@
             "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
           },
           "Location" : [0.000000, 0.000000, 0.000000],
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "Data/Chicken/Chicken.obj",
           "Two Sided Shadow" : false,
@@ -132,11 +143,56 @@
         "Properties" : {
           "Cast Shadow" : true,
           "Location" : [0.680827, 3.482542, -0.500000],
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "None",
           "Two Sided Shadow" : false,
           "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "ACameraActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "UCameraRigComponent",
+          "Properties" : {
+            "Enable Mouse LookAhead" : true,
+            "Far Z" : 200.000000,
+            "LookAhead Lag Speed" : 8.000000,
+            "Mouse LookAhead Distance" : 1.000000,
+            "Near Z" : 0.010000,
+            "Orthographic View Offset" : [-3.000000, 3.000000, 3.000000],
+            "Orthographic Width" : 12.000000,
+            "Perspective Back Distance" : 5.000000,
+            "Perspective FOV" : 1.047198,
+            "Perspective Height" : 3.000000,
+            "Perspective Side Offset" : 0.000000,
+            "Position Lag Speed" : 6.000000,
+            "Snap On Projection Change" : false,
+            "Stabilize Vertical In Orthographic" : true,
+            "Target Offset" : [0.000000, 0.000000, 0.800000],
+            "Vertical Dead Zone" : 0.400000,
+            "Vertical Follow Strength" : 0.150000,
+            "Vertical Lag Speed" : 2.000000,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UCameraComponent",
+        "Properties" : {
+          "Aspect Ratio" : 1.777778,
+          "FOV" : 1.047198,
+          "Far Z" : 1000.000000,
+          "Location" : [1.347203, -2.598638, -0.500000],
+          "Near Z" : 0.100000,
+          "Ortho Width" : 10.000000,
+          "Orthographic" : false,
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
@@ -151,11 +207,11 @@
     "AspectRatio" : 1.830455,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-5.359024, -3.001835, 4.086616],
+    "Location" : [-6.810920, -1.467417, 4.799665],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 25.578703, 17.498350]
+    "Rotation" : [0.000000, 28.428587, 1.298935]
   },
   "Primitives" : {
     "73" : {

@@ -81,6 +81,8 @@ void UHopMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 {
 	UMovementComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// TODO: Split hop bobbing from root/collision movement. The Pawn root should stay as
+	// the gameplay/camera target, while a visual component handles the vertical bob.
 	USceneComponent* UpdatedSceneComponent = GetUpdatedComponent();
 	if (!bSimulating || !UpdatedSceneComponent || DeltaTime <= 0.0f)
 	{

@@ -1,6 +1,8 @@
 #include "Component/ControllerInputComponent.h"
 
+#include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
+#include "Component/Movement/HopMovementComponent.h"
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Engine/Input/InputSystem.h"
 #include "GameFramework/Pawn.h"
@@ -41,6 +43,23 @@ namespace
 		default:
 			return static_cast<int32>(EControllerLookMode::Auto);
 		}
+	}
+
+	UHopMovementComponent* FindHopMovementComponent(APawn* Pawn)
+	{
+		if (!Pawn)
+		{
+			return nullptr;
+		}
+
+		for (UActorComponent* Component : Pawn->GetComponents())
+		{
+			if (UHopMovementComponent* Movement = Cast<UHopMovementComponent>(Component))
+			{
+				return Movement;
+			}
+		}
+		return nullptr;
 	}
 }
 
@@ -114,6 +133,30 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 	if (Snapshot.IsDown('D')) MoveInput.Y += 1.0f;
 	if (Snapshot.IsDown('E') || Snapshot.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
 	if (Snapshot.IsDown('Q') || Snapshot.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
+
+	if (Controller)
+	{
+		if (APawn* Pawn = Controller->GetPawn())
+		{
+			if (UHopMovementComponent* HopMovement = FindHopMovementComponent(Pawn))
+			{
+				const float ForwardAxis = MoveInput.X;
+				const float RightAxis = MoveInput.Y;
+				const FVector WorldMoveInput =
+					FVector(1.0f, 0.0f, 0.0f) * ForwardAxis +
+					FVector(0.0f, 1.0f, 0.0f) * RightAxis;
+
+				if (WorldMoveInput.IsNearlyZero())
+				{
+					return false;
+				}
+
+				// TODO: Sprint can be added later by adjusting HopCoefficient or MaxSpeed on HopMovement.
+				HopMovement->AddMovementInput(WorldMoveInput, 1.0f);
+				return true;
+			}
+		}
+	}
 
 	if (MoveInput.IsNearlyZero())
 	{

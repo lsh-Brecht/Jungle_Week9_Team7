@@ -104,14 +104,14 @@ protected:
 
 	// Legacy-compatible movement settings.
 	float InitialSpeed = 10.0f;
-	float MaxSpeed = 100.0f;
+	float MaxSpeed = 15.0f;
 	float HopCoefficient = 1.0f;
 
 	float Acceleration = 2048.0f;
 	float BrakingDeceleration = 4096.0f;
 
-	float HopHeight = 25.0f;
-	float HopFrequency = 1.0f; // cycles per second. High value + low height gives a vibration-like motion.
+	float HopHeight = 0.3f;
+	float HopFrequency = 4.0f; // cycles per second. High value + low height gives a vibration-like motion.
 	bool bHopOnlyWhenMoving = true;
 	bool bResetHopWhenIdle = true;
 
