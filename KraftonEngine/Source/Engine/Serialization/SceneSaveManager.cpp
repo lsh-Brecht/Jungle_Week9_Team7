@@ -178,7 +178,7 @@ json::JSON FSceneSaveManager::SerializeWorld(UWorld* World, const FWorldContext&
 	std::unordered_map<AActor*, string> ActorPrimitiveKey;
 
 	for (AActor* Actor : World->GetActors()) {
-		if (!Actor) continue;
+		if (!Actor || !Actor->IsA<AStaticMeshActor>()) continue;
 
 		for (UActorComponent* Comp : Actor->GetComponents()) {
 			if (!Comp) continue;

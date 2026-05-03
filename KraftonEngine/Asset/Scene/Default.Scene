@@ -2,9 +2,23 @@
   "Actors" : [{
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "136",
+      "PrimitiveKey" : "73",
       "RootComponent" : {
-        "Children" : [],
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
         "ClassName" : "UStaticMeshComponent",
         "Properties" : {
           "Cast Shadow" : true,
@@ -12,7 +26,7 @@
             "Path" : "Asset/Materials/Auto/Material.mat"
           },
           "Location" : [0.000000, 0.000000, -1.500000],
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [30.000000, 30.000000, 1.000000],
           "Static Mesh" : "Data/GouraudCube/GouraudCube.obj",
           "Two Sided Shadow" : false,
@@ -36,7 +50,7 @@
               "Material" : {
                 "Path" : "Asset/Materials/Editor/DirectionalLight.mat"
               },
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
@@ -44,6 +58,7 @@
               "bEditorOnly" : true,
               "bTickEnable" : true
             },
+            "bEditorOnly" : true,
             "bHiddenInComponentTree" : true
           }],
         "ClassName" : "UDirectionalLightComponent",
@@ -76,7 +91,6 @@
             "bTickEnable" : true
           }
         }],
-      "PrimitiveKey" : "143",
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -96,6 +110,38 @@
         }
       },
       "bVisible" : true
+    }, {
+      "ClassName" : "APlayerController",
+      "NonSceneComponents" : [{
+          "ClassName" : "UControllerInputComponent",
+          "Properties" : {
+            "Look Mode" : 0,
+            "Look Sensitivity" : 0.080000,
+            "Max Pitch" : 89.000000,
+            "Min Pitch" : -89.000000,
+            "Move Speed" : 10.000000,
+            "Movement Frame" : 1,
+            "Sprint Multiplier" : 2.500000,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Cast Shadow" : true,
+          "Location" : [0.680827, 3.482542, -0.500000],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "None",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
     }],
   "ClassName" : "UWorld",
   "ContextHandle" : "Default",
@@ -105,25 +151,18 @@
     "AspectRatio" : 1.830455,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-5.893383, 0.303119, 4.086616],
+    "Location" : [-5.359024, -3.001835, 4.086616],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 35.178307, 8.348783]
+    "Rotation" : [0.000000, 25.578703, 17.498350]
   },
   "Primitives" : {
-    "136" : {
+    "73" : {
       "Location" : [0.000000, 0.000000, -1.500000],
       "ObjStaticMeshAsset" : "Data/GouraudCube/GouraudCube.obj",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [30.000000, 30.000000, 1.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "143" : {
-      "Location" : [0.000000, 0.000000, 0.000000],
-      "ObjStaticMeshAsset" : "Data/Chicken/Chicken.obj",
-      "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     }
   },
