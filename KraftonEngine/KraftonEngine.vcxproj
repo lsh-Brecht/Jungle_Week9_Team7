@@ -450,6 +450,7 @@
     <ClCompile Include="Source\Engine\Render\Shadow\AtlasQuadTreePoint.cpp" />
     <ClCompile Include="Source\Engine\Render\Shadow\ShadowAtlasQuadTree.cpp" />
     <ClCompile Include="Source\Engine\Render\Types\FrameContext.cpp" />
+    <ClCompile Include="Source\Engine\Resource\Prefab.cpp" />
     <ClCompile Include="Source\Engine\Resource\ResourceManager.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Delegate.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
@@ -708,6 +709,7 @@
     <ClInclude Include="Source\Engine\Render\Types\ShadowSettings.h" />
     <ClInclude Include="Source\Engine\Render\Types\VertexTypes.h" />
     <ClInclude Include="Source\Engine\Render\Types\ViewTypes.h" />
+    <ClInclude Include="Source\Engine\Resource\Prefab.h" />
     <ClInclude Include="Source\Engine\Resource\ResourceManager.h" />
     <ClInclude Include="Source\Engine\Runtime\Delegate.h" />
     <ClInclude Include="Source\Engine\Runtime\DelegateSubscriptionBox.h" />

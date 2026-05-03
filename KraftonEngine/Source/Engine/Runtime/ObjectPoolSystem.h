@@ -5,6 +5,7 @@
 #include "GameFramework/AActor.h"
 
 #include <type_traits>
+#include <functional>
 
 class UClass;
 class UWorld;
@@ -14,6 +15,47 @@ struct FPooledClassBucket
 	TArray<AActor*> InactiveActors;
 	int32 MaxPoolSize = 100;
 };
+
+struct FPoolKey
+{
+	UClass* ClassKey = nullptr;
+	FString PrefabKey;
+
+	static FPoolKey FromClass(UClass* Class)
+	{
+		FPoolKey Key;
+		Key.ClassKey = Class;
+		return Key;
+	}
+
+	static FPoolKey FromPrefab(const FString& PrefabPath)
+	{
+		FPoolKey Key;
+		Key.PrefabKey = PrefabPath;
+		return Key;
+	}
+
+	bool IsPrefab() const { return !PrefabKey.empty(); }
+
+	bool operator==(const FPoolKey& Other) const
+	{
+		return ClassKey == Other.ClassKey && PrefabKey == Other.PrefabKey;
+	}
+};
+
+namespace std
+{
+	template<>
+	struct hash<FPoolKey>
+	{
+		size_t operator()(const FPoolKey& Key) const noexcept
+		{
+			const size_t ClassHash = std::hash<UClass*>{}(Key.ClassKey);
+			const size_t PrefabHash = std::hash<FString>{}(Key.PrefabKey);
+			return ClassHash ^ (PrefabHash + 0x9e3779b97f4a7c15ull + (ClassHash << 6) + (ClassHash >> 2));
+		}
+	};
+}
 
 class FObjectPoolSystem : public TSingleton<FObjectPoolSystem>
 {
@@ -37,12 +79,17 @@ public:
 	}
 
 	AActor* AcquireActor(UWorld* World, UClass* Class, const FVector& Location, const FRotator& Rotation);
+	AActor* AcquirePrefab(UWorld* World, const FString& PrefabPath, const FVector& Location, const FRotator& Rotation);
 	bool ReleaseActor(AActor* Actor);
 	int32 WarmUp(UWorld* World, UClass* Class, int32 Count);
+	int32 WarmUpPrefab(UWorld* World, const FString& PrefabPath, int32 Count);
 
 	void SetMaxPoolSize(UClass* Class, int32 MaxPoolSize);
+	void SetMaxPoolSize(const FString& PrefabPath, int32 MaxPoolSize);
 	int32 GetMaxPoolSize(UClass* Class) const;
+	int32 GetMaxPoolSize(const FString& PrefabPath) const;
 	int32 GetInactiveCount(UClass* Class) const;
+	int32 GetInactiveCount(const FString& PrefabPath) const;
 
 	void ClearWorld(UWorld* World);
 	void ForgetActor(AActor* Actor);
@@ -50,16 +97,21 @@ public:
 private:
 	FObjectPoolSystem() = default;
 
-	AActor* SpawnActorForPool(UWorld* World, UClass* Class, bool bStartInactive);
+	AActor* AcquireActorByKey(UWorld* World, const FPoolKey& Key, const FVector& Location, const FRotator& Rotation);
+	int32 WarmUpKey(UWorld* World, const FPoolKey& Key, int32 Count);
+	AActor* SpawnActorForPool(UWorld* World, const FPoolKey& Key, bool bStartInactive);
+	void ResetActorFromPrefab(AActor* Actor, const FPoolKey& Key);
 	void ActivateActor(AActor* Actor, const FVector& Location, const FRotator& Rotation);
 	void DeactivateActor(AActor* Actor);
 	void DispatchSpawnCallbacks(AActor* Actor);
 	void DispatchReturnCallbacks(AActor* Actor);
 	void DestroyActor(AActor* Actor);
 
-	FPooledClassBucket* FindBucket(UClass* Class);
-	const FPooledClassBucket* FindBucket(UClass* Class) const;
-	FPooledClassBucket& GetOrCreateBucket(UClass* Class);
+	FPooledClassBucket* FindBucket(const FPoolKey& Key);
+	const FPooledClassBucket* FindBucket(const FPoolKey& Key) const;
+	FPooledClassBucket& GetOrCreateBucket(const FPoolKey& Key);
+	FPoolKey ResolveActorKey(AActor* Actor) const;
 
-	TMap<UClass*, FPooledClassBucket> PoolMap;
+	TMap<FPoolKey, FPooledClassBucket> PoolMap;
+	TMap<AActor*, FPoolKey> ActorPoolKeys;
 };

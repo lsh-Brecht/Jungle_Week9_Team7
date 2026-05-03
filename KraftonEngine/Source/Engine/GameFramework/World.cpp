@@ -105,9 +105,19 @@ bool UWorld::ReleaseActor(AActor* Actor)
 	return FObjectPoolSystem::Get().ReleaseActor(Actor);
 }
 
+AActor* UWorld::AcquirePrefab(const FString& PrefabPath, const FVector& Location, const FRotator& Rotation)
+{
+	return FObjectPoolSystem::Get().AcquirePrefab(this, PrefabPath, Location, Rotation);
+}
+
 int32 UWorld::WarmUpActorPool(UClass* Class, int32 Count)
 {
 	return FObjectPoolSystem::Get().WarmUp(this, Class, Count);
+}
+
+int32 UWorld::WarmUpPrefabPool(const FString& PrefabPath, int32 Count)
+{
+	return FObjectPoolSystem::Get().WarmUpPrefab(this, PrefabPath, Count);
 }
 
 void UWorld::AddActor(AActor* Actor)

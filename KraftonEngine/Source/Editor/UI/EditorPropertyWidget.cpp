@@ -31,6 +31,8 @@
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
 #include "Platform/Paths.h"
+#include "Serialization/SceneSaveManager.h"
+#include "Core/Log.h"
 
 #include <Windows.h>
 #include <commdlg.h>
@@ -141,6 +143,35 @@ namespace
 			[](wchar_t Ch) { return static_cast<wchar_t>(std::towlower(Ch)); });
 		return Extension == L".lua";
 	}
+
+	std::wstring MakeSafePrefabFileName(const AActor* Actor)
+	{
+		FString BaseName;
+		if (Actor)
+		{
+			BaseName = Actor->GetFName().ToString();
+			if (BaseName.empty() && Actor->GetClass())
+			{
+				BaseName = Actor->GetClass()->GetName();
+			}
+		}
+		if (BaseName.empty())
+		{
+			BaseName = "Prefab";
+		}
+
+		std::wstring FileName = FPaths::ToWide(BaseName);
+		for (wchar_t& Ch : FileName)
+		{
+			if (Ch == L'<' || Ch == L'>' || Ch == L':' || Ch == L'"' ||
+				Ch == L'/' || Ch == L'\\' || Ch == L'|' || Ch == L'?' || Ch == L'*')
+			{
+				Ch = L'_';
+			}
+		}
+		FileName += L".json";
+		return FileName;
+	}
 }
 
 static FString RemoveExtension(const FString& Path)
@@ -216,6 +247,27 @@ FString FEditorPropertyWidget::OpenLuaScriptFileDialog()
 	}
 
 	return MakeLuaScriptPropertyPath(AbsolutePath);
+}
+
+FString FEditorPropertyWidget::OpenPrefabSaveDialog(AActor* Actor)
+{
+	const std::wstring PrefabDirectory = FPaths::Combine(FPaths::DataDir(), L"Prefabs");
+	FPaths::CreateDir(PrefabDirectory);
+
+	const std::wstring DefaultFile = MakeSafePrefabFileName(Actor);
+
+	FEditorFileDialogOptions Options;
+	Options.Filter = L"Prefab Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+	Options.Title = L"Save Actor as Prefab";
+	Options.DefaultExtension = L"json";
+	Options.InitialDirectory = PrefabDirectory.c_str();
+	Options.DefaultFileName = DefaultFile.c_str();
+	Options.bFileMustExist = false;
+	Options.bPathMustExist = true;
+	Options.bPromptOverwrite = true;
+	Options.bReturnRelativeToProjectRoot = true;
+
+	return FEditorFileUtils::SaveFileDialog(Options);
 }
 
 void FEditorPropertyWidget::Render(float DeltaTime)
@@ -400,6 +452,39 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 {
 	ImGui::Text("Actor: %s", PrimaryActor->GetClass()->GetName());
 	ImGui::Text("Name: %s", PrimaryActor->GetFName().ToString().c_str());
+
+	const bool bCanSavePrefab = SelectedActors.size() <= 1;
+	if (!bCanSavePrefab)
+	{
+		ImGui::BeginDisabled();
+	}
+	if (ImGui::Button("Save as Prefab"))
+	{
+		FString PrefabPath = OpenPrefabSaveDialog(PrimaryActor);
+		if (!PrefabPath.empty())
+		{
+			if (FSceneSaveManager::SaveActorAsPrefab(PrimaryActor, PrefabPath))
+			{
+				UE_LOG("[Editor] Saved prefab: %s", PrefabPath.c_str());
+				if (EditorEngine)
+				{
+					EditorEngine->RefreshContentBrowser();
+				}
+			}
+			else
+			{
+				UE_LOG("[Editor] Failed to save prefab: %s", PrefabPath.c_str());
+			}
+		}
+	}
+	if (!bCanSavePrefab)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("Prefab saving is available for a single selected actor.");
+		}
+	}
 
 	if (PrimaryActor->GetRootComponent())
 	{

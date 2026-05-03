@@ -779,6 +779,9 @@
     <ClCompile Include="Source\Engine\Render\Types\FrameContext.cpp">
       <Filter>Source\Engine\Render\Types</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Resource\Prefab.cpp">
+      <Filter>Source\Engine\Resource</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Resource\ResourceManager.cpp">
       <Filter>Source\Engine\Resource</Filter>
     </ClCompile>
@@ -1546,6 +1549,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Render\Types\ViewTypes.h">
       <Filter>Source\Engine\Render\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Resource\Prefab.h">
+      <Filter>Source\Engine\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Resource\ResourceManager.h">
       <Filter>Source\Engine\Resource</Filter>

@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 #include <d3d11.h>
 #include "DDSTextureLoader.h"
 #include "WICTextureLoader.h"
@@ -20,6 +21,15 @@ namespace ResourceKey
 	constexpr const char* Path     = "Path";
 	constexpr const char* Columns  = "Columns";
 	constexpr const char* Rows     = "Rows";
+}
+
+namespace
+{
+	FString NormalizeResourcePath(FString Path)
+	{
+		std::replace(Path.begin(), Path.end(), '\\', '/');
+		return Path;
+	}
 }
 
 void FResourceManager::LoadFromFile(const FString& Path, ID3D11Device* InDevice)
@@ -348,6 +358,38 @@ TArray<FString> FResourceManager::GetTextureNames() const
 		Names.push_back(Key);
 	}
 	return Names;
+}
+
+UPrefab* FResourceManager::LoadPrefab(const FString& Path)
+{
+	const FString Key = NormalizeResourcePath(Path);
+	if (UPrefab* Existing = FindPrefab(Key))
+	{
+		return Existing;
+	}
+
+	UPrefab Prefab;
+	if (!Prefab.LoadFromFile(Key))
+	{
+		return nullptr;
+	}
+
+	PrefabResources[Key] = Prefab;
+	return &PrefabResources[Key];
+}
+
+UPrefab* FResourceManager::FindPrefab(const FString& Path)
+{
+	const FString Key = NormalizeResourcePath(Path);
+	auto It = PrefabResources.find(Key);
+	return (It != PrefabResources.end()) ? &It->second : nullptr;
+}
+
+const UPrefab* FResourceManager::FindPrefab(const FString& Path) const
+{
+	const FString Key = NormalizeResourcePath(Path);
+	auto It = PrefabResources.find(Key);
+	return (It != PrefabResources.end()) ? &It->second : nullptr;
 }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> FResourceManager::FindLoadedTexture(FString InPath)

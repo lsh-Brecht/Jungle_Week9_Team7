@@ -25,6 +25,7 @@ private:
 
 	static FString OpenObjFileDialog();
 	static FString OpenLuaScriptFileDialog();
+	static FString OpenPrefabSaveDialog(AActor* Actor);
 
 	UActorComponent* SelectedComponent = nullptr;
 	AActor* LastSelectedActor = nullptr;

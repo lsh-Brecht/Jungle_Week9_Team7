@@ -45,7 +45,9 @@ public:
 	static std::wstring GetSceneDirectory() { return FPaths::SceneDir(); }
 
 	static void SaveSceneAsJSON(const string& SceneName, FWorldContext& WorldContext, UCameraComponent* PerspectiveCam = nullptr);
+	static bool SaveActorAsPrefab(AActor* Actor, const FString& FilePath);
 	static void LoadSceneFromJSON(const string& filepath, FWorldContext& OutWorldContext, FPerspectiveCameraData& OutCam);
+	static bool ApplyPrefabDataToActor(AActor* Actor, json::JSON& ActorJSON);
 
 	static TArray<FString> GetSceneFileList();
 

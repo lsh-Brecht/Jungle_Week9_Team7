@@ -4,6 +4,7 @@
 #include "Core/Singleton.h"
 #include "Core/ResourceTypes.h"
 #include "Object/FName.h"
+#include "Resource/Prefab.h"
 #include <wrl/client.h>
 
 // 리소스를 관리하는 싱글턴.
@@ -51,6 +52,11 @@ public:
 	// --- Texture names ---
 	TArray<FString> GetTextureNames() const;
 
+	// --- Prefab ---
+	UPrefab* LoadPrefab(const FString& Path);
+	UPrefab* FindPrefab(const FString& Path);
+	const UPrefab* FindPrefab(const FString& Path) const;
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> FindLoadedTexture(FString InPath);
 
 private:
@@ -60,5 +66,6 @@ private:
 	TMap<FString, FFontResource>     FontResources;
 	TMap<FString, FParticleResource> ParticleResources;
 	TMap<FString, FTextureResource>  TextureResources;
+	TMap<FString, UPrefab>           PrefabResources;
 	TMap<FString, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> LoadedResource;
 };

@@ -66,6 +66,30 @@ namespace SceneKeys
 	static constexpr const char* EditorOnlyComponent = "bEditorOnly";
 }
 
+static UActorComponent* FindReusableNonSceneComponent(AActor* Owner, const string& ClassName, TSet<UActorComponent*>& UsedComponents)
+{
+	if (!Owner)
+	{
+		return nullptr;
+	}
+
+	for (UActorComponent* Component : Owner->GetComponents())
+	{
+		if (!Component || Component->IsA<USceneComponent>() || UsedComponents.count(Component) > 0)
+		{
+			continue;
+		}
+
+		if (Component->GetClass() && ClassName == Component->GetClass()->GetName())
+		{
+			UsedComponents.insert(Component);
+			return Component;
+		}
+	}
+
+	return nullptr;
+}
+
 static void SerializeComponentEditorMetadata(json::JSON& Node, const UActorComponent* Comp)
 {
 	if (!Comp)
@@ -162,6 +186,43 @@ void FSceneSaveManager::SaveSceneAsJSON(const string& InSceneName, FWorldContext
 		File.flush();
 		File.close();
 	}
+}
+
+bool FSceneSaveManager::SaveActorAsPrefab(AActor* Actor, const FString& FilePath)
+{
+	if (!Actor || FilePath.empty())
+	{
+		return false;
+	}
+
+	std::filesystem::path OutputPath(FPaths::ToWide(FilePath));
+	if (!OutputPath.is_absolute())
+	{
+		OutputPath = std::filesystem::path(FPaths::RootDir()) / OutputPath;
+	}
+	OutputPath = OutputPath.lexically_normal();
+	if (!OutputPath.has_extension())
+	{
+		OutputPath.replace_extension(L".json");
+	}
+
+	const std::filesystem::path ParentPath = OutputPath.parent_path();
+	if (!ParentPath.empty())
+	{
+		std::filesystem::create_directories(ParentPath);
+	}
+
+	json::JSON PrefabJSON = SerializeActor(Actor);
+
+	std::ofstream File(OutputPath);
+	if (!File.is_open())
+	{
+		return false;
+	}
+
+	File << PrefabJSON.dump();
+	File.flush();
+	return true;
 }
 
 json::JSON FSceneSaveManager::SerializeWorld(UWorld* World, const FWorldContext& Ctx, UCameraComponent* PerspectiveCam)
@@ -645,6 +706,85 @@ void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext&
 	OutWorldContext.World = World;
 	OutWorldContext.ContextName = ContextName;
 	OutWorldContext.ContextHandle = FName(ContextHandle);
+}
+
+bool FSceneSaveManager::ApplyPrefabDataToActor(AActor* Actor, json::JSON& ActorJSON)
+{
+	using json::JSON;
+
+	if (!Actor)
+	{
+		return false;
+	}
+
+	if (ActorJSON.hasKey(SceneKeys::Visible))
+	{
+		Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
+	}
+
+	if (ActorJSON.hasKey(SceneKeys::RootComponent))
+	{
+		JSON& RootJSON = ActorJSON[SceneKeys::RootComponent];
+		if (Actor->GetRootComponent())
+		{
+			DeserializeSceneComponentIntoExisting(Actor->GetRootComponent(), RootJSON, Actor);
+		}
+		else
+		{
+			USceneComponent* Root = DeserializeSceneComponentTree(RootJSON, Actor);
+			if (Root)
+			{
+				Actor->SetRootComponent(Root);
+			}
+		}
+	}
+
+	if (ActorJSON.hasKey(SceneKeys::NonSceneComponents))
+	{
+		TSet<UActorComponent*> ReusedComponents;
+		for (auto& CompJSON : ActorJSON[SceneKeys::NonSceneComponents].ArrayRange())
+		{
+			string CompClass = CompJSON[SceneKeys::ClassName].ToString();
+			if (CompClass.empty())
+			{
+				continue;
+			}
+
+			UActorComponent* Comp = FindReusableNonSceneComponent(Actor, CompClass, ReusedComponents);
+			if (!Comp)
+			{
+				UObject* CompObj = FObjectFactory::Get().Create(CompClass, Actor);
+				if (!CompObj || !CompObj->IsA<UActorComponent>())
+				{
+					continue;
+				}
+
+				Comp = static_cast<UActorComponent*>(CompObj);
+				Actor->RegisterComponent(Comp);
+			}
+
+			if (CompJSON.hasKey(SceneKeys::Properties))
+			{
+				JSON& PropsJSON = CompJSON[SceneKeys::Properties];
+				DeserializeProperties(Comp, PropsJSON);
+			}
+			DeserializeComponentEditorMetadata(Comp, CompJSON);
+			EnsureEditorBillboardMetadata(Comp);
+		}
+	}
+
+	if (!Actor->IsA<AStaticMeshActor>() || !Actor->GetRootComponent())
+	{
+		Actor->InitDefaultComponents();
+	}
+
+	if (UWorld* World = Actor->GetWorld())
+	{
+		World->RemoveActorToOctree(Actor);
+		World->InsertActorToOctree(Actor);
+	}
+
+	return true;
 }
 
 USceneComponent* FSceneSaveManager::DeserializeSceneComponentTree(json::JSON& Node, AActor* Owner)
