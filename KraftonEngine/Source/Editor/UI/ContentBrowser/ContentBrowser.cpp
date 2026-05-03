@@ -111,10 +111,10 @@ namespace
 		}
 
 		File <<
-			"function BeginPlay()\n\tprint(\"[BeginPlay] \" .. obj.UUID)\n\tobj:PrintLocation()\nend\n\n"
-			"function EndPlay()\n\tprint(\"[EndPlay] \" .. obj.UUID)\n\tobj:PrintLocation()\nend\n\n"
-			"function OnOverlap(OtherActor)\n\tOtherActor:PrintLocation();\nend\n\n"
-			"function Tick(dt)\n\tobj.Location = obj.Location + obj.Velocity * dt\n\tobj:PrintLocation()\nend\n\n";
+			"function BeginPlay()\n    print(\"[BeginPlay] \" .. obj.UUID)\n    obj:PrintLocation()\nend\n\n"
+			"function EndPlay()\n    print(\"[EndPlay] \" .. obj.UUID)\n    obj:PrintLocation()\nend\n\n"
+			"function OnOverlap(OtherActor)\n    OtherActor:PrintLocation();\nend\n\n"
+			"function Tick(dt)\n    obj.Location = obj.Location + obj.Velocity * dt\n    obj:PrintLocation()\nend\n\n";
 
 		return true;
 	}
