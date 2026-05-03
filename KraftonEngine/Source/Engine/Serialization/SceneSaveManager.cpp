@@ -1,4 +1,4 @@
-#include "SceneSaveManager.h"
+﻿#include "SceneSaveManager.h"
 
 #include <iostream>
 #include <fstream>
@@ -63,6 +63,7 @@ namespace SceneKeys
 	static constexpr const char* Properties = "Properties";
 	static constexpr const char* Children = "Children";
 	static constexpr const char* HiddenInComponentTree = "bHiddenInComponentTree";
+	static constexpr const char* EditorOnlyComponent = "bEditorOnly";
 }
 
 static void SerializeComponentEditorMetadata(json::JSON& Node, const UActorComponent* Comp)
@@ -76,6 +77,11 @@ static void SerializeComponentEditorMetadata(json::JSON& Node, const UActorCompo
 	{
 		Node[SceneKeys::HiddenInComponentTree] = true;
 	}
+
+	if (Comp->IsEditorOnlyComponent())
+	{
+		Node[SceneKeys::EditorOnlyComponent] = true;
+	}
 }
 
 static void DeserializeComponentEditorMetadata(UActorComponent* Comp, json::JSON& Node)
@@ -88,6 +94,11 @@ static void DeserializeComponentEditorMetadata(UActorComponent* Comp, json::JSON
 	if (Node.hasKey(SceneKeys::HiddenInComponentTree))
 	{
 		Comp->SetHiddenInComponentTree(Node[SceneKeys::HiddenInComponentTree].ToBool());
+	}
+
+	if (Node.hasKey(SceneKeys::EditorOnlyComponent))
+	{
+		Comp->SetEditorOnlyComponent(Node[SceneKeys::EditorOnlyComponent].ToBool());
 	}
 }
 

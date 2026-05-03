@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "GameFramework/AActor.h"
 
@@ -20,7 +20,7 @@ public:
 private:
 	UDecalComponent* DecalComponent;
 	UBillboardComponent* BillboardComponent = nullptr;
-	UTextRenderComponent* TextRenderComponent = nullptr;
+	//UTextRenderComponent* TextRenderComponent = nullptr;
 	
 	const FString DefaultDecalMaterialPath = "Asset/Materials/Editor/DefaultDecal.mat";
 };

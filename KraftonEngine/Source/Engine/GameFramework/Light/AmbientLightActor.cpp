@@ -8,8 +8,33 @@ IMPLEMENT_CLASS(AAmbientLightActor, AActor)
 
 void AAmbientLightActor::InitDefaultComponents()
 {
-	LightComponent = AddComponent<UAmbientLightComponent>();
-	SetRootComponent(LightComponent);
+	if (LightComponent && GetRootComponent() == LightComponent)
+	{
+		BillboardComponent = LightComponent->EnsureEditorBillboard();
+		return;
+	}
 
-	BillboardComponent = LightComponent->EnsureEditorBillboard();
+	if (UAmbientLightComponent* RootLight = Cast<UAmbientLightComponent>(GetRootComponent()))
+	{
+		LightComponent = RootLight;
+		BillboardComponent = LightComponent->EnsureEditorBillboard();
+		return;
+	}
+
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (UAmbientLightComponent* Light = Cast<UAmbientLightComponent>(Component))
+		{
+			LightComponent = Light;
+			BillboardComponent = LightComponent->EnsureEditorBillboard();
+			return;
+		}
+	}
+
+	if (!GetRootComponent())
+	{
+		LightComponent = AddComponent<UAmbientLightComponent>();
+		SetRootComponent(LightComponent);
+		BillboardComponent = LightComponent->EnsureEditorBillboard();
+	}
 }

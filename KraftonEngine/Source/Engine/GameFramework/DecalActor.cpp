@@ -15,17 +15,43 @@ ADecalActor::ADecalActor()
 
 void ADecalActor::InitDefaultComponents()
 {
-	DecalComponent = AddComponent<UDecalComponent>();
-	auto Material = FMaterialManager::Get().GetOrCreateMaterial(DefaultDecalMaterialPath);
-	DecalComponent->SetMaterial(Material);
-	SetRootComponent(DecalComponent);
+	if (DecalComponent && GetRootComponent() == DecalComponent)
+	{
+		BillboardComponent = DecalComponent->EnsureEditorBillboard();
+		return;
+	}
 
-	BillboardComponent = DecalComponent->EnsureEditorBillboard();
-	
-	// UUID 텍스트 표시
-	TextRenderComponent = AddComponent<UTextRenderComponent>();
-	TextRenderComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 1.3f));
-	TextRenderComponent->SetText("UUID : " + TextRenderComponent->GetOwnerUUIDToString());
-	TextRenderComponent->AttachToComponent(DecalComponent);
-	TextRenderComponent->SetFont(FName("Default"));
+	if (UDecalComponent* RootDecal = Cast<UDecalComponent>(GetRootComponent()))
+	{
+		DecalComponent = RootDecal;
+		BillboardComponent = DecalComponent->EnsureEditorBillboard();
+		return;
+	}
+
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (UDecalComponent* Decal = Cast<UDecalComponent>(Component))
+		{
+			DecalComponent = Decal;
+			BillboardComponent = DecalComponent->EnsureEditorBillboard();
+			return;
+		}
+	}
+
+	if (!GetRootComponent())
+	{
+		DecalComponent = AddComponent<UDecalComponent>();
+		auto Material = FMaterialManager::Get().GetOrCreateMaterial(DefaultDecalMaterialPath);
+		DecalComponent->SetMaterial(Material);
+		SetRootComponent(DecalComponent);
+
+		BillboardComponent = DecalComponent->EnsureEditorBillboard();
+		
+		//// UUID 텍스트 표시
+		//TextRenderComponent = AddComponent<UTextRenderComponent>();
+		//TextRenderComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 1.3f));
+		//TextRenderComponent->SetText("UUID : " + TextRenderComponent->GetOwnerUUIDToString());
+		//TextRenderComponent->AttachToComponent(DecalComponent);
+		//TextRenderComponent->SetFont(FName("Default"));
+	}
 }

@@ -11,8 +11,34 @@ AHeightFogActor::AHeightFogActor()
 
 void AHeightFogActor::InitDefaultComponents()
 {
-	FogComponent = AddComponent<UHeightFogComponent>();
-	SetRootComponent(FogComponent);
+	if (FogComponent && GetRootComponent() == FogComponent)
+	{
+		BillboardComponent = FogComponent->EnsureEditorBillboard();
+		return;
+	}
 
-	BillboardComponent = FogComponent->EnsureEditorBillboard();
+	if (UHeightFogComponent* RootFog = Cast<UHeightFogComponent>(GetRootComponent()))
+	{
+		FogComponent = RootFog;
+		BillboardComponent = FogComponent->EnsureEditorBillboard();
+		return;
+	}
+
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (UHeightFogComponent* Fog = Cast<UHeightFogComponent>(Component))
+		{
+			FogComponent = Fog;
+			BillboardComponent = FogComponent->EnsureEditorBillboard();
+			return;
+		}
+	}
+
+	if (!GetRootComponent())
+	{
+		FogComponent = AddComponent<UHeightFogComponent>();
+		SetRootComponent(FogComponent);
+
+		BillboardComponent = FogComponent->EnsureEditorBillboard();
+	}
 }
