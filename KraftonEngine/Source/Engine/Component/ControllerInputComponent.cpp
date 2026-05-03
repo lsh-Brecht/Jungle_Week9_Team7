@@ -2,8 +2,7 @@
 
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
-#include "Component/Movement/HopMovementComponent.h"
-#include "Component/Movement/PawnMovementComponent.h"
+#include "Component/Movement/MovementComponent.h"
 #include "Engine/Input/InputSystem.h"
 #include "GameFramework/PlayerController.h"
 #include "Math/MathUtils.h"
@@ -44,21 +43,28 @@ namespace
 		}
 	}
 
-	UHopMovementComponent* FindHopMovementComponent(APawn* Pawn)
+	UMovementComponent* FindControllerDrivenMovementComponent(AActor* Actor)
 	{
-		if (!Pawn)
+		if (!Actor)
 		{
 			return nullptr;
 		}
 
-		for (UActorComponent* Component : Pawn->GetComponents())
+		UMovementComponent* BestMovement = nullptr;
+		for (UActorComponent* Component : Actor->GetComponents())
 		{
-			if (UHopMovementComponent* Movement = Cast<UHopMovementComponent>(Component))
+			UMovementComponent* Movement = Cast<UMovementComponent>(Component);
+			if (!Movement || !Movement->CanReceiveControllerInput())
 			{
-				return Movement;
+				continue;
+			}
+
+			if (!BestMovement || Movement->GetControllerInputPriority() > BestMovement->GetControllerInputPriority())
+			{
+				BestMovement = Movement;
 			}
 		}
-		return nullptr;
+		return BestMovement;
 	}
 }
 
@@ -135,35 +141,11 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 	if (Snapshot.IsDown('E') || Snapshot.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
 	if (Snapshot.IsDown('Q') || Snapshot.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
 
-	if (Controller)
-	{
-		if (APawn* Pawn = Controller->GetPawn())
-		{
-			if (UHopMovementComponent* HopMovement = FindHopMovementComponent(Pawn))
-			{
-				const float ForwardAxis = MoveInput.X;
-				const float RightAxis = MoveInput.Y;
-				const FVector WorldMoveInput =
-					FVector(1.0f, 0.0f, 0.0f) * ForwardAxis +
-					FVector(0.0f, 1.0f, 0.0f) * RightAxis;
-
-				if (WorldMoveInput.IsNearlyZero())
-				{
-					return false;
-				}
-
-				// TODO: Sprint can be added later by adjusting HopCoefficient or MaxSpeed on HopMovement.
-				HopMovement->AddMovementInput(WorldMoveInput, 1.0f);
-				return true;
-			}
-		}
-	}
-
 	if (MoveInput.IsNearlyZero())
 	{
 		return false;
 	}
-	MoveInput = MoveInput.Normalized();
+	const FVector LocalInput = MoveInput.Normalized();
 
 	UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
 	FVector MoveForward = FVector::ForwardVector;
@@ -182,22 +164,30 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
 
 	const float SafeDeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
 	const float SpeedBoost = Snapshot.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
-	const FVector WorldDelta = (MoveForward * MoveInput.X + MoveRight * MoveInput.Y + FVector::UpVector * MoveInput.Z)
-		* (MoveSpeed * SpeedBoost * SafeDeltaTime);
+	FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
+	WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
+	const FVector WorldDelta = WorldDirection * (MoveSpeed * SpeedBoost * SafeDeltaTime);
 
 	if (Controller)
 	{
 		if (AActor* Actor = Controller->GetPossessedActor())
 		{
-			for (UActorComponent* Comp : Actor->GetComponents())
+			FControllerMovementInput ControllerMoveInput;
+			ControllerMoveInput.LocalInput = LocalInput;
+			ControllerMoveInput.WorldDirection = WorldDirection;
+			ControllerMoveInput.WorldDelta = WorldDelta;
+			ControllerMoveInput.DeltaTime = SafeDeltaTime;
+			ControllerMoveInput.MoveSpeed = MoveSpeed;
+			ControllerMoveInput.SpeedMultiplier = SpeedBoost;
+
+			if (UMovementComponent* Movement = FindControllerDrivenMovementComponent(Actor))
 			{
-				if (UPawnMovementComponent* Movement = Cast<UPawnMovementComponent>(Comp))
+				if (Movement->ApplyControllerMovementInput(ControllerMoveInput))
 				{
-					Movement->AddMovementInput(WorldDelta, WorldDelta.Length());
-					Movement->ApplyPendingMovement();
 					return true;
 				}
 			}
+
 			Actor->AddActorWorldOffset(WorldDelta);
 			return true;
 		}
@@ -269,6 +259,23 @@ void UControllerInputComponent::SetMovementFrame(EControllerMovementFrame InFram
 void UControllerInputComponent::SetLookMode(EControllerLookMode InMode)
 {
 	LookMode = NormalizeLookModeValue(static_cast<int32>(InMode));
+}
+void UControllerInputComponent::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
+{
+	if (PossessedActorUUID == 0)
+	{
+		return;
+	}
+
+	auto It = ActorUUIDRemap.find(PossessedActorUUID);
+	if (It != ActorUUIDRemap.end())
+	{
+		PossessedActorUUID = It->second;
+	}
+	else
+	{
+		PossessedActorUUID = 0;
+	}
 }
 
 UCameraComponent* UControllerInputComponent::ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const

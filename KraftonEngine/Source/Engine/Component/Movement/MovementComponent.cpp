@@ -106,6 +106,12 @@ void UMovementComponent::ClearUpdatedComponentIfMatches(const USceneComponent* R
 	TryAutoRegisterUpdatedComponent();
 }
 
+bool UMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
+{
+	(void)Input;
+	return false;
+}
+
 void UMovementComponent::TryAutoRegisterUpdatedComponent()
 {
 	if (!bAutoRegisterUpdatedComponent)

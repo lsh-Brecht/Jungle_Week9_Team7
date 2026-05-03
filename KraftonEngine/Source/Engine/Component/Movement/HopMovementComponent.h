@@ -17,7 +17,7 @@ class UHopMovementComponent : public UMovementComponent
 public:
 	DECLARE_CLASS(UHopMovementComponent, UMovementComponent)
 
-	UHopMovementComponent() = default;
+	UHopMovementComponent();
 	~UHopMovementComponent() override = default;
 
 	void BeginPlay() override;
@@ -40,6 +40,7 @@ public:
 	// 로컬 입력. X는 Forward, Y는 Right 기준으로 월드 입력으로 변환된다.
 	void SetLocalMovementInput(const FVector& InLocalInput);
 	void AddLocalMovementInput(const FVector& InLocalDirection, float Scale = 1.0f);
+	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
 	const FVector& GetLastMovementInput() const { return LastMovementInput; }
 

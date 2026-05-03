@@ -43,6 +43,8 @@ public:
 	EControllerLookMode GetLookMode() const { return static_cast<EControllerLookMode>(LookMode); }
 	void SetLookMode(EControllerLookMode InMode);
 
+	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
+
 	uint32 PossessedActorUUID = 0;
 
 private:

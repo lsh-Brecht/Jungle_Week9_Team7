@@ -55,6 +55,8 @@ public:
 	virtual void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps);
 	// 프로퍼티 값 변경 후 호출. 하위 클래스에서 override하여 부수효과(리소스 재로딩 등) 처리.
 	virtual void PostEditProperty(const char* PropertyName);
+    // World 복제 후 Actor UUID 기반 참조를 새 World의 UUID로 보정한다.
+    virtual void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) {}
 	// 선택된 프록시의 소유 액터 컴포넌트가 디버그 시각화를 FScene에 기여
 	// FPrimitiveSceneProxy::CollectSelectedVisuals 에서 호출됨
 	virtual void ContributeSelectedVisuals(FScene& Scene) const { (void)Scene; }

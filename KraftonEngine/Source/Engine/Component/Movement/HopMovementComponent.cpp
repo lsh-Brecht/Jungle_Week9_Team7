@@ -65,6 +65,12 @@ namespace
 
 IMPLEMENT_CLASS(UHopMovementComponent, UMovementComponent)
 
+UHopMovementComponent::UHopMovementComponent()
+{
+	bReceiveControllerInput = true;
+	ControllerInputPriority = 10;
+}
+
 void UHopMovementComponent::BeginPlay()
 {
 	UMovementComponent::BeginPlay();
@@ -217,6 +223,17 @@ void UHopMovementComponent::SetLocalMovementInput(const FVector& InLocalInput)
 void UHopMovementComponent::AddLocalMovementInput(const FVector& InLocalDirection, float Scale)
 {
 	AddMovementInput(BuildWorldInputFromLocal(InLocalDirection), Scale);
+}
+
+bool UHopMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
+{
+	if (Input.WorldDirection.IsNearlyZero())
+	{
+		return false;
+	}
+
+	AddMovementInput(Input.WorldDirection, 1.0f);
+	return true;
 }
 
 FVector UHopMovementComponent::BuildWorldInputFromLocal(const FVector& InLocalInput) const

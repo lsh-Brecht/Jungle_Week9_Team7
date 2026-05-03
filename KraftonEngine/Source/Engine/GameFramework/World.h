@@ -96,6 +96,7 @@ public:
 	UCameraComponent* FindFirstCamera() const;
 	APawn* FindFirstPawn() const;
 	AActor* FindFirstPossessableActor() const;
+	AActor* FindActorByUUIDInWorld(uint32 ActorUUID) const;
 	APlayerController* FindOrCreatePlayerController();
 	void AutoWirePlayerController(APlayerController* PreferredController = nullptr);
 	UCameraComponent* ResolveGameplayViewCamera(APlayerController* PreferredController = nullptr) const;

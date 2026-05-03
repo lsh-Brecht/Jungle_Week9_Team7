@@ -11,7 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Component/ActorComponent.h"
-#include "Component/Movement/PawnMovementComponent.h"
+#include "Component/Movement/MovementComponent.h"
 #include "Component/ControllerInputComponent.h"
 #include "Object/Object.h"
 #include <algorithm>
@@ -19,6 +19,29 @@
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
+static void RemapActor(UWorld* NewWorld, const TMap<uint32, uint32>& ActorUUIDRemap)
+{
+	if (!NewWorld)
+	{
+		return;
+	}
+
+	for (AActor* Actor : NewWorld->GetActors())
+	{
+		if (!Actor)
+		{
+			continue;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			if (!Component)
+			{
+				Component->RemapActorReferences(ActorUUIDRemap);
+			}
+		}
+	}
+}
 
 UWorld::~UWorld()
 {
@@ -42,11 +65,22 @@ UObject* UWorld::Duplicate(UObject* NewOuter) const
 	NewWorld->SetOuter(NewOuter);
 	NewWorld->InitWorld(); // Partition/VisibleSet 초기화 — 이거 없으면 복제 액터가 렌더링되지 않음
 
+	TMap<uint32, uint32> ActorUUIDRemap;
+
 	for (AActor* Src : GetActors())
 	{
 		if (!Src) continue;
-		Src->Duplicate(NewWorld);
+
+		AActor* Dst = Cast<AActor>(Src->Duplicate(NewWorld));
+		if (!Dst)
+		{
+			continue;
+		}
+
+		ActorUUIDRemap[Src->GetUUID()] = Dst->GetUUID();
 	}
+
+	RemapActor(NewWorld, ActorUUIDRemap);
 
 	NewWorld->PostDuplicate();
 	return NewWorld;
@@ -60,11 +94,22 @@ UWorld* UWorld::DuplicateAs(EWorldType InWorldType) const
 	NewWorld->SetWorldType(InWorldType);
 	NewWorld->InitWorld();
 
+	TMap<uint32, uint32> ActorUUIDRemap;
+
 	for (AActor* Src : GetActors())
 	{
 		if (!Src) continue;
-		Src->Duplicate(NewWorld);
+
+		AActor* Dst = Cast<AActor>(Src->Duplicate(NewWorld));
+		if (!Dst)
+		{
+			continue;
+		}
+
+		ActorUUIDRemap[Src->GetUUID()] = Dst->GetUUID();
 	}
+
+	RemapActor(NewWorld, ActorUUIDRemap);
 
 	NewWorld->PostDuplicate();
 	return NewWorld;
@@ -559,7 +604,25 @@ AActor* UWorld::FindFirstPossessableActor() const
 	{
 		for (UActorComponent* Comp : Actor->GetComponents())
 		{
-			if (Cast<UPawnMovementComponent>(Comp)) return Actor;
+			if (Cast<UMovementComponent>(Comp))
+			{
+				return Actor;
+			}
+		}
+	}
+	return nullptr;
+}
+AActor* UWorld::FindActorByUUIDInWorld(uint32 ActorUUID) const
+{
+	if (!PersistentLevel || ActorUUID == 0)
+	{
+		return nullptr;
+	}
+	for (AActor* Actor : PersistentLevel->GetActors())
+	{
+		if (Actor->GetUUID() == ActorUUID)
+		{
+			return Actor;
 		}
 	}
 	return nullptr;
@@ -599,13 +662,9 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 	{
 		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
 		{
-			if (Input->PossessedActorUUID != 0)
+			if (AActor* Target = FindActorByUUIDInWorld(Input->PossessedActorUUID))
 			{
-				if (UObject* Obj = UObjectManager::Get().FindByUUID(Input->PossessedActorUUID))
-				{
-					if (AActor* Target = Cast<AActor>(Obj))
-						Controller->Possess(Target);
-				}
+				Controller->Possess(Target);
 			}
 		}
 		if (!Controller->GetPossessedActor())

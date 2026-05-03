@@ -8,6 +8,12 @@
 
 IMPLEMENT_CLASS(UPawnMovementComponent, UMovementComponent)
 
+UPawnMovementComponent::UPawnMovementComponent()
+{
+	bReceiveControllerInput = true;
+	ControllerInputPriority = 0;
+}
+
 void UPawnMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
 {
 	UMovementComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -41,6 +47,18 @@ FVector UPawnMovementComponent::ConsumeMovementInputVector()
 	FVector Result = PendingMovementInput;
 	PendingMovementInput = FVector::ZeroVector;
 	return Result;
+}
+
+bool UPawnMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
+{
+	if (Input.WorldDelta.IsNearlyZero())
+	{
+		return false;
+	}
+
+	AddMovementInput(Input.WorldDelta, Input.WorldDelta.Length());
+	ApplyPendingMovement();
+	return true;
 }
 
 void UPawnMovementComponent::ApplyPendingMovement()

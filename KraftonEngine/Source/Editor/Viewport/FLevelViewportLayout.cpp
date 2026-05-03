@@ -12,6 +12,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/CameraActor.h"
 #include "Component/SceneComponent.h"
+#include "Component/StaticMeshComponent.h"
 #include "GameFramework/DecalActor.h"
 #include "GameFramework/HeightFogActor.h"
 #include "GameFramework/Light/AmbientLightActor.h"
@@ -2065,7 +2066,7 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 		SpawnedActor = World->SpawnActor<AActor>();
 		if (SpawnedActor)
 		{
-			USceneComponent* Root = SpawnedActor->AddComponent<USceneComponent>();
+			UStaticMeshComponent* Root = SpawnedActor->AddComponent<UStaticMeshComponent>();
 			if (Root) SpawnedActor->SetRootComponent(Root);
 		}
 		break;

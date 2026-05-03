@@ -10,7 +10,7 @@ class UPawnMovementComponent : public UMovementComponent
 public:
 	DECLARE_CLASS(UPawnMovementComponent, UMovementComponent)
 
-	UPawnMovementComponent() = default;
+	UPawnMovementComponent();
 	~UPawnMovementComponent() override = default;
 
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
@@ -20,6 +20,7 @@ public:
 	FVector ConsumeMovementInputVector();
 	FVector GetPendingMovementInputVector() const { return PendingMovementInput; }
 	void ApplyPendingMovement();
+	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
 private:
 	FVector PendingMovementInput = FVector::ZeroVector;

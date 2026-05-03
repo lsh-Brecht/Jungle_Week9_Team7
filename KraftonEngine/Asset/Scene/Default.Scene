@@ -1,8 +1,9 @@
 {
   "Actors" : [{
+      "ActorUUID" : 102,
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "73",
+      "PrimitiveKey" : "102",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -37,6 +38,7 @@
       },
       "bVisible" : true
     }, {
+      "ActorUUID" : 105,
       "ClassName" : "ADirectionalLightActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -81,6 +83,7 @@
       },
       "bVisible" : true
     }, {
+      "ActorUUID" : 108,
       "ClassName" : "APawn",
       "NonSceneComponents" : [{
           "ClassName" : "UHopMovementComponent",
@@ -98,6 +101,14 @@
             "Simulating" : true,
             "Updated Component" : "",
             "Velocity" : [0.000000, 0.000000, 0.000000],
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UPawnMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Updated Component" : "",
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -122,6 +133,7 @@
       },
       "bVisible" : true
     }, {
+      "ActorUUID" : 112,
       "ClassName" : "APlayerController",
       "NonSceneComponents" : [{
           "ClassName" : "UControllerInputComponent",
@@ -132,6 +144,7 @@
             "Min Pitch" : -89.000000,
             "Move Speed" : 10.000000,
             "Movement Frame" : 1,
+            "PossessedActorUUID" : 108,
             "Sprint Multiplier" : 2.500000,
             "bEditorOnly" : false,
             "bTickEnable" : true
@@ -154,6 +167,7 @@
       },
       "bVisible" : true
     }, {
+      "ActorUUID" : 115,
       "ClassName" : "ACameraActor",
       "NonSceneComponents" : [{
           "ClassName" : "UCameraRigComponent",
@@ -214,7 +228,7 @@
     "Rotation" : [0.000000, 28.428587, 1.298935]
   },
   "Primitives" : {
-    "73" : {
+    "102" : {
       "Location" : [0.000000, 0.000000, -1.500000],
       "ObjStaticMeshAsset" : "Data/GouraudCube/GouraudCube.obj",
       "Rotation" : [0.000000, -0.000000, 0.000000],

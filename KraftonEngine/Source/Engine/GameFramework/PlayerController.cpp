@@ -49,23 +49,45 @@ static FRotator MakeControlRotationFromCamera(const UCameraComponent* Camera)
 
 void APlayerController::Possess(AActor* InActor)
 {
+	if (InActor)
+	{
+		UWorld* ControllerWorld = GetWorld();
+		UWorld* TargetWorld = InActor->GetWorld();
+
+		if (ControllerWorld && TargetWorld && ControllerWorld != TargetWorld)
+		{
+			return;
+		}
+	}
+
 	if (PossessedActor == InActor)
 	{
 		ViewTarget = InActor;
 		return;
 	}
+
 	UnPossess();
+
 	PossessedActor = InActor;
 	ViewTarget = InActor;
+
 	if (PossessedActor)
 	{
 		if (APawn* Pawn = Cast<APawn>(PossessedActor))
+		{
 			Pawn->SetController(this);
+		}
+
 		if (UCameraComponent* Camera = FindCameraOnActor(PossessedActor))
+		{
 			ControlRotation = MakeControlRotationFromCamera(Camera);
+		}
 	}
+
 	if (UControllerInputComponent* Input = FindControllerInputComponent())
+	{
 		Input->PossessedActorUUID = InActor ? InActor->GetUUID() : 0;
+	}
 }
 
 void APlayerController::UnPossess()
