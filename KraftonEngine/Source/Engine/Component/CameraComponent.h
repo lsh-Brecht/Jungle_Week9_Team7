@@ -124,6 +124,7 @@ private:
 	bool CalcThirdPersonView(APlayerController* Controller, float DeltaTime, FCameraView& OutView);
 	bool CalcOrthographicFollowView(APlayerController* Controller, float DeltaTime, FCameraView& OutView);
 
+	AActor* ResolveSubjectActor(APlayerController* Controller) const;
 	FVector ComputeTargetFocusPoint(AActor* Target, float DeltaTime);
 	FVector ComputeLookAheadWorld(APlayerController* Controller, float DeltaTime);
 	FQuat MakeLookAtRotationQuat(const FVector& Location, const FVector& Target) const;

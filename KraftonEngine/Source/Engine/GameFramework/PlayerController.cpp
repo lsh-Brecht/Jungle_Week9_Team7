@@ -139,8 +139,19 @@ void APlayerController::Possess(AActor* InActor)
 		}
 	}
 
+	AActor* PreviousPossessedActor = GetPossessedActor();
+	UCameraComponent* ExistingActiveCamera = GetActiveCamera();
+	const bool bUsePossessedActorCamera =
+		!ExistingActiveCamera
+		|| ExistingActiveCamera->GetOwner() == PreviousPossessedActor
+		|| ExistingActiveCamera->GetOwner() == InActor;
+
 	if (PossessedActor == InActor)
 	{
+		if (bUsePossessedActorCamera && InActor)
+		{
+			SetActiveCameraFromPossessedPawn();
+		}
 		return;
 	}
 
@@ -161,11 +172,25 @@ void APlayerController::Possess(AActor* InActor)
 			Pawn->SetController(this);
 		}
 	}
+
+	if (bUsePossessedActorCamera)
+	{
+		SetActiveCameraFromPossessedPawn();
+	}
 }
 
 void APlayerController::UnPossess()
 {
-	if (APawn* Pawn = Cast<APawn>(GetPossessedActor()))
+	AActor* Actor = GetPossessedActor();
+	if (UCameraComponent* ActiveCamera = GetActiveCamera())
+	{
+		if (ActiveCamera->GetOwner() == Actor)
+		{
+			ClearActiveCamera();
+		}
+	}
+
+	if (APawn* Pawn = Cast<APawn>(Actor))
 	{
 		if (Pawn->GetController() == this)
 		{

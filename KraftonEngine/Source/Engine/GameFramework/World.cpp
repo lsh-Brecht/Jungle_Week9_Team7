@@ -462,6 +462,8 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 
 void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 {
+	const bool bCanDriveWorldView = GetWorldType() != EWorldType::Editor || HasBegunPlay();
+
 	for (APlayerController* Controller : PlayerControllers)
 	{
 		if (!Controller || !IsActorInWorld(Controller))
@@ -471,10 +473,14 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 
 		FPlayerCameraManager& Manager = Controller->GetCameraManager();
 		Manager.UpdateCamera(DeltaTime);
-		if (UCameraComponent* OutputCamera = Manager.GetOutputCameraIfValid())
+
+		if (bCanDriveWorldView)
 		{
-			SetViewCamera(OutputCamera);
-			SetActiveCamera(OutputCamera);
+			if (UCameraComponent* OutputCamera = Manager.GetOutputCameraIfValid())
+			{
+				SetViewCamera(OutputCamera);
+				SetActiveCamera(OutputCamera);
+			}
 		}
 	}
 }

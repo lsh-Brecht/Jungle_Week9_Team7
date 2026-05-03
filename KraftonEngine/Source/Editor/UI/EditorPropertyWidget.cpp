@@ -559,27 +559,33 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 		}
 
 		ImGui::Spacing();
-
-		ImGui::Spacing();
 		ImGui::Text("Camera");
+		ImGui::TextDisabled("Possessing an actor with a CameraComponent selects that camera automatically.");
+
 		if (UCameraComponent* ActiveCamera = PC->GetActiveCamera())
 		{
-			const FString& N = ActiveCamera->GetFName().ToString();
-			ImGui::Text("Active Camera: %s", N.empty() ? ActiveCamera->GetClass()->GetName() : N.c_str());
+			FString OwnerName = ActiveCamera->GetOwner() ? ActiveCamera->GetOwner()->GetFName().ToString() : FString();
+			FString CameraName = ActiveCamera->GetFName().ToString();
+			FString Label = OwnerName.empty() ? FString("Actor") : OwnerName;
+			Label += ".";
+			Label += CameraName.empty() ? ActiveCamera->GetClass()->GetName() : CameraName;
+			ImGui::Text("Player Camera: %s", Label.c_str());
 		}
 		else
 		{
-			ImGui::TextDisabled("Active Camera: (none)");
+			ImGui::TextDisabled("Player Camera: (none)");
 		}
-		if (ImGui::Button("Set Camera From Possessed Actor"))
-		{
-			PC->SetActiveCameraFromPossessedPawn();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Set Active Camera..."))
+
+		if (ImGui::Button("Choose Player Camera..."))
 		{
 			ImGui::OpenPopup("##ControllerCameraPicker");
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear Player Camera"))
+		{
+			PC->ClearActiveCamera();
+		}
+
 		if (ImGui::BeginPopup("##ControllerCameraPicker"))
 		{
 			UWorld* World = EditorEngine->GetWorld();
@@ -616,6 +622,12 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 						if (ImGui::MenuItem(Label.c_str()))
 						{
 							PC->SetActiveCamera(Camera);
+							PC->GetCameraManager().SnapToActiveCamera();
+							if (UCameraComponent* ViewCamera = PC->ResolveViewCamera())
+							{
+								World->SetViewCamera(ViewCamera);
+								World->SetActiveCamera(ViewCamera);
+							}
 							ImGui::CloseCurrentPopup();
 						}
 					}
@@ -627,16 +639,8 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 			}
 			ImGui::EndPopup();
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("Clear Active Camera"))
-		{
-			PC->ClearActiveCamera();
-		}
-		if (ImGui::Button("Snap Camera To Active"))
-		{
-			PC->GetCameraManager().SnapToActiveCamera();
-		}
 	}
+
 	// Pawn — 현재 Controller 표시
 	else if (APawn* Pawn = Cast<APawn>(PrimaryActor))
 	{
@@ -1082,36 +1086,29 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 
 	ImGui::Separator();
 
-	// CameraComponent — preview and gameplay connection are explicit, separate actions.
+	// CameraComponent — player view selection is explicit; follow target is handled by the camera settings below.
 	if (UCameraComponent* Cam = Cast<UCameraComponent>(SelectedComponent))
 	{
 		UWorld* World = EditorEngine->GetWorld();
 		if (World)
 		{
-			if (World->GetViewCamera() == Cam)
+			APlayerController* Controller = World->GetPlayerController(0);
+			const bool bIsPlayerCamera = Controller && Controller->GetActiveCamera() == Cam;
+			if (bIsPlayerCamera)
 			{
-				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Preview Camera]");
+				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Player Camera");
 			}
-			if (APlayerController* Controller = World->GetPlayerController(0))
+			else
 			{
-				if (Controller->GetActiveCamera() == Cam)
-				{
-					ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Gameplay Camera]");
-				}
+				ImGui::TextDisabled("Not used as the player camera");
 			}
-			if (ImGui::Button("Preview Through This Camera"))
-			{
-				World->SetViewCamera(Cam);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Set As Gameplay Camera"))
+
+			if (ImGui::Button("Use as Player Camera"))
 			{
 				Cam->SetActiveCamera();
 			}
-			if (ImGui::Button("Set As Gameplay Camera With Blend"))
-			{
-				Cam->SetActiveCameraWithBlend();
-			}
+
+			ImGui::TextDisabled("Follow Target below changes who this camera follows. It is visible once this camera is the player camera.");
 		}
 		ImGui::Separator();
 	}

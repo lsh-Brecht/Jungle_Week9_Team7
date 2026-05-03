@@ -283,30 +283,32 @@ void UCameraComponent::SetActiveCamera()
 			{
 				Controller->Possess(OwnerPawn);
 			}
+
 			Controller->SetActiveCamera(this);
+			Controller->GetCameraManager().SnapToActiveCamera();
+
+			if (UCameraComponent* ViewCamera = Controller->ResolveViewCamera())
+			{
+				World->SetViewCamera(ViewCamera);
+				World->SetActiveCamera(ViewCamera);
+			}
 		}
 	}
 }
 
 void UCameraComponent::SetActiveCameraWithBlend()
 {
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* Controller = World->FindOrCreatePlayerController())
-		{
-			if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-			{
-				Controller->Possess(OwnerPawn);
-			}
-			Controller->SetActiveCameraWithBlend(this);
-		}
-	}
+	SetActiveCamera();
 }
 
 void UCameraComponent::SetTargetActor(AActor* Target)
 {
 	TargetActorUUID = Target ? Target->GetUUID() : 0;
 	bUseOwnerAsTarget = Target == nullptr;
+	if (Target && GetViewMode() == ECameraViewMode::Static)
+	{
+		SetViewMode(ECameraViewMode::ThirdPerson);
+	}
 	ResetRuntimeCameraState();
 }
 
@@ -322,6 +324,34 @@ AActor* UCameraComponent::ResolveTargetActor() const
 	}
 
 	return bUseOwnerAsTarget ? GetOwner() : nullptr;
+}
+
+AActor* UCameraComponent::ResolveSubjectActor(APlayerController* Controller) const
+{
+	UWorld* World = GetWorld();
+	if (TargetActorUUID != 0 && World)
+	{
+		if (AActor* Target = World->FindActorByUUIDInWorld(TargetActorUUID))
+		{
+			return Target;
+		}
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor && Cast<APawn>(OwnerActor))
+	{
+		return OwnerActor;
+	}
+
+	if (Controller)
+	{
+		if (AActor* Possessed = Controller->GetPossessedActor())
+		{
+			return Possessed;
+		}
+	}
+
+	return bUseOwnerAsTarget ? OwnerActor : nullptr;
 }
 
 void UCameraComponent::ClearTargetActor()
@@ -453,9 +483,9 @@ void UCameraComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutPro
 	OutProps.push_back({ "Ortho Width", EPropertyType::Float, &CameraState.OrthoWidth, 0.1f, 10000.0f, 0.5f });
 
 	OutProps.push_back({ "View Mode", EPropertyType::Enum, &ViewMode, 0.0f, 0.0f, 0.1f, ViewModeNames, ViewModeCount });
-	OutProps.push_back({ "Use Owner As Target", EPropertyType::Bool, &bUseOwnerAsTarget });
-	OutProps.push_back({ "Target Actor", EPropertyType::ActorRef, &TargetActorUUID });
-	OutProps.push_back({ "Target Offset", EPropertyType::Vec3, &TargetOffset, 0.0f, 0.0f, 0.1f });
+	OutProps.push_back({ "Follow Subject Auto", EPropertyType::Bool, &bUseOwnerAsTarget });
+	OutProps.push_back({ "Follow Target", EPropertyType::ActorRef, &TargetActorUUID });
+	OutProps.push_back({ "Follow Offset", EPropertyType::Vec3, &TargetOffset, 0.0f, 0.0f, 0.1f });
 
 	OutProps.push_back({ "Eye Height", EPropertyType::Float, &EyeHeight, 0.0f, 1000.0f, 0.01f });
 	OutProps.push_back({ "First Person Use Control Rotation", EPropertyType::Bool, &bFirstPersonUseControlRotation });
@@ -497,12 +527,16 @@ void UCameraComponent::PostEditProperty(const char* PropertyName)
 	USceneComponent::PostEditProperty(PropertyName);
 	NormalizeOptions();
 
-	if (std::strcmp(PropertyName, "Target Actor") == 0)
+	if (std::strcmp(PropertyName, "Follow Target") == 0)
 	{
 		bUseOwnerAsTarget = (TargetActorUUID == 0);
+		if (TargetActorUUID != 0 && GetViewMode() == ECameraViewMode::Static)
+		{
+			SetViewMode(ECameraViewMode::ThirdPerson);
+		}
 		ResetRuntimeCameraState();
 	}
-	else if (std::strcmp(PropertyName, "Use Owner As Target") == 0)
+	else if (std::strcmp(PropertyName, "Follow Subject Auto") == 0)
 	{
 		if (bUseOwnerAsTarget)
 		{
@@ -558,7 +592,7 @@ bool UCameraComponent::CalcStaticView(APlayerController* Controller, float Delta
 bool UCameraComponent::CalcFirstPersonView(APlayerController* Controller, float DeltaTime, FCameraView& OutView)
 {
 	(void)DeltaTime;
-	AActor* Target = ResolveTargetActor();
+	AActor* Target = ResolveSubjectActor(Controller);
 	if (!Target)
 	{
 		return CalcStaticView(Controller, DeltaTime, OutView);
@@ -584,7 +618,7 @@ bool UCameraComponent::CalcFirstPersonView(APlayerController* Controller, float 
 
 bool UCameraComponent::CalcThirdPersonView(APlayerController* Controller, float DeltaTime, FCameraView& OutView)
 {
-	AActor* Target = ResolveTargetActor();
+	AActor* Target = ResolveSubjectActor(Controller);
 	if (!Target)
 	{
 		return CalcStaticView(Controller, DeltaTime, OutView);
@@ -626,7 +660,7 @@ bool UCameraComponent::CalcThirdPersonView(APlayerController* Controller, float 
 
 bool UCameraComponent::CalcOrthographicFollowView(APlayerController* Controller, float DeltaTime, FCameraView& OutView)
 {
-	AActor* Target = ResolveTargetActor();
+	AActor* Target = ResolveSubjectActor(Controller);
 	if (!Target)
 	{
 		return CalcStaticView(Controller, DeltaTime, OutView);

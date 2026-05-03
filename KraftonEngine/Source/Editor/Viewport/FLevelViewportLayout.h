@@ -84,9 +84,7 @@ public:
 		SpotLight,
 		Camera,
 		Pawn,
-		PlayablePawn,
 		PlayerController,
-		ThirdPersonPlayerSetup,
 		EmptyActor
 	};
 

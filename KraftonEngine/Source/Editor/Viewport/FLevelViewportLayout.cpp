@@ -1899,9 +1899,7 @@ void FLevelViewportLayout::RenderViewportPlaceActorPopup()
 		PlaceActorMenuItem("Spot Light", EViewportPlaceActorType::SpotLight);
 		PlaceActorMenuItem("Camera", EViewportPlaceActorType::Camera);
 		PlaceActorMenuItem("Pawn", EViewportPlaceActorType::Pawn);
-		PlaceActorMenuItem("Playable Pawn (Pawn Only)", EViewportPlaceActorType::PlayablePawn);
 		PlaceActorMenuItem("PlayerController", EViewportPlaceActorType::PlayerController);
-		PlaceActorMenuItem("Third Person Player Setup (Pawn + Controller)", EViewportPlaceActorType::ThirdPersonPlayerSetup);
 
 		ImGui::EndMenu();
 	}
@@ -2128,43 +2126,6 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 		}
 		break;
 	}
-	case EViewportPlaceActorType::PlayablePawn:
-	{
-		APawn* Actor = World->SpawnActor<APawn>();
-		if (Actor)
-		{
-			Actor->InitDefaultComponents();
-			if (!FindActorComponent<UPawnMovementComponent>(Actor))
-			{
-				Actor->AddComponent<UPawnMovementComponent>();
-			}
-			if (!FindActorComponent<UPawnOrientationComponent>(Actor))
-			{
-				Actor->AddComponent<UPawnOrientationComponent>();
-			}
-			UCameraComponent* Camera = FindActorComponent<UCameraComponent>(Actor);
-			if (!Camera)
-			{
-				Camera = Actor->AddComponent<UCameraComponent>();
-				if (Camera && Actor->GetRootComponent())
-				{
-					Camera->AttachToComponent(Actor->GetRootComponent());
-				}
-			}
-			if (Camera)
-			{
-				Camera->SetViewMode(ECameraViewMode::ThirdPerson);
-				Camera->SetOrthographic(false);
-				Camera->SetUseOwnerAsTarget(true);
-				Camera->SetUseTargetForward(false);
-				Camera->SetUseControlRotationYaw(true);
-				Camera->SetBackDistance(5.0f);
-				Camera->SetHeight(2.0f);
-			}
-			SpawnedActor = Actor;
-		}
-		break;
-	}
 	case EViewportPlaceActorType::PlayerController:
 	{
 		APlayerController* Actor = World->SpawnActor<APlayerController>();
@@ -2173,53 +2134,6 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 			Actor->InitDefaultComponents();
 			SpawnedActor = Actor;
 		}
-		break;
-	}
-	case EViewportPlaceActorType::ThirdPersonPlayerSetup:
-	{
-		APawn* Pawn = World->SpawnActor<APawn>();
-		APlayerController* Controller = World->FindOrCreatePlayerController();
-		if (Pawn)
-		{
-			Pawn->InitDefaultComponents();
-			if (!FindActorComponent<UPawnMovementComponent>(Pawn))
-			{
-				Pawn->AddComponent<UPawnMovementComponent>();
-			}
-			if (!FindActorComponent<UPawnOrientationComponent>(Pawn))
-			{
-				Pawn->AddComponent<UPawnOrientationComponent>();
-			}
-			UCameraComponent* Camera = FindActorComponent<UCameraComponent>(Pawn);
-			if (!Camera)
-			{
-				Camera = Pawn->AddComponent<UCameraComponent>();
-			}
-			if (Camera && Pawn->GetRootComponent())
-			{
-				Camera->AttachToComponent(Pawn->GetRootComponent());
-			}
-			if (Camera)
-			{
-				Camera->SetViewMode(ECameraViewMode::ThirdPerson);
-				Camera->SetOrthographic(false);
-				Camera->SetUseOwnerAsTarget(true);
-				Camera->SetUseTargetForward(false);
-				Camera->SetUseControlRotationYaw(true);
-				Camera->SetBackDistance(5.0f);
-				Camera->SetHeight(2.0f);
-			}
-		}
-		if (Controller)
-		{
-			Controller->InitDefaultComponents();
-			Controller->Possess(Pawn);
-			if (Pawn)
-			{
-				Controller->SetActiveCamera(Pawn->FindPawnCamera());
-			}
-		}
-		SpawnedActor = Pawn ? static_cast<AActor*>(Pawn) : static_cast<AActor*>(Controller);
 		break;
 	}
 	default:
