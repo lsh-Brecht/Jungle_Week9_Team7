@@ -6,7 +6,7 @@
 #include "Math/Matrix.h"
 #include "Math/Quat.h"
 
-IMPLEMENT_CLASS(URotatingMovementComponent, UMovementComponent)
+IMPLEMENT_LUA_COMPONENT(URotatingMovementComponent, UMovementComponent)
 
 void URotatingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
 {

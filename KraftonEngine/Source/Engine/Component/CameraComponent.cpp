@@ -1,6 +1,8 @@
 #include "Component/CameraComponent.h"
+
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
+
 #include <cmath>
 
 IMPLEMENT_CLASS(UCameraComponent, USceneComponent)
@@ -8,12 +10,12 @@ IMPLEMENT_CLASS(UCameraComponent, USceneComponent)
 void UCameraComponent::Serialize(FArchive& Ar)
 {
 	USceneComponent::Serialize(Ar);
-	Ar << CameraState.FOV;
-	Ar << CameraState.AspectRatio;
-	Ar << CameraState.NearZ;
-	Ar << CameraState.FarZ;
-	Ar << CameraState.OrthoWidth;
-	Ar << CameraState.bIsOrthogonal;
+	Ar << ProjectionSettings.FOV;
+	Ar << ProjectionSettings.AspectRatio;
+	Ar << ProjectionSettings.NearZ;
+	Ar << ProjectionSettings.FarZ;
+	Ar << ProjectionSettings.OrthoWidth;
+	Ar << ProjectionSettings.bIsOrthographic;
 }
 
 FMatrix UCameraComponent::GetViewMatrix() const
@@ -24,14 +26,18 @@ FMatrix UCameraComponent::GetViewMatrix() const
 
 FMatrix UCameraComponent::GetProjectionMatrix() const
 {
-	if (!CameraState.bIsOrthogonal) {
-		return FMatrix::PerspectiveFovLH(CameraState.FOV, CameraState.AspectRatio, CameraState.NearZ, CameraState.FarZ);
+	if (!ProjectionSettings.bIsOrthographic)
+	{
+		return FMatrix::PerspectiveFovLH(
+			ProjectionSettings.FOV,
+			ProjectionSettings.AspectRatio,
+			ProjectionSettings.NearZ,
+			ProjectionSettings.FarZ);
 	}
-	else {
-		float HalfW = CameraState.OrthoWidth * 0.5f;
-		float HalfH = HalfW / CameraState.AspectRatio;
-		return FMatrix::OrthoLH(HalfW * 2.0f, HalfH * 2.0f, CameraState.NearZ, CameraState.FarZ);
-	}
+
+	const float HalfW = ProjectionSettings.OrthoWidth * 0.5f;
+	const float HalfH = HalfW / ProjectionSettings.AspectRatio;
+	return FMatrix::OrthoLH(HalfW * 2.0f, HalfH * 2.0f, ProjectionSettings.NearZ, ProjectionSettings.FarZ);
 }
 
 FMatrix UCameraComponent::GetViewProjectionMatrix() const
@@ -49,18 +55,46 @@ FConvexVolume UCameraComponent::GetConvexVolume() const
 void UCameraComponent::LookAt(const FVector& Target)
 {
 	FVector Position = GetWorldLocation();
-	FVector Diff = (Target - Position).Normalized();
-
-	constexpr float Rad2Deg = 180.0f / 3.14159265358979f;
-
-	FRotator LookRotation = GetRelativeRotation();
-	LookRotation.Pitch = -asinf(Diff.Z) * Rad2Deg;
-
-	if (fabsf(Diff.Z) < 0.999f) {
-		LookRotation.Yaw = atan2f(Diff.Y, Diff.X) * Rad2Deg;
+	FVector Diff = Target - Position;
+	if (Diff.IsNearlyZero())
+	{
+		return;
 	}
 
-	SetRelativeRotation(LookRotation);
+	Diff = Diff.Normalized();
+
+	FRotator LookRotation;
+	LookRotation.Pitch = -asinf(Diff.Z) * RAD_TO_DEG;
+	LookRotation.Yaw = fabsf(Diff.Z) < 0.999f ? atan2f(Diff.Y, Diff.X) * RAD_TO_DEG : 0.0f;
+	LookRotation.Roll = 0.0f;
+	SetWorldRotation(LookRotation);
+}
+
+FCameraView UCameraComponent::GetCameraView() const
+{
+	FCameraView View;
+	View.Location = GetWorldLocation();
+	View.Rotation = GetWorldRotationQuat();
+	View.Projection = ProjectionSettings;
+	View.bValid = true;
+	return View;
+}
+
+void UCameraComponent::ApplyCameraView(const FCameraView& View)
+{
+	if (!View.bValid)
+	{
+		return;
+	}
+
+	SetWorldLocation(View.Location);
+	SetWorldRotation(View.Rotation);
+	SetProjectionSettings(View.Projection);
+}
+
+void UCameraComponent::SetProjectionSettings(const FCameraProjectionSettings& NewSettings)
+{
+	ProjectionSettings = NewSettings;
 }
 
 void UCameraComponent::OnResize(int32 Width, int32 Height)
@@ -69,19 +103,15 @@ void UCameraComponent::OnResize(int32 Width, int32 Height)
 	{
 		return;
 	}
-	CameraState.AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
+
+	ProjectionSettings.AspectRatio = static_cast<float>(Width) / static_cast<float>(Height);
 }
 
-void UCameraComponent::SetCameraState(const FCameraState& NewState)
+FRay UCameraComponent::DeprojectScreenToWorld(float MouseX, float MouseY, float ScreenWidth, float ScreenHeight)
 {
-	CameraState = NewState;
-}
-
-FRay UCameraComponent::DeprojectScreenToWorld(float MouseX, float MouseY, float ScreenWidth, float ScreenHeight) {
 	float NdcX = (2.0f * MouseX) / ScreenWidth - 1.0f;
 	float NdcY = 1.0f - (2.0f * MouseY) / ScreenHeight;
 
-	// Reversed-Z: near plane = 1, far plane = 0
 	FVector NdcNear(NdcX, NdcY, 1.0f);
 	FVector NdcFar(NdcX, NdcY, 0.0f);
 
@@ -104,10 +134,10 @@ FRay UCameraComponent::DeprojectScreenToWorld(float MouseX, float MouseY, float 
 void UCameraComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	USceneComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({ "FOV",          EPropertyType::Float, &CameraState.FOV, 0.1f,   3.14f,    0.01f });
-	OutProps.push_back({ "Aspect Ratio", EPropertyType::Float, &CameraState.AspectRatio, 0.01f,  10.0f,    0.01f });
-	OutProps.push_back({ "Near Z",       EPropertyType::Float, &CameraState.NearZ, 0.01f,  100.0f,   0.01f });
-	OutProps.push_back({ "Far Z",        EPropertyType::Float, &CameraState.FarZ, 1.0f,   100000.0f, 10.0f });
-	OutProps.push_back({ "Orthographic", EPropertyType::Bool,  &CameraState.bIsOrthogonal});
-	OutProps.push_back({ "Ortho Width",  EPropertyType::Float, &CameraState.OrthoWidth, 0.1f,   1000.0f,  0.5f });
+	OutProps.push_back({ "FOV",          EPropertyType::Float, &ProjectionSettings.FOV, 0.1f,   3.14f,    0.01f });
+	OutProps.push_back({ "Aspect Ratio", EPropertyType::Float, &ProjectionSettings.AspectRatio, 0.01f,  10.0f,    0.01f });
+	OutProps.push_back({ "Near Z",       EPropertyType::Float, &ProjectionSettings.NearZ, 0.01f,  100.0f,   0.01f });
+	OutProps.push_back({ "Far Z",        EPropertyType::Float, &ProjectionSettings.FarZ, 1.0f,   100000.0f, 10.0f });
+	OutProps.push_back({ "Orthographic", EPropertyType::Bool,  &ProjectionSettings.bIsOrthographic });
+	OutProps.push_back({ "Ortho Width",  EPropertyType::Float, &ProjectionSettings.OrthoWidth, 0.1f,   1000.0f,  0.5f });
 }

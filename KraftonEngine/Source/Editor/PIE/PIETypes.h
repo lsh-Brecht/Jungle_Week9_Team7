@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Component/CameraComponent.h"
+#include "Camera/CameraTypes.h"
 #include "Core/EngineTypes.h"
 #include "Math/Rotator.h"
 #include "Math/Vector.h"
@@ -33,7 +33,7 @@ struct FPIEViewportCameraSnapshot
 	// 추후 PIE 시작 위치를 별도 에디터 오브젝트로 지정해도 동일한 스냅샷 구조를 재사용할 수 있다.
 	FVector Location;
 	FRotator Rotation;
-	FCameraState CameraState;
+	FCameraProjectionSettings ProjectionSettings;
 	bool bValid = false;
 };
 

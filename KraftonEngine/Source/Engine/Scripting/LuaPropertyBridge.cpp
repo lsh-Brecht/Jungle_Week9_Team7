@@ -188,6 +188,7 @@ const char* FLuaPropertyBridge::ToLuaTypeName(EPropertyType Type)
 		return "bool";
 
 	case EPropertyType::Int:
+	case EPropertyType::ActorRef:
 		return "int";
 
 	case EPropertyType::Float:
@@ -328,6 +329,9 @@ sol::object FLuaPropertyBridge::GetProperty(sol::this_state State, UActorCompone
 	case EPropertyType::Enum:
 		return sol::make_object(Lua, *reinterpret_cast<int32*>(Desc->ValuePtr));
 
+	case EPropertyType::ActorRef:
+		return sol::make_object(Lua, static_cast<int32>(*static_cast<uint32*>(Desc->ValuePtr)));
+
 	case EPropertyType::Vec3Array:
 	{
 		TArray<FVector>* Values = static_cast<TArray<FVector>*>(Desc->ValuePtr);
@@ -460,6 +464,13 @@ bool FLuaPropertyBridge::SetProperty(UActorComponent* Component, const FString& 
 			}
 
 			*reinterpret_cast<int32*>(Desc->ValuePtr) = NewValue;
+			break;
+		}
+
+		case EPropertyType::ActorRef:
+		{
+			const int32 NewValue = Value.as<int32>();
+			*static_cast<uint32*>(Desc->ValuePtr) = NewValue > 0 ? static_cast<uint32>(NewValue) : 0;
 			break;
 		}
 

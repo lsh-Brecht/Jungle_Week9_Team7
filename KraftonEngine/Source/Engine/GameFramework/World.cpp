@@ -8,6 +8,7 @@
 #include "Render/Types/LODContext.h"
 #include "Scripting/LuaScriptSubsystem.h"
 #include "Runtime/ObjectPoolSystem.h"
+#include "GameFramework/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Component/ActorComponent.h"
@@ -453,6 +454,8 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 
 	UpdateCollision();
 
+	UpdatePlayerCameraManagers(DeltaTime);
+
 	ApplyCollisionDebugVisualization();
 }
 
@@ -668,15 +671,10 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 		return;
 	}
 
+	Controller->InitDefaultComponents();
+
 	if (!Controller->GetPossessedActor())
 	{
-		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
-		{
-			if (AActor* Target = FindActorByUUIDInWorld(Input->PossessedActorUUID))
-			{
-				Controller->Possess(Target);
-			}
-		}
 		if (!Controller->GetPossessedActor())
 		{
 			if (AActor* Target = FindFirstPossessableActor())
@@ -704,24 +702,34 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 		}
 	}
 
-	if (!GetActiveCamera())
+	if (APlayerCameraManager* CameraManager = Controller->GetPlayerCameraManager())
+	{
+		CameraManager->SetViewTarget(Controller->GetViewTarget());
+		CameraManager->SnapToTarget();
+		SetActiveCamera(CameraManager->GetOutputCameraComponent());
+		SetViewCamera(CameraManager->GetOutputCameraComponent());
+	}
+	else if (!GetActiveCamera())
 	{
 		if (UCameraComponent* Camera = ResolveGameplayViewCamera(Controller))
 		{
 			SetActiveCamera(Camera);
 		}
-	}
 
-	SetViewCamera(ResolveGameplayViewCamera(Controller));
+		SetViewCamera(ResolveGameplayViewCamera(Controller));
+	}
 }
 
 UCameraComponent* UWorld::ResolveGameplayViewCamera(APlayerController* PreferredController) const
 {
 	if (PreferredController && IsActorInWorld(PreferredController))
 	{
-		if (UCameraComponent* Camera = PreferredController->ResolveViewCamera())
+		if (APlayerCameraManager* CameraManager = PreferredController->GetPlayerCameraManager())
 		{
-			return Camera;
+			if (UCameraComponent* Camera = CameraManager->GetOutputCameraComponent())
+			{
+				return Camera;
+			}
 		}
 	}
 
@@ -731,9 +739,12 @@ UCameraComponent* UWorld::ResolveGameplayViewCamera(APlayerController* Preferred
 		{
 			continue;
 		}
-		if (UCameraComponent* Camera = Controller->ResolveViewCamera())
+		if (APlayerCameraManager* CameraManager = Controller->GetPlayerCameraManager())
 		{
-			return Camera;
+			if (UCameraComponent* Camera = CameraManager->GetOutputCameraComponent())
+			{
+				return Camera;
+			}
 		}
 	}
 
@@ -743,6 +754,22 @@ UCameraComponent* UWorld::ResolveGameplayViewCamera(APlayerController* Preferred
 	}
 
 	return FindFirstCamera();
+}
+
+void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
+{
+	for (APlayerController* Controller : PlayerControllers)
+	{
+		if (!Controller || !IsActorInWorld(Controller))
+		{
+			continue;
+		}
+
+		if (APlayerCameraManager* CameraManager = Controller->GetPlayerCameraManager())
+		{
+			CameraManager->UpdateCamera(DeltaTime);
+		}
+	}
 }
 
 APlayerController* UWorld::GetPlayerController(int32 Index) const

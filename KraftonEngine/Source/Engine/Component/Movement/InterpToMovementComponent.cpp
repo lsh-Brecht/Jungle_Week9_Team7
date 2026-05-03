@@ -4,7 +4,7 @@
 #include "Math/Quat.h"
 #include "Serialization/Archive.h"
 
-IMPLEMENT_CLASS(UInterpToMovementComponent, UMovementComponent)
+IMPLEMENT_LUA_COMPONENT(UInterpToMovementComponent, UMovementComponent)
 
 namespace {
 	// Returns normalized direction from A to B

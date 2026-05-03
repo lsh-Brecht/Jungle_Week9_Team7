@@ -274,7 +274,7 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		{
 			Info.SavedViewportCamera.Location = VCCamera->GetWorldLocation();
 			Info.SavedViewportCamera.Rotation = VCCamera->GetRelativeRotation();
-			Info.SavedViewportCamera.CameraState = VCCamera->GetCameraState();
+			Info.SavedViewportCamera.ProjectionSettings = VCCamera->GetProjectionSettings();
 			Info.SavedViewportCamera.bValid = true;
 		}
 	}
@@ -386,7 +386,7 @@ void UEditorEngine::EndPlayMap()
 					const FPIEViewportCameraSnapshot& SavedCamera = PlayInEditorSessionInfo->SavedViewportCamera;
 					VCCamera->SetWorldLocation(SavedCamera.Location);
 					VCCamera->SetRelativeRotation(SavedCamera.Rotation);
-					VCCamera->SetCameraState(SavedCamera.CameraState);
+					VCCamera->SetProjectionSettings(SavedCamera.ProjectionSettings);
 				}
 
 				EditorWorld->SetActiveCamera(VCCamera);
@@ -605,14 +605,14 @@ void UEditorEngine::RestoreViewportCamera(const FPerspectiveCameraData& CamData)
 	{
 		Camera->SetWorldLocation(CamData.Location);
 		Camera->SetRelativeRotation(CamData.Rotation);
-		FCameraState CameraState = Camera->GetCameraState();
-		CameraState.FOV = CamData.FOV;
-		CameraState.AspectRatio = CamData.AspectRatio;
-		CameraState.NearZ = CamData.NearClip;
-		CameraState.FarZ = CamData.FarClip;
-		CameraState.OrthoWidth = CamData.OrthoWidth;
-		CameraState.bIsOrthogonal = CamData.bOrthographic;
-		Camera->SetCameraState(CameraState);
+		FCameraProjectionSettings ProjectionSettings = Camera->GetProjectionSettings();
+		ProjectionSettings.FOV = CamData.FOV;
+		ProjectionSettings.AspectRatio = CamData.AspectRatio;
+		ProjectionSettings.NearZ = CamData.NearClip;
+		ProjectionSettings.FarZ = CamData.FarClip;
+		ProjectionSettings.OrthoWidth = CamData.OrthoWidth;
+		ProjectionSettings.bIsOrthographic = CamData.bOrthographic;
+		Camera->SetProjectionSettings(ProjectionSettings);
 	}
 }
 

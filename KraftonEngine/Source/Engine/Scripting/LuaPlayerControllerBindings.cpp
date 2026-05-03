@@ -3,9 +3,9 @@
 #include "LuaHandles.h"
 #include "LuaBindingHelper.h"
 
+#include "Camera/CameraTypes.h"
 #include "Component/ControllerInputComponent.h"
-#include "Component/CameraComponent.h"
-#include "Component/ActorComponent.h"
+#include "Core/Log.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -35,171 +35,111 @@ namespace
 		return Value;
 	}
 
-	const char* MovementFrameToString(EControllerMovementFrame Frame)
+	const char* MovementBasisToString(EControllerMovementBasis Basis)
 	{
-		switch (Frame)
+		switch (Basis)
 		{
-		case EControllerMovementFrame::World:
+		case EControllerMovementBasis::World:
 			return "World";
-
-		case EControllerMovementFrame::Camera:
+		case EControllerMovementBasis::ControlRotation:
+			return "ControlRotation";
+		case EControllerMovementBasis::ViewCamera:
 		default:
-			return "Camera";
+			return "ViewCamera";
 		}
 	}
 
-	const char* LookModeToString(EControllerLookMode Mode)
-	{
-		switch (Mode)
-		{
-		case EControllerLookMode::CameraOnly:
-			return "CameraOnly";
-
-		case EControllerLookMode::PawnYawPawnPitch:
-			return "PawnYawPawnPitch";
-
-		case EControllerLookMode::Auto:
-		default:
-			return "Auto";
-		}
-	}
-
-	EControllerMovementFrame MovementFrameFromIndex(int32 Index)
-	{
-		return Index == static_cast<int32>(EControllerMovementFrame::World)
-		? EControllerMovementFrame::World
-		: EControllerMovementFrame::Camera;
-	}
-
-	EControllerLookMode LookModeFromIndex(int32 Index)
+	EControllerMovementBasis MovementBasisFromIndex(int32 Index)
 	{
 		switch (Index)
 		{
-		case static_cast<int32>(EControllerLookMode::CameraOnly):
-			return EControllerLookMode::CameraOnly;
-
-		case static_cast<int32>(EControllerLookMode::PawnYawPawnPitch):
-			return EControllerLookMode::PawnYawPawnPitch;
-
-		case static_cast<int32>(EControllerLookMode::Auto):
+		case static_cast<int32>(EControllerMovementBasis::World):
+			return EControllerMovementBasis::World;
+		case static_cast<int32>(EControllerMovementBasis::ControlRotation):
+			return EControllerMovementBasis::ControlRotation;
+		case static_cast<int32>(EControllerMovementBasis::ViewCamera):
 		default:
-			return EControllerLookMode::Auto;
+			return EControllerMovementBasis::ViewCamera;
 		}
 	}
 
-	EControllerMovementFrame MovementFrameFromName(const FString& Name)
+	EControllerMovementBasis MovementBasisFromName(const FString& Name)
 	{
 		const FString Token = NormalizeControllerToken(Name);
 
 		if (Token == "WORLD")
 		{
-			return EControllerMovementFrame::World;
+			return EControllerMovementBasis::World;
 		}
-
-		return EControllerMovementFrame::Camera;
+		if (Token == "CONTROL" || Token == "CONTROLROTATION")
+		{
+			return EControllerMovementBasis::ControlRotation;
+		}
+		return EControllerMovementBasis::ViewCamera;
 	}
 
-	EControllerLookMode LookModeFromName(const FString& Name)
+	ECameraModeId CameraModeFromIndex(int32 Index)
+	{
+		if (Index < static_cast<int32>(ECameraModeId::FirstPerson) ||
+			Index > static_cast<int32>(ECameraModeId::Cutscene))
+		{
+			return ECameraModeId::ThirdPerson;
+		}
+		return static_cast<ECameraModeId>(Index);
+	}
+
+	ECameraModeId CameraModeFromName(const FString& Name)
 	{
 		const FString Token = NormalizeControllerToken(Name);
 
-		if (Token == "CAMERA" || Token == "CAMERAONLY")
+		if (Token == "FIRSTPERSON" || Token == "FPS")
 		{
-			return EControllerLookMode::CameraOnly;
+			return ECameraModeId::FirstPerson;
 		}
-
-		if (Token == "PAWN" || Token == "PAWNYAWPAWNPITCH" || Token == "PAWNYAWPITCH")
+		if (Token == "ORTHOGRAPHIC" || Token == "ORTHOGRAPHICFOLLOW" || Token == "ORTHO")
 		{
-			return EControllerLookMode::PawnYawPawnPitch;
+			return ECameraModeId::OrthographicFollow;
 		}
-
-		return EControllerLookMode::Auto;
+		if (Token == "PERSPECTIVEFOLLOW")
+		{
+			return ECameraModeId::PerspectiveFollow;
+		}
+		if (Token == "EXTERNAL" || Token == "EXTERNALCAMERA")
+		{
+			return ECameraModeId::ExternalCamera;
+		}
+		if (Token == "CUTSCENE")
+		{
+			return ECameraModeId::Cutscene;
+		}
+		return ECameraModeId::ThirdPerson;
 	}
 
-	FLuaControllerInputComponentHandle MakeControllerInputHandle(UControllerInputComponent* Component)
+	FCameraBlendParams MakeBlendParams(float BlendTime)
 	{
-		FLuaControllerInputComponentHandle Handle;
-
-		if (Component)
-		{
-			Handle.UUID = Component->GetUUID();
-		}
-
-		return Handle;
+		FCameraBlendParams Params;
+		Params.BlendTime = BlendTime < 0.0f ? 0.0f : BlendTime;
+		return Params;
 	}
 
 	FLuaGameObjectHandle MakeGameObjectHandle(AActor* Actor)
 	{
 		FLuaGameObjectHandle Handle;
-
 		if (Actor)
 		{
 			Handle.UUID = Actor->GetUUID();
 		}
-
 		return Handle;
 	}
 
 	FLuaPawnHandle MakePawnHandle(APawn* Pawn)
 	{
 		FLuaPawnHandle Handle;
-
 		if (Pawn)
 		{
 			Handle.UUID = Pawn->GetUUID();
 		}
-
 		return Handle;
-	}
-
-	UCameraComponent* FindCameraOnActor(AActor* Actor)
-	{
-		if (!Actor)
-		{
-			return nullptr;
-		}
-
-		for (UActorComponent* Component : Actor->GetComponents())
-		{
-			if (UCameraComponent* Camera = Cast<UCameraComponent>(Component))
-			{
-				return Camera;
-			}
-		}
-
-		return nullptr;
-	}
-
-	bool ShouldApplyPawnLookRotation(APlayerController* Controller)
-	{
-		if (!Controller)
-		{
-			return false;
-		}
-
-		AActor* PossessedActor = Controller->GetPossessedActor();
-		if (!PossessedActor)
-		{
-			return false;
-		}
-
-		UControllerInputComponent* Input = Controller->FindControllerInputComponent();
-		const EControllerLookMode Mode = Input ? Input->GetLookMode() : EControllerLookMode::Auto;
-
-		if (Mode == EControllerLookMode::PawnYawPawnPitch)
-		{
-			return true;
-		}
-
-		if (Mode == EControllerLookMode::CameraOnly)
-		{
-			return false;
-		}
-
-		UCameraComponent* PawnCamera = FindCameraOnActor(PossessedActor);
-		UCameraComponent* ViewCamera = Controller->ResolveViewCamera();
-
-		return PawnCamera && PawnCamera == ViewCamera;
 	}
 
 	void ApplyControllerLookRotation(APlayerController* Controller, FRotator Rotation)
@@ -211,54 +151,6 @@ namespace
 
 		Rotation.Roll = 0.0f;
 		Controller->SetControlRotation(Rotation);
-
-		AActor* PossessedActor = Controller->GetPossessedActor();
-
-		if (PossessedActor && ShouldApplyPawnLookRotation(Controller))
-		{
-			PossessedActor->SetActorRotation(FRotator(Rotation.Pitch, Rotation.Yaw, 0.0f));
-			return;
-		}
-
-		if (UCameraComponent* Camera = Controller->ResolveViewCamera())
-		{
-			Camera->SetRelativeRotation(Rotation);
-		}
-	}
-
-	void AddControllerYawInput(APlayerController* Controller, float Value)
-	{
-		if (!Controller)
-		{
-			return;
-		}
-
-		FRotator Rotation = Controller->GetControlRotation();
-		Rotation.Yaw += Value;
-
-		ApplyControllerLookRotation(Controller, Rotation);
-	}
-
-	void AddControllerPitchInput(APlayerController* Controller, float Value)
-	{
-		if (!Controller)
-		{
-			return;
-		}
-
-		float MinPitch = -89.0f;
-		float MaxPitch = 89.0f;
-
-		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
-		{
-			MinPitch = Input->GetMinPitch();
-			MaxPitch = Input->GetMaxPitch();
-		}
-
-		FRotator Rotation = Controller->GetControlRotation();
-		Rotation.Pitch = Clamp(Rotation.Pitch + Value, MinPitch, MaxPitch);
-
-		ApplyControllerLookRotation(Controller, Rotation);
 	}
 }
 
@@ -271,66 +163,34 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 
 		LUA_HANDLE_COMMON(FLuaControllerInputComponentHandle),
 
-		"MovementFrame",
+		"MovementBasis",
 		sol::property(
 			[](const FLuaControllerInputComponentHandle& Self) -> FString
 			{
 				UControllerInputComponent* Input = Self.Resolve();
-				return Input ? MovementFrameToString(Input->GetMovementFrame()) : FString();
+				return Input ? MovementBasisToString(Input->GetMovementBasis()) : FString();
 			},
 			[](const FLuaControllerInputComponentHandle& Self, const FString& Value)
 			{
 				if (UControllerInputComponent* Input = Self.Resolve())
 				{
-					Input->SetMovementFrame(MovementFrameFromName(Value));
+					Input->SetMovementBasis(MovementBasisFromName(Value));
 				}
 			}
 		),
 
-		"MovementFrameIndex",
+		"MovementBasisIndex",
 		sol::property(
 			[](const FLuaControllerInputComponentHandle& Self) -> int32
 			{
 				UControllerInputComponent* Input = Self.Resolve();
-				return Input ? static_cast<int32>(Input->GetMovementFrame()) : 0;
+				return Input ? static_cast<int32>(Input->GetMovementBasis()) : 0;
 			},
 			[](const FLuaControllerInputComponentHandle& Self, int32 Value)
 			{
 				if (UControllerInputComponent* Input = Self.Resolve())
 				{
-					Input->SetMovementFrame(MovementFrameFromIndex(Value));
-				}
-			}
-		),
-
-		"LookMode",
-		sol::property(
-			[](const FLuaControllerInputComponentHandle& Self) -> FString
-			{
-				UControllerInputComponent* Input = Self.Resolve();
-				return Input ? LookModeToString(Input->GetLookMode()) : FString();
-			},
-			[](const FLuaControllerInputComponentHandle& Self, const FString& Value)
-			{
-				if (UControllerInputComponent* Input = Self.Resolve())
-				{
-					Input->SetLookMode(LookModeFromName(Value));
-				}
-			}
-		),
-
-		"LookModeIndex",
-		sol::property(
-			[](const FLuaControllerInputComponentHandle& Self) -> int32
-			{
-				UControllerInputComponent* Input = Self.Resolve();
-				return Input ? static_cast<int32>(Input->GetLookMode()) : 0;
-			},
-			[](const FLuaControllerInputComponentHandle& Self, int32 Value)
-			{
-				if (UControllerInputComponent* Input = Self.Resolve())
-				{
-					Input->SetLookMode(LookModeFromIndex(Value));
+					Input->SetMovementBasis(MovementBasisFromIndex(Value));
 				}
 			}
 		),
@@ -367,12 +227,44 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			}
 		),
 
+		"LookSensitivityX",
+		sol::property(
+			[](const FLuaControllerInputComponentHandle& Self) -> float
+			{
+				UControllerInputComponent* Input = Self.Resolve();
+				return Input ? Input->GetLookSensitivityX() : 0.0f;
+			},
+			[](const FLuaControllerInputComponentHandle& Self, float Value)
+			{
+				if (UControllerInputComponent* Input = Self.Resolve())
+				{
+					Input->SetLookSensitivityX(Value);
+				}
+			}
+		),
+
+		"LookSensitivityY",
+		sol::property(
+			[](const FLuaControllerInputComponentHandle& Self) -> float
+			{
+				UControllerInputComponent* Input = Self.Resolve();
+				return Input ? Input->GetLookSensitivityY() : 0.0f;
+			},
+			[](const FLuaControllerInputComponentHandle& Self, float Value)
+			{
+				if (UControllerInputComponent* Input = Self.Resolve())
+				{
+					Input->SetLookSensitivityY(Value);
+				}
+			}
+		),
+
 		"LookSensitivity",
 		sol::property(
 			[](const FLuaControllerInputComponentHandle& Self) -> float
 			{
 				UControllerInputComponent* Input = Self.Resolve();
-				return Input ? Input->GetLookSensitivity() : 0.0f;
+				return Input ? Input->GetLookSensitivityX() : 0.0f;
 			},
 			[](const FLuaControllerInputComponentHandle& Self, float Value)
 			{
@@ -415,38 +307,20 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			}
 		),
 
-		"SetMovementFrame",
+		"SetMovementBasis",
 		sol::overload(
 			[](const FLuaControllerInputComponentHandle& Self, const FString& Value)
 			{
 				if (UControllerInputComponent* Input = Self.Resolve())
 				{
-					Input->SetMovementFrame(MovementFrameFromName(Value));
+					Input->SetMovementBasis(MovementBasisFromName(Value));
 				}
 			},
 			[](const FLuaControllerInputComponentHandle& Self, int32 Value)
 			{
 				if (UControllerInputComponent* Input = Self.Resolve())
 				{
-					Input->SetMovementFrame(MovementFrameFromIndex(Value));
-				}
-			}
-		),
-
-		"SetLookMode",
-		sol::overload(
-			[](const FLuaControllerInputComponentHandle& Self, const FString& Value)
-			{
-				if (UControllerInputComponent* Input = Self.Resolve())
-				{
-					Input->SetLookMode(LookModeFromName(Value));
-				}
-			},
-			[](const FLuaControllerInputComponentHandle& Self, int32 Value)
-			{
-				if (UControllerInputComponent* Input = Self.Resolve())
-				{
-					Input->SetLookMode(LookModeFromIndex(Value));
+					Input->SetMovementBasis(MovementBasisFromIndex(Value));
 				}
 			}
 		)
@@ -464,25 +338,21 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			[](const FLuaPlayerControllerHandle& Self, const FLuaGameObjectHandle& ActorHandle)
 			{
 				APlayerController* Controller = Self.Resolve();
-
 				if (!Controller)
 				{
 					UE_LOG("[Lua] Invalid PlayerController.Possess(GameObject) Call.");
 					return;
 				}
-
 				Controller->Possess(ActorHandle.Resolve());
 			},
 			[](const FLuaPlayerControllerHandle& Self, const FLuaPawnHandle& PawnHandle)
 			{
 				APlayerController* Controller = Self.Resolve();
-
 				if (!Controller)
 				{
 					UE_LOG("[Lua] Invalid PlayerController.Possess(Pawn) Call.");
 					return;
 				}
-
 				Controller->Possess(PawnHandle.Resolve());
 			}
 		),
@@ -490,80 +360,45 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 		"UnPossess",
 		[](const FLuaPlayerControllerHandle& Self)
 		{
-			APlayerController* Controller = Self.Resolve();
-
-			if (!Controller)
+			if (APlayerController* Controller = Self.Resolve())
 			{
-				UE_LOG("[Lua] Invalid PlayerController.UnPossess Call.");
-				return;
+				Controller->UnPossess();
 			}
-
-			Controller->UnPossess();
 		},
 
 		"GetPossessedActor",
 		[](const FLuaPlayerControllerHandle& Self, sol::this_state State) -> sol::object
 		{
 			sol::state_view LuaView(State);
-
 			APlayerController* Controller = Self.Resolve();
 			AActor* Actor = Controller ? Controller->GetPossessedActor() : nullptr;
-
-			if (!Actor)
-			{
-				return sol::nil;
-			}
-
-			FLuaGameObjectHandle Handle;
-			Handle.UUID = Actor->GetUUID();
-			return sol::make_object(LuaView, Handle);
+			return Actor ? sol::make_object(LuaView, MakeGameObjectHandle(Actor)) : sol::nil;
 		},
 
 		"GetPossessedPawn",
 		[](const FLuaPlayerControllerHandle& Self, sol::this_state State) -> sol::object
 		{
 			sol::state_view LuaView(State);
-
 			APlayerController* Controller = Self.Resolve();
-			AActor* Actor = Controller ? Controller->GetPossessedActor() : nullptr;
-			APawn* Pawn = Cast<APawn>(Actor);
-
-			if (!Pawn)
-			{
-				return sol::nil;
-			}
-
-			FLuaPawnHandle Handle;
-			Handle.UUID = Pawn->GetUUID();
-			return sol::make_object(LuaView, Handle);
+			APawn* Pawn = Cast<APawn>(Controller ? Controller->GetPossessedActor() : nullptr);
+			return Pawn ? sol::make_object(LuaView, MakePawnHandle(Pawn)) : sol::nil;
 		},
 
 		"GetViewTarget",
 		[](const FLuaPlayerControllerHandle& Self, sol::this_state State) -> sol::object
 		{
 			sol::state_view LuaView(State);
-
 			APlayerController* Controller = Self.Resolve();
 			AActor* Actor = Controller ? Controller->GetViewTarget() : nullptr;
-
-			if (!Actor)
-			{
-				return sol::nil;
-			}
-
-			FLuaGameObjectHandle Handle;
-			Handle.UUID = Actor->GetUUID();
-			return sol::make_object(LuaView, Handle);
+			return Actor ? sol::make_object(LuaView, MakeGameObjectHandle(Actor)) : sol::nil;
 		},
 
 		"GetControllerInput",
 		[](const FLuaPlayerControllerHandle& Self, sol::this_state State) -> sol::object
 		{
 			sol::state_view LuaView(State);
-
 			APlayerController* Controller = Self.Resolve();
 			UControllerInputComponent* Input = Controller ? Controller->FindControllerInputComponent() : nullptr;
-
 			if (!Input)
 			{
 				return sol::nil;
@@ -579,10 +414,8 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			[](const FLuaPlayerControllerHandle& Self, sol::this_state State) -> sol::object
 			{
 				sol::state_view LuaView(State);
-
 				APlayerController* Controller = Self.Resolve();
 				UControllerInputComponent* Input = Controller ? Controller->FindControllerInputComponent() : nullptr;
-
 				if (!Input)
 				{
 					return sol::nil;
@@ -598,27 +431,67 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 		sol::overload(
 			[](const FLuaPlayerControllerHandle& Self, const FLuaPawnHandle& PawnHandle)
 			{
-				APlayerController* Controller = Self.Resolve();
-
-				if (!Controller)
+				if (APlayerController* Controller = Self.Resolve())
 				{
-					UE_LOG("[Lua] Invalid PlayerController.SetViewTarget(Pawn) Call.");
-					return;
+					Controller->SetViewTarget(PawnHandle.Resolve());
 				}
-
-				Controller->SetViewTarget(PawnHandle.Resolve());
 			},
 			[](const FLuaPlayerControllerHandle& Self, const FLuaGameObjectHandle& ActorHandle)
 			{
-				APlayerController* Controller = Self.Resolve();
-
-				if (!Controller)
+				if (APlayerController* Controller = Self.Resolve())
 				{
-					UE_LOG("[Lua] Invalid PlayerController.SetViewTarget(Actor) Call.");
-					return;
+					Controller->SetViewTarget(ActorHandle.Resolve());
 				}
+			}
+		),
 
-				Controller->SetViewTarget(ActorHandle.Resolve());
+		"SetViewTargetWithBlend",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, const FLuaPawnHandle& PawnHandle, float BlendTime)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetViewTargetWithBlend(PawnHandle.Resolve(), MakeBlendParams(BlendTime));
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, const FLuaGameObjectHandle& ActorHandle, float BlendTime)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetViewTargetWithBlend(ActorHandle.Resolve(), MakeBlendParams(BlendTime));
+				}
+			}
+		),
+
+		"SetCameraMode",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, const FString& ModeName)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetCameraMode(CameraModeFromName(ModeName), MakeBlendParams(0.0f));
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, const FString& ModeName, float BlendTime)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetCameraMode(CameraModeFromName(ModeName), MakeBlendParams(BlendTime));
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, int32 ModeIndex)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetCameraMode(CameraModeFromIndex(ModeIndex), MakeBlendParams(0.0f));
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, int32 ModeIndex, float BlendTime)
+			{
+				if (APlayerController* Controller = Self.Resolve())
+				{
+					Controller->SetCameraMode(CameraModeFromIndex(ModeIndex), MakeBlendParams(BlendTime));
+				}
 			}
 		),
 
@@ -632,43 +505,35 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 		"SetControlRotation",
 		[](const FLuaPlayerControllerHandle& Self, const FRotator& Rotation)
 		{
-			APlayerController* Controller = Self.Resolve();
-
-			if (!Controller)
-			{
-				UE_LOG("[Lua] Invalid PlayerController.SetControlRotation Call.");
-				return;
-			}
-
-			ApplyControllerLookRotation(Controller, Rotation);
+			ApplyControllerLookRotation(Self.Resolve(), Rotation);
 		},
 
 		"AddYawInput",
 		[](const FLuaPlayerControllerHandle& Self, float Value)
 		{
-			APlayerController* Controller = Self.Resolve();
-
-			if (!Controller)
+			if (APlayerController* Controller = Self.Resolve())
 			{
-				UE_LOG("[Lua] Invalid PlayerController.AddYawInput Call.");
-				return;
+				Controller->AddYawInput(Value);
 			}
-
-			AddControllerYawInput(Controller, Value);
 		},
 
 		"AddPitchInput",
 		[](const FLuaPlayerControllerHandle& Self, float Value)
 		{
 			APlayerController* Controller = Self.Resolve();
-
 			if (!Controller)
 			{
-				UE_LOG("[Lua] Invalid PlayerController.AddPitchInput Call.");
 				return;
 			}
 
-			AddControllerPitchInput(Controller, Value);
+			float MinPitch = -89.0f;
+			float MaxPitch = 89.0f;
+			if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
+			{
+				MinPitch = Input->GetMinPitch();
+				MaxPitch = Input->GetMaxPitch();
+			}
+			Controller->AddPitchInput(Value, MinPitch, MaxPitch);
 		},
 
 		"ForwardVector",
@@ -702,15 +567,7 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 		[](const FLuaPlayerControllerHandle& Self, const FVector& Direction, float Scale)
 		{
 			APlayerController* Controller = Self.Resolve();
-
-			if (!Controller)
-			{
-				UE_LOG("[Lua] Invalid PlayerController.AddMovementInput Call.");
-				return;
-			}
-
-			APawn* Pawn = Cast<APawn>(Controller->GetPossessedActor());
-
+			APawn* Pawn = Cast<APawn>(Controller ? Controller->GetPossessedActor() : nullptr);
 			if (!Pawn)
 			{
 				UE_LOG("[Lua] PlayerController.AddMovementInput ignored: possessed actor is not Pawn.");

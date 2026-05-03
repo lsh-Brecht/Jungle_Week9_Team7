@@ -20,6 +20,7 @@ class UPrimitiveComponent;
 class UActorComponent;
 class APawn;
 class APlayerController;
+class APlayerCameraManager;
 
 class UWorld : public UObject {
 public:
@@ -102,6 +103,7 @@ public:
 	APlayerController* FindOrCreatePlayerController();
 	void AutoWirePlayerController(APlayerController* PreferredController = nullptr);
 	UCameraComponent* ResolveGameplayViewCamera(APlayerController* PreferredController = nullptr) const;
+	void UpdatePlayerCameraManagers(float DeltaTime);
 
 	// PlayerController 관리
 	APlayerController* CreatePlayerController();

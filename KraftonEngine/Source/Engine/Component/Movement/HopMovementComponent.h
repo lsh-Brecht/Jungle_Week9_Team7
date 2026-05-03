@@ -35,20 +35,17 @@ public:
 	void ClearMovementInput();
 
 	// 누적형 입력. 여러 입력 소스(WASD, 패드, AI, 스크립트)가 한 프레임에 더할 수 있으며 Tick 후 자동으로 비워진다.
-	void AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f);
+	void AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f) override;
 
 	// 로컬 입력. X는 Forward, Y는 Right 기준으로 월드 입력으로 변환된다.
 	void SetLocalMovementInput(const FVector& InLocalInput);
 	void AddLocalMovementInput(const FVector& InLocalDirection, float Scale = 1.0f);
 	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
-	const FVector& GetLastMovementInput() const { return LastMovementInput; }
-
 	// ---------------------------------------------------------------------
 	// Movement settings / state
 	// ---------------------------------------------------------------------
 	void SetVelocity(const FVector& InVelocity) { Velocity = InVelocity; }
-	const FVector& GetVelocity() const { return Velocity; }
 
 	// 기존 Lua/에디터 호환용 이름. 플레이어 이동에서는 기본 이동 속도처럼 사용한다.
 	void SetInitialSpeed(float InInitialSpeed) { InitialSpeed = InInitialSpeed; }
@@ -98,10 +95,6 @@ protected:
 
 	// One-frame accumulated input. Cleared after Tick.
 	FVector PendingMovementInput = FVector(0.0f, 0.0f, 0.0f);
-	FVector LastMovementInput = FVector(0.0f, 0.0f, 0.0f);
-
-	// Runtime horizontal velocity in world space.
-	FVector Velocity = FVector(0.0f, 0.0f, 0.0f);
 
 	// Legacy-compatible movement settings.
 	float InitialSpeed = 10.0f;

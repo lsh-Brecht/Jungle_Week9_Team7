@@ -1,10 +1,11 @@
-﻿#pragma once
+#pragma once
 
-#include "Component/ActorComponent.h"
+#include "Camera/CameraTypes.h"
+#include "Component/CameraModeComponent.h"
 #include "Math/Vector.h"
 
 class AActor;
-class UCameraComponent;
+class APlayerController;
 
 enum class ECameraRigProjectionMode : uint8
 {
@@ -12,45 +13,47 @@ enum class ECameraRigProjectionMode : uint8
 	Perspective
 };
 
-class UCameraRigComponent : public UActorComponent
+class UCameraRigComponent : public UCameraModeComponent
 {
 public:
-	DECLARE_CLASS(UCameraRigComponent, UActorComponent)
+	DECLARE_CLASS(UCameraRigComponent, UCameraModeComponent)
 
 	UCameraRigComponent() = default;
 	~UCameraRigComponent() override = default;
 
 	void BeginPlay() override;
-	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void Serialize(FArchive& Ar) override;
+	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
 
-	void SetTargetActor(AActor* InTargetActor) { TargetActor = InTargetActor; }
-	AActor* GetTargetActor() const { return TargetActor; }
-	void SetCameraComponent(UCameraComponent* InCameraComponent) { CameraComponent = InCameraComponent; }
-	UCameraComponent* GetCameraComponent() const { return CameraComponent; }
+	ECameraModeId GetCameraModeId() const override;
+
+	bool CalcCameraView(
+		APlayerController* Controller,
+		AActor* ViewTarget,
+		float DeltaTime,
+		FCameraView& OutView) override;
+
 	void SetLookAheadInput(const FVector2& InInput);
 	void SetProjectionMode(ECameraRigProjectionMode InMode);
-	ECameraRigProjectionMode GetProjectionMode() const { return ProjectionMode; }
-	bool IsOrthographic() const { return ProjectionMode == ECameraRigProjectionMode::Orthographic; }
-	bool IsPerspective() const { return ProjectionMode == ECameraRigProjectionMode::Perspective; }
+	ECameraRigProjectionMode GetProjectionMode() const { return static_cast<ECameraRigProjectionMode>(ProjectionMode); }
+	bool IsOrthographic() const { return GetProjectionMode() == ECameraRigProjectionMode::Orthographic; }
+	bool IsPerspective() const { return GetProjectionMode() == ECameraRigProjectionMode::Perspective; }
 	void ToggleProjectionMode();
-	void ApplyProjectionMode();
-	void SnapToTarget();
+	void SnapInternalState(AActor* ViewTarget);
 
-protected:
-	UCameraComponent* ResolveCameraComponent();
-	AActor* ResolveTargetActor() const;
-	FVector ComputeFocusPoint(float DeltaTime);
-	FVector ComputeDesiredCameraLocation(const FVector& FocusPoint) const;
+private:
+	AActor* ResolveTargetActor(APlayerController* Controller, AActor* ViewTarget) const;
+	FVector ComputeFocusPoint(APlayerController* Controller, AActor* ViewTarget, float DeltaTime);
+	FVector ComputeDesiredCameraLocation(APlayerController* Controller, AActor* ViewTarget, const FVector& FocusPoint) const;
 	FVector ComputeOrthographicOffset() const;
-	FVector ComputePerspectiveOffset() const;
-	FVector ComputeMouseLookAheadWorld() const;
-	void UpdateCamera(float DeltaTime);
+	FVector ComputePerspectiveOffset(AActor* Target) const;
+	FVector ComputeMouseLookAheadWorld(APlayerController* Controller) const;
+	FQuat MakeLookAtRotationQuat(const FVector& Location, const FVector& Target) const;
 
-	ECameraRigProjectionMode ProjectionMode = ECameraRigProjectionMode::Orthographic;
-	AActor* TargetActor = nullptr;
-	UCameraComponent* CameraComponent = nullptr;
+private:
+	int32 ProjectionMode = static_cast<int32>(ECameraRigProjectionMode::Perspective);
+	uint32 TargetActorUUID = 0;
 
 	FVector TargetOffset = FVector(0.0f, 0.0f, 0.8f);
 
@@ -65,9 +68,7 @@ protected:
 	float NearZ = 0.01f;
 	float FarZ = 200.0f;
 
-	float PositionLagSpeed = 6.0f;
 	float LookAheadLagSpeed = 8.0f;
-
 	bool bEnableMouseLookAhead = true;
 	float MouseLookAheadDistance = 1.0f;
 	FVector2 LookAheadInput = FVector2(0.0f, 0.0f);
@@ -80,6 +81,4 @@ protected:
 	float VerticalDeadZone = 0.4f;
 	float VerticalFollowStrength = 0.15f;
 	float VerticalLagSpeed = 2.0f;
-
-	bool bSnapOnProjectionModeChange = false;
 };

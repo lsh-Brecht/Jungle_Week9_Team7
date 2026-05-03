@@ -471,12 +471,12 @@ json::JSON FSceneSaveManager::SerializeCamera(UCameraComponent* Cam)
 	WriteVec3(cam, "Location", M.GetLocation());
 	WriteVec3(cam, "Rotation", M.GetEuler());
 
-	const FCameraState& S = Cam->GetCameraState();
+	const FCameraProjectionSettings& S = Cam->GetProjectionSettings();
 	cam["FOV"] = static_cast<double>(S.FOV);
 	cam["AspectRatio"] = static_cast<double>(S.AspectRatio);
 	cam["NearClip"] = static_cast<double>(S.NearZ);
 	cam["FarClip"] = static_cast<double>(S.FarZ);
-	cam["Orthographic"] = S.bIsOrthogonal;
+	cam["Orthographic"] = S.bIsOrthographic;
 	cam["OrthoWidth"] = static_cast<double>(S.OrthoWidth);
 
 	return cam;

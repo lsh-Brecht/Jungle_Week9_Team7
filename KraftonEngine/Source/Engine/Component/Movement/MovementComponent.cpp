@@ -10,7 +10,7 @@
 #include <sstream>
 
 // Base movement logic only; concrete movement types should be added instead.
-IMPLEMENT_CLASS(UMovementComponent, UActorComponent)
+IMPLEMENT_LUA_QUERY_COMPONENT(UMovementComponent, UActorComponent)
 HIDE_FROM_COMPONENT_LIST(UMovementComponent)
 
 namespace
@@ -49,6 +49,10 @@ void UMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutP
 	UActorComponent::GetEditableProperties(OutProps);
 	OutProps.push_back({ "Auto Register Updated", EPropertyType::Bool, &bAutoRegisterUpdatedComponent });
 	OutProps.push_back({ "Updated Component", EPropertyType::SceneComponentRef, &UpdatedComponentPath });
+	OutProps.push_back({ "Receive Controller Input", EPropertyType::Bool, &bReceiveControllerInput });
+	OutProps.push_back({ "Controller Input Priority", EPropertyType::Int, &ControllerInputPriority, -100.0f, 100.0f, 1.0f });
+	OutProps.push_back({ "Last Movement Input", EPropertyType::Vec3, &LastMovementInput, 0.0f, 0.0f, 1.0f });
+	OutProps.push_back({ "Velocity", EPropertyType::Vec3, &Velocity, 0.0f, 0.0f, 1.0f });
 }
 
 void UMovementComponent::Serialize(FArchive& Ar)
@@ -56,6 +60,8 @@ void UMovementComponent::Serialize(FArchive& Ar)
 	UActorComponent::Serialize(Ar);
 	Ar << bAutoRegisterUpdatedComponent;
 	Ar << UpdatedComponentPath;
+	Ar << bReceiveControllerInput;
+	Ar << ControllerInputPriority;
 	// UpdatedComponent 포인터는 BeginPlay에서 재해결되므로 직렬화 제외.
 }
 
@@ -110,6 +116,18 @@ bool UMovementComponent::ApplyControllerMovementInput(const FControllerMovementI
 {
 	(void)Input;
 	return false;
+}
+
+void UMovementComponent::AddMovementInput(const FVector& WorldDirection, float Scale)
+{
+	(void)WorldDirection;
+	(void)Scale;
+}
+
+void UMovementComponent::ClearMovementInputState()
+{
+	LastMovementInput = FVector::ZeroVector;
+	Velocity = FVector::ZeroVector;
 }
 
 void UMovementComponent::TryAutoRegisterUpdatedComponent()

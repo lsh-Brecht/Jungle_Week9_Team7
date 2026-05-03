@@ -53,6 +53,10 @@ public:
 	const FMatrix& GetWorldInverseMatrix() const;
 	void SetWorldLocation(FVector NewWorldLocation);
 	FVector GetWorldLocation() const;
+	FQuat GetWorldRotationQuat() const;
+	FRotator GetWorldRotation() const;
+	void SetWorldRotation(const FQuat& NewWorldRotation);
+	void SetWorldRotation(const FRotator& NewWorldRotation);
 	FVector GetWorldScale() const;
 	const FTransform& GetRelativeTransform() const { return RelativeTransform; }
 	FVector GetRelativeLocation() const { return RelativeTransform.Location; }

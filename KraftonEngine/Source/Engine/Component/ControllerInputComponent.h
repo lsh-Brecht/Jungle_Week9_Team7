@@ -8,18 +8,11 @@ class UCameraComponent;
 struct FInputSystemSnapshot;
 class FArchive;
 
-enum class EControllerMovementFrame : int32
+enum class EControllerMovementBasis : int32
 {
 	World = 0,
-	Camera = 1,
-};
-
-enum class EControllerLookMode : int32
-{
-	Auto               = 0,
-	CameraOnly         = 1,
-	PawnYawPawnPitch   = 2,
-	PawnYawCameraPitch = 3,
+	ControlRotation = 1,
+	ViewCamera = 2,
 };
 
 class UControllerInputComponent : public UActorComponent
@@ -36,13 +29,10 @@ public:
 
 	bool ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	bool ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
-	bool ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, const FInputSystemSnapshot& Snapshot);
+	bool ApplyLookInput(APlayerController* Controller, const FInputSystemSnapshot& Snapshot);
 
-	EControllerMovementFrame GetMovementFrame() const { return static_cast<EControllerMovementFrame>(MovementFrame); }
-	void SetMovementFrame(EControllerMovementFrame InFrame);
-
-	EControllerLookMode GetLookMode() const { return static_cast<EControllerLookMode>(LookMode); }
-	void SetLookMode(EControllerLookMode InMode);
+	EControllerMovementBasis GetMovementBasis() const { return static_cast<EControllerMovementBasis>(MovementBasis); }
+	void SetMovementBasis(EControllerMovementBasis InBasis);
 
 	float GetMoveSpeed() const { return MoveSpeed; }
 	void SetMoveSpeed(float InSpeed);
@@ -50,7 +40,10 @@ public:
 	float GetSprintMultiplier() const { return SprintMultiplier; }
 	void SetSprintMultiplier(float InMultiplier);
 
-	float GetLookSensitivity() const { return LookSensitivity; }
+	float GetLookSensitivityX() const { return LookSensitivityX; }
+	float GetLookSensitivityY() const { return LookSensitivityY; }
+	void SetLookSensitivityX(float InSensitivity);
+	void SetLookSensitivityY(float InSensitivity);
 	void SetLookSensitivity(float InSensitivity);
 
 	float GetMinPitch() const { return MinPitch; }
@@ -59,20 +52,18 @@ public:
 	float GetMaxPitch() const { return MaxPitch; }
 	void SetMaxPitch(float InMaxPitch);
 
-	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
-
-	uint32 PossessedActorUUID = 0;
-	
 private:
-	UCameraComponent* ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const;
+	UCameraComponent* ResolveViewCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const;
+	void BuildMovementBasis(APlayerController* Controller, UCameraComponent* FallbackCamera, FVector& OutForward, FVector& OutRight) const;
 	void NormalizeOptions();
 
 private:
-	int32 MovementFrame = static_cast<int32>(EControllerMovementFrame::Camera);
-	int32 LookMode = static_cast<int32>(EControllerLookMode::Auto);
+	int32 MovementBasis = static_cast<int32>(EControllerMovementBasis::ViewCamera);
 	float MoveSpeed = 10.0f;
 	float SprintMultiplier = 2.5f;
-	float LookSensitivity = 0.08f;
+	float LookSensitivityX = 0.08f;
+	float LookSensitivityY = 0.08f;
+	bool bInvertY = false;
 	float MinPitch = -89.0f;
 	float MaxPitch = 89.0f;
 };

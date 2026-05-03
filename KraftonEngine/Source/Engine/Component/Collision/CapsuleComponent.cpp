@@ -3,7 +3,7 @@
 #include "Render/Scene/FScene.h"
 #include "Serialization/Archive.h"
 
-IMPLEMENT_CLASS(UCapsuleComponent, UShapeComponent)
+IMPLEMENT_LUA_COMPONENT(UCapsuleComponent, UShapeComponent)
 
 namespace
 {

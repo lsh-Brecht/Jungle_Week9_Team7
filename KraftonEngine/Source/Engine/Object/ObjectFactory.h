@@ -22,6 +22,24 @@ TypeName##_RegisterFactory G##TypeName##_RegisterFactory;}
     DEFINE_CLASS(ClassName, ParentClass)                               \
     REGISTER_FACTORY(ClassName)
 
+#define IMPLEMENT_CLASS_WITH_FLAGS(ClassName, ParentClass, FlagsValue) \
+	DEFINE_CLASS_WITH_FLAGS(ClassName, ParentClass, FlagsValue)        \
+	REGISTER_FACTORY(ClassName)
+
+#define IMPLEMENT_LUA_QUERY_COMPONENT(ClassName, ParentClass)          \
+	DEFINE_CLASS_WITH_FLAGS(                                           \
+		ClassName,                                                     \
+		ParentClass,                                                   \
+		CF_LuaExposed                                                  \
+	)
+
+#define IMPLEMENT_LUA_COMPONENT(ClassName, ParentClass)                \
+	IMPLEMENT_CLASS_WITH_FLAGS(                                        \
+		ClassName,                                                     \
+		ParentClass,                                                   \
+		CF_LuaExposed | CF_LuaCreatable | CF_LuaRemovable              \
+	)
+
 // Add Component 목록에서만 숨길 때 사용한다. 클래스 RTTI/팩토리 등록은 IMPLEMENT_CLASS가 담당한다.
 #define HIDE_FROM_COMPONENT_LIST(ClassName)                            \
 namespace {                                                            \
@@ -46,6 +64,11 @@ public:
 	UObject* Create(const std::string& TypeName, UObject* InOuter = nullptr) {
 		auto Spawner = Registry.find(TypeName);	// Do NOT use array accessor [] here. it will insert a new key if not found.
 		return (Spawner != Registry.end()) ? Spawner->second(InOuter) : nullptr;
+	}
+	
+	bool CanCreate(const std::string& TypeName)
+	{
+		return Registry.find(TypeName) != Registry.end();
 	}
 
 private:

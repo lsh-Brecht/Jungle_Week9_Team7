@@ -25,6 +25,8 @@
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Component/ControllerInputComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/PawnOrientationComponent.h"
+#include "Component/CameraRigComponent.h"
 
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
@@ -651,6 +653,8 @@ namespace
 			{ "movement", UMovementComponent::StaticClass(), false },
 			{ "pawnmovement", UPawnMovementComponent::StaticClass(), true },
 			{ "controllerinput", UControllerInputComponent::StaticClass(), true },
+			{ "pawnorientation", UPawnOrientationComponent::StaticClass(), true },
+			{ "camerarig", UCameraRigComponent::StaticClass(), true },
 			{ "projectilemovement", UProjectileMovementComponent::StaticClass(), true },
 			{ "interptomovement", UInterpToMovementComponent::StaticClass(), true },
 			{ "pendulummovement", UPendulumMovementComponent::StaticClass(), true },

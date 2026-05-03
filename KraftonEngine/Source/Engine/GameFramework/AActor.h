@@ -32,6 +32,8 @@ public:
 
 	void Serialize(FArchive& Ar) override;
 	UObject* Duplicate(UObject* NewOuter = nullptr) const override;
+	virtual void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) { (void)OutProps; }
+	virtual void PostEditProperty(const char* PropertyName) { (void)PropertyName; }
 
 	// 컴포넌트 생성 + Owner 설정 + 등록 + 렌더 상태 생성
 	template<typename T>

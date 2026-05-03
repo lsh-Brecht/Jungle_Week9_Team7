@@ -63,7 +63,7 @@ namespace
 	}
 }
 
-IMPLEMENT_CLASS(UHopMovementComponent, UMovementComponent)
+IMPLEMENT_LUA_COMPONENT(UHopMovementComponent, UMovementComponent)
 
 UHopMovementComponent::UHopMovementComponent()
 {
