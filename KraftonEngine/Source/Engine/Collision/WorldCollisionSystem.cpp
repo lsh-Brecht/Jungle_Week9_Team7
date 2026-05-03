@@ -4,6 +4,8 @@
 #include "Component/PrimitiveComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Collision/PrimitiveCollision.h"
+#include "Core/CollisionTypes.h"
+#include "Component/Collision/CollisionTypes.h"
 #include "Component/Script/LuaScriptComponent.h"
 #include "Scripting/LuaScriptSubsystem.h"
 #include "Object/ObjectFactory.h"
@@ -15,6 +17,73 @@ FWorldCollisionSystem::FWorldCollisionSystem(UWorld* InWorld)
 
 FWorldCollisionSystem::~FWorldCollisionSystem()
 {
+}
+
+bool FWorldCollisionSystem::HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit)
+{
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	if (!World || !MovingActor || MovingActor->IsPooledActorInactive() || !MovingActor->IsActorCollisionEnabled())
+	{
+		return false;
+	}
+
+	WorldCollisionBVH.EnsureBuilt(World->GetActors());
+
+	for (UPrimitiveComponent* MovingPrimitive : MovingActor->GetPrimitiveComponents())
+	{
+		if (!MovingPrimitive ||
+			MovingPrimitive->GetCollisionShapeType() == ECollisionShapeType::None ||
+			!MovingPrimitive->BlocksMovement())
+		{
+			continue;
+		}
+
+		const FBoundingBox MovingBounds = MovingPrimitive->GetWorldAABB();
+		if (!MovingBounds.IsValid())
+		{
+			continue;
+		}
+
+		TArray<UPrimitiveComponent*> Candidates;
+		WorldCollisionBVH.QueryAABB(MovingBounds, Candidates);
+
+		for (UPrimitiveComponent* Candidate : Candidates)
+		{
+			if (!Candidate || Candidate == MovingPrimitive || Candidate->GetOwner() == MovingActor)
+			{
+				continue;
+			}
+
+			AActor* CandidateOwner = Candidate->GetOwner();
+			if (!CandidateOwner ||
+				CandidateOwner->IsPooledActorInactive() ||
+				!CandidateOwner->IsActorCollisionEnabled() ||
+				Candidate->GetCollisionShapeType() == ECollisionShapeType::None ||
+				!Candidate->BlocksMovement())
+			{
+				continue;
+			}
+
+			if (FPrimitiveCollision::Intersect(MovingPrimitive, Candidate))
+			{
+				if (OutHit)
+				{
+					OutHit->bHit = true;
+					OutHit->HitComponent = Candidate;
+					OutHit->WorldHitLocation = MovingPrimitive->GetWorldLocation();
+					OutHit->WorldNormal = FVector::ZeroVector;
+					OutHit->Distance = 0.0f;
+				}
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void FWorldCollisionSystem::UpdateCollision()
@@ -33,6 +102,12 @@ void FWorldCollisionSystem::UpdateCollision()
 
 	for (const FWorldCollisionBVH::FOverlapCandidatePair& Pair : PotentialPairs)
 	{
+		if (!Pair.A || !Pair.B ||
+			(!Pair.A->ShouldGenerateOverlapEvents() && !Pair.B->ShouldGenerateOverlapEvents()))
+		{
+			continue;
+		}
+
 		if (FPrimitiveCollision::Intersect(Pair.A, Pair.B))
 		{
 			FOverlapPairKey OverlapKey(Pair.A, Pair.B);

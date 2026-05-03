@@ -21,6 +21,7 @@ public:
 	static bool SaveActorAsPrefab(AActor* Actor, const FString& PrefabName);
 	static bool LoadPrefabRootActorJson(const FString& PrefabNameOrPath, json::JSON& OutRootActorJson);
 	static AActor* LoadPrefabActor(UWorld* World, const FString& PrefabNameOrPath);
+	static AActor* LoadPrefabActor(UWorld* World, const FString& PrefabNameOrPath, bool bRenewActorUUID);
 	static bool ApplyPrefabToActor(AActor* Actor, const FString& PrefabNameOrPath);
 	static AActor* SpawnPrefab(UWorld* World, const FString& PrefabNameOrPath, const FVector& SpawnLocation);
 	static AActor* SpawnPrefab(UWorld* World, const FString& PrefabNameOrPath, const FVector& SpawnLocation, const FRotator& SpawnRotation);

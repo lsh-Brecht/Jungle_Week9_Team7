@@ -52,6 +52,8 @@ void UPrimitiveComponent::Serialize(FArchive& Ar)
 	Ar << bIsVisible;
 	Ar << bCastShadow;
 	Ar << bCastShadowAsTwoSided;
+	// bBlocksMovement / bGenerateOverlapEvents는 기존 에셋 호환을 위해 아직 직렬화하지 않는다.
+	// 추후 Archive 버전 필드가 생기면 여기 뒤에 안전하게 추가하면 된다.
 	// LocalExtents는 메시 등에서 재계산되므로 직렬화 제외.
 }
 
@@ -118,6 +120,8 @@ void UPrimitiveComponent::GetEditableProperties(TArray<FPropertyDescriptor>& Out
 	OutProps.push_back({ "Visible", EPropertyType::Bool, &bIsVisible });
 	OutProps.push_back({ "Cast Shadow", EPropertyType::Bool, &bCastShadow });
 	OutProps.push_back({ "Two Sided Shadow", EPropertyType::Bool, &bCastShadowAsTwoSided });
+	OutProps.push_back({ "Blocks Movement", EPropertyType::Bool, &bBlocksMovement });
+	OutProps.push_back({ "Generate Overlap Events", EPropertyType::Bool, &bGenerateOverlapEvents });
 }
 
 void UPrimitiveComponent::PostEditProperty(const char* PropertyName)
@@ -137,6 +141,17 @@ void UPrimitiveComponent::PostEditProperty(const char* PropertyName)
 	else if (strcmp(PropertyName, "Two Sided Shadow") == 0)
 	{
 		MarkRenderVisibilityDirty();
+	}
+	else if (strcmp(PropertyName, "Blocks Movement") == 0 ||
+		strcmp(PropertyName, "Generate Overlap Events") == 0)
+	{
+		// BVH 포함 여부는 shape type 기준이라 재삽입까지는 필요 없다.
+		// 다만 다음 충돌 업데이트에서 즉시 최신 응답을 보도록 dirty 처리한다.
+		AActor* OwnerActor = GetOwner();
+		if (OwnerActor && OwnerActor->GetWorld())
+		{
+			OwnerActor->GetWorld()->MarkWorldCollisionBVHDirty();
+		}
 	}
 }
 

@@ -349,7 +349,10 @@ void FEditorPropertyWidget::Render(float DeltaTime)
 			{
 				std::filesystem::path Path = std::filesystem::path(FPaths::ToWide(SavePath));
 				FString PrefabName = FPaths::ToUtf8(Path.stem().wstring());
-				FPrefabSaveManager::SaveActorAsPrefab(PrimaryActor, PrefabName);
+				if (FPrefabSaveManager::SaveActorAsPrefab(PrimaryActor, PrefabName) && EditorEngine)
+				{
+					EditorEngine->RefreshContentBrowser();
+				}
 			}
 		}
 	}

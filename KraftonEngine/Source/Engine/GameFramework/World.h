@@ -119,6 +119,7 @@ public:
 	void UpdateActorInOctree(AActor* actor);
 
 	void UpdateCollision();
+	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 	void ApplyCollisionDebugVisualization();
 
 private:

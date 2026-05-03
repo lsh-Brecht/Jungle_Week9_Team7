@@ -4,6 +4,7 @@
 #include "Platform/Paths.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/World.h"
+#include "Component/ActorComponent.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -131,6 +132,11 @@ bool FPrefabSaveManager::LoadPrefabRootActorJson(const FString& PrefabNameOrPath
 
 AActor* FPrefabSaveManager::LoadPrefabActor(UWorld* World, const FString& PrefabNameOrPath)
 {
+	return LoadPrefabActor(World, PrefabNameOrPath, true);
+}
+
+AActor* FPrefabSaveManager::LoadPrefabActor(UWorld* World, const FString& PrefabNameOrPath, bool bRenewActorUUID)
+{
 	if (!World || PrefabNameOrPath.empty())
 	{
 		return nullptr;
@@ -142,11 +148,27 @@ AActor* FPrefabSaveManager::LoadPrefabActor(UWorld* World, const FString& Prefab
 		return nullptr;
 	}
 
+	TMap<uint32, uint32> ActorUUIDRemap;
+
 	FActorDeserializeOptions Options;
 	Options.bAddToWorld = false;
 	Options.bInitDefaultComponentsIfMissing = false;
+	Options.bRestoreActorUUID = !bRenewActorUUID;
+	Options.ActorUUIDRemap = bRenewActorUUID ? &ActorUUIDRemap : nullptr;
 
-	return FSceneSaveManager::DeserializeActor(World, RootActorJson, nullptr, Options);
+	AActor* Actor = FSceneSaveManager::DeserializeActor(World, RootActorJson, nullptr, Options);
+	if (Actor && bRenewActorUUID)
+	{
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			if (Component)
+			{
+				Component->RemapActorReferences(ActorUUIDRemap);
+			}
+		}
+	}
+
+	return Actor;
 }
 
 bool FPrefabSaveManager::ApplyPrefabToActor(AActor* Actor, const FString& PrefabNameOrPath)

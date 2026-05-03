@@ -1,0 +1,63 @@
+{
+  "Name" : "VoxelTreeA",
+  "RootActor" : {
+    "ActorUUID" : 124,
+    "ClassName" : "AActor",
+    "NonSceneComponents" : [],
+    "RootComponent" : {
+      "Children" : [{
+          "Children" : [],
+          "ClassName" : "UBoxComponent",
+          "Properties" : {
+            "Blocks Movement" : true,
+            "Box Extent" : [0.400000, 0.400000, 0.400000],
+            "Cast Shadow" : true,
+            "Generate Overlap Events" : true,
+            "Location" : [0.015399, -0.224488, -1.897232],
+            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Scale" : [1.000000, 1.000000, 1.000000],
+            "Two Sided Shadow" : false,
+            "Visible" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "Children" : [],
+          "ClassName" : "UBoxComponent",
+          "Properties" : {
+            "Blocks Movement" : true,
+            "Box Extent" : [0.500000, 0.500000, 0.500000],
+            "Cast Shadow" : true,
+            "Generate Overlap Events" : true,
+            "Location" : [-0.103971, 0.000000, 0.000000],
+            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Scale" : [2.380791, 2.644263, 2.481544],
+            "Two Sided Shadow" : false,
+            "Visible" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "ClassName" : "UStaticMeshComponent",
+      "Properties" : {
+        "Blocks Movement" : true,
+        "Cast Shadow" : true,
+        "Element 0" : {
+          "Path" : "Asset/Materials/Auto/VoxelTreeAMat.mat"
+        },
+        "Generate Overlap Events" : true,
+        "Location" : [4.647086, 7.947726, 2.259677],
+        "Rotation" : [-0.000000, 0.000000, 0.000000],
+        "Scale" : [1.000000, 1.000000, 1.000000],
+        "Static Mesh" : "Data/VoxelTreeA/VoxelTreeA.obj",
+        "Two Sided Shadow" : false,
+        "Visible" : true,
+        "bEditorOnly" : false,
+        "bTickEnable" : true
+      }
+    },
+    "bVisible" : true
+  },
+  "Type" : "ActorPrefab",
+  "Version" : 1
+}

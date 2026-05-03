@@ -37,6 +37,11 @@ public:
 
 	bool GetCastShadowAsTwoSided() const { return bCastShadowAsTwoSided; }
 
+	bool BlocksMovement() const { return bBlocksMovement; }
+	void SetBlocksMovement(bool bInBlocksMovement) { bBlocksMovement = bInBlocksMovement; }
+	bool ShouldGenerateOverlapEvents() const { return bGenerateOverlapEvents; }
+	void SetGenerateOverlapEvents(bool bInGenerateOverlapEvents) { bGenerateOverlapEvents = bInGenerateOverlapEvents; }
+
 	// 월드 공간 AABB를 FBoundingBox로 반환
 	FBoundingBox GetWorldBoundingBox() const;
 	void MarkWorldBoundsDirty();
@@ -100,6 +105,8 @@ protected:
 	bool bIsVisible = true;
 	bool bCastShadow = true;
 	bool bCastShadowAsTwoSided = false;
+	bool bBlocksMovement = true;
+	bool bGenerateOverlapEvents = true;
 	FPrimitiveSceneProxy* SceneProxy = nullptr;
 	
 	FOctree* OctreeNode = nullptr;

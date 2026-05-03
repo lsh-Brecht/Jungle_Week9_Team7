@@ -674,13 +674,23 @@ AActor* FSceneSaveManager::DeserializeActor(UWorld* World, json::JSON& ActorJSON
 		}
 	}
 
-			if (ActorJSON.hasKey("ActorUUID")) {
-				Actor->SetUUID(static_cast<uint32>(ActorJSON["ActorUUID"].ToInt()));
-			}
+	if (ActorJSON.hasKey("ActorUUID"))
+	{
+		const uint32 SerializedActorUUID = static_cast<uint32>(ActorJSON["ActorUUID"].ToInt());
+		if (Options.bRestoreActorUUID)
+		{
+			Actor->SetUUID(SerializedActorUUID);
+		}
+		else if (Options.ActorUUIDRemap && SerializedActorUUID != 0)
+		{
+			(*Options.ActorUUIDRemap)[SerializedActorUUID] = Actor->GetUUID();
+		}
+	}
 
-			if (ActorJSON.hasKey(SceneKeys::Visible)) {
-				Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
-			}
+	if (ActorJSON.hasKey(SceneKeys::Visible))
+	{
+		Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
+	}
 	if (ActorJSON.hasKey(SceneKeys::Visible)) {
 		Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
 	}

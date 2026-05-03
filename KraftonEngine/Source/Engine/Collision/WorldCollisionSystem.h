@@ -6,6 +6,7 @@
 class UWorld;
 class AActor;
 class UPrimitiveComponent;
+struct FHitResult;
 
 // Key type for previous and current overlap pairs.
 struct FOverlapPairKey
@@ -55,6 +56,7 @@ public:
 	~FWorldCollisionSystem();
 
 	void UpdateCollision();
+	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 
 	// Forward BVH operations
 	void MarkDirty() { WorldCollisionBVH.MarkDirty(); }

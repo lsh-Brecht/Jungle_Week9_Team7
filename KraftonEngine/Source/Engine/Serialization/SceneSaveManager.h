@@ -24,6 +24,14 @@ struct FActorDeserializeOptions
 {
 	bool bAddToWorld = true;
 	bool bInitDefaultComponentsIfMissing = true;
+
+	// Scene loading must restore the serialized UUID so saved Actor references stay valid.
+	// Prefab instancing must keep the constructor-generated UUID to avoid duplicate UUIDs.
+	bool bRestoreActorUUID = true;
+
+	// Optional old UUID -> new UUID map filled when bRestoreActorUUID is false.
+	// Components that store Actor UUID references can use this map after deserialization.
+	TMap<uint32, uint32>* ActorUUIDRemap = nullptr;
 };
 
 #include "Core/PropertyTypes.h"

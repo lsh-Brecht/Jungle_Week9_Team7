@@ -1,7 +1,9 @@
 ﻿#include "Component/Movement/MovementComponent.h"
 
 #include "Component/SceneComponent.h"
+#include "Core/CollisionTypes.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
 
@@ -110,6 +112,43 @@ bool UMovementComponent::ApplyControllerMovementInput(const FControllerMovementI
 {
 	(void)Input;
 	return false;
+}
+
+bool UMovementComponent::SafeMoveUpdatedComponent(const FVector& Delta, FHitResult* OutHit)
+{
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	if (Delta.IsNearlyZero())
+	{
+		return true;
+	}
+
+	if (!ResolveUpdatedComponent())
+	{
+		return false;
+	}
+
+	USceneComponent* Scene = GetUpdatedComponent();
+	AActor* OwnerActor = GetOwner();
+	if (!Scene || !OwnerActor)
+	{
+		return false;
+	}
+
+	UWorld* World = OwnerActor->GetWorld();
+	const FVector OldLocation = Scene->GetWorldLocation();
+	Scene->AddWorldOffset(Delta);
+
+	if (World && World->HasBlockingOverlapForActor(OwnerActor, OutHit))
+	{
+		Scene->SetWorldLocation(OldLocation);
+		return false;
+	}
+
+	return true;
 }
 
 void UMovementComponent::TryAutoRegisterUpdatedComponent()

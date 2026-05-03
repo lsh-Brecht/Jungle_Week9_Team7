@@ -73,7 +73,12 @@ void UProjectileMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		return;
 	}
 
-	UpdatedSceneComponent->SetWorldLocation(UpdatedSceneComponent->GetWorldLocation() + MoveDelta);
+	const FVector CurrentLocation = UpdatedSceneComponent->GetWorldLocation();
+	FHitResult HitResult;
+	if (!SafeMoveUpdatedComponent(MoveDelta, &HitResult))
+	{
+		HandleBlockingHit(UpdatedSceneComponent, CurrentLocation, MoveDelta, HitResult);
+	}
 }
 
 void UProjectileMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
@@ -162,5 +167,23 @@ bool UProjectileMovementComponent::HandleBlockingHit(USceneComponent* UpdatedSce
 	(void)CurrentLocation;
 	(void)MoveDelta;
 	(void)HitResult;
-	return true;
+
+	switch (GetHitBehavior())
+	{
+	case EProjectileHitBehavior::Stop:
+		StopSimulating();
+		return true;
+	case EProjectileHitBehavior::Bounce:
+		// 정확한 반사에는 HitResult.WorldNormal 계산이 필요하다.
+		// 현재 충돌 질의는 bool/상대 컴포넌트만 제공하므로 우선 Stop과 동일하게 처리한다.
+		StopSimulating();
+		return true;
+	case EProjectileHitBehavior::Destroy:
+		// DestroyActor 연결은 게임플레이 정책이므로 여기서는 이동만 정지한다.
+		StopSimulating();
+		return true;
+	default:
+		StopSimulating();
+		return true;
+	}
 }

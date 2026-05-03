@@ -1,4 +1,4 @@
-#include "Editor/Viewport/FLevelViewportLayout.h"
+﻿#include "Editor/Viewport/FLevelViewportLayout.h"
 
 #include "Editor/EditorEngine.h"
 #include "Editor/Viewport/LevelEditorViewportClient.h"
@@ -1868,9 +1868,6 @@ void FLevelViewportLayout::RenderViewportPlaceActorPopup()
 		};
 
 		PlaceActorMenuItem("Empty Actor", EViewportPlaceActorType::EmptyActor);
-		PlaceActorMenuItem("Cube", EViewportPlaceActorType::Cube);
-		PlaceActorMenuItem("Sphere", EViewportPlaceActorType::Sphere);
-		PlaceActorMenuItem("Cylinder", EViewportPlaceActorType::Cylinder);
 		PlaceActorMenuItem("Decal", EViewportPlaceActorType::Decal);
 		PlaceActorMenuItem("Height Fog", EViewportPlaceActorType::HeightFog);
 		PlaceActorMenuItem("Ambient Light", EViewportPlaceActorType::AmbientLight);
@@ -1973,36 +1970,6 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 
 	switch (Type)
 	{
-	case EViewportPlaceActorType::Cube:
-	{
-		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>();
-		if (Actor)
-		{
-			Actor->InitDefaultComponents("Data/BasicShape/Cube.OBJ");
-			SpawnedActor = Actor;
-		}
-		break;
-	}
-	case EViewportPlaceActorType::Sphere:
-	{
-		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>();
-		if (Actor)
-		{
-			Actor->InitDefaultComponents("Data/BasicShape/Sphere.OBJ");
-			SpawnedActor = Actor;
-		}
-		break;
-	}
-	case EViewportPlaceActorType::Cylinder:
-	{
-		AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>();
-		if (Actor)
-		{
-			Actor->InitDefaultComponents("Data/BasicShape/Cylinder.obj");
-			SpawnedActor = Actor;
-		}
-		break;
-	}
 	case EViewportPlaceActorType::Decal:
 	{
 		ADecalActor* Actor = World->SpawnActor<ADecalActor>();
