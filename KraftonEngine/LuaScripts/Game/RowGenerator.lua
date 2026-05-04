@@ -140,8 +140,8 @@ function RowGenerator.GenerateRow(rowIndex)
 
     if biomeType == BIOME.GRASS then
         SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
-        SpawnStaticObstacle(rowIndex, -1, PREFABS.TRAFFIC_BARRIER_B)
-        SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.SlotCount, PREFABS.TRAFFIC_BARRIER_B)
+        SpawnStaticObstacle(rowIndex, 0, PREFABS.TRAFFIC_BARRIER_B)
+        SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.MaxSlotIndex, PREFABS.TRAFFIC_BARRIER_B)
     elseif biomeType == BIOME.ROAD then
         SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.ROADTILE)
     elseif biomeType == BIOME.RAILWAY then
@@ -150,14 +150,14 @@ function RowGenerator.GenerateRow(rowIndex)
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
     local nextSafeSlot = LastSafeSlot + math.random(-1, 1)
-    nextSafeSlot = math.max(0, math.min(RowGenerator.MapConfig.MaxSlotIndex, nextSafeSlot))
+    nextSafeSlot = math.max(1, math.min(RowGenerator.MapConfig.MaxSlotIndex - 1, nextSafeSlot))
     LastSafeSlot = nextSafeSlot -- 다음 Row를 위해 갱신
 
     if biomeType == BIOME.GRASS then
         local obstacleChance = RowGenerator.GetObstacleChance(rowIndex)
         
         for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
-            if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰
+            if slot ~= nextSafeSlot and slot ~= 0 and slot ~= RowGenerator.MapConfig.MaxSlotIndex then -- 안전 구역이 아닌 곳만 장애물 스폰
                 if math.random() < obstacleChance then
                     -- 가중치에 따라 확률적으로 장애물 프리팹을 선택
                     local obstacle = ChooseWeighted(ObstacleWeights)
