@@ -18,6 +18,7 @@ local PREFABS = {
     RAILWAYTILE = "Asset/Prefab/Road.Prefab",
     TRAFFIC_BARRIER_B = "Asset/Prefab/TrafficBarrierB.Prefab",
     TRAFFIC_BARRIER_A = "Asset/Prefab/TrafficBarrierA.Prefab",
+    INVISIBLE_SIDE_WALL = "Asset/Prefab/InvisibleSideWall.Prefab",
 
     ROCK = "Asset/Prefab/Rock.Prefab",
     TREE1 = "Asset/Prefab/TreeA.Prefab",
@@ -97,6 +98,7 @@ function RowGenerator.ConfigureRows()
         World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
         World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 100)
         World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_A, 100)
+        World.WarmUpPrefabPool(PREFABS.INVISIBLE_SIDE_WALL, 100)
 
         World.WarmUpPrefabPool(PREFABS.ROCK, 100)
         World.WarmUpPrefabPool(PREFABS.TREE1, 100)
@@ -157,6 +159,9 @@ function RowGenerator.GenerateRow(rowIndex)
     local biomeType = biome.type
     SetRowBiome(rowIndex, biomeType)
     -- print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
+
+    SpawnStaticObstacle(rowIndex, -1, PREFABS.INVISIBLE_SIDE_WALL)
+    SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.SlotCount, PREFABS.INVISIBLE_SIDE_WALL)
 
     if biomeType == BIOME.GRASS then
         SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
