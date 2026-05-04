@@ -505,6 +505,10 @@ void FGameUiSystem::SetScore(int32 Score)
 void FGameUiSystem::SetBestScore(int32 BestScore)
 {
 	const FString Text = std::to_string(std::max(0, BestScore));
+
+	// HUD.rml uses best-score-value. Keep best-value as a compatibility fallback
+	// for older UI documents.
+	SetElementTextAny("best-score-value", Text.c_str());
 	SetElementTextAny("best-value", Text.c_str());
 	SetElementTextAny("final-best-value", Text.c_str());
 }
@@ -752,10 +756,12 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	{
 		ResetRunUi();
 		QueueScriptEvent("restart");
-		if (ElementId == "restart" && Callbacks.OnRestart)
+
+		if (Callbacks.OnRestart)
 		{
 			Callbacks.OnRestart();
 		}
+
 		return;
 	}
 	if (ElementId == "exit")

@@ -87,8 +87,14 @@ bool FGameClientViewport::Initialize(
 			InEngine->GetSettings().RenderOptions.ShowFlags.bFXAA = bEnabled;
 		}
 	};
-	ViewportClient->GetGameUiSystem().SetCallbacks(std::move(UiCallbacks));
-	ViewportClient->GetGameUiSystem().Initialize(Window, Renderer, ViewportClient);
+	FGameUiSystem& GameUi = ViewportClient->GetGameUiSystem();
+
+	if (!GameUi.Initialize(Window, Renderer, ViewportClient))
+	{
+		return false;
+	}
+
+	GameUi.SetCallbacks(std::move(UiCallbacks));
 
 	SetInputEnabled(true);
 

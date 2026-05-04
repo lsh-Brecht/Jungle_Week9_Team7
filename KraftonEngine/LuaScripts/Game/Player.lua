@@ -166,7 +166,7 @@ local Player = {
     prevMouse2 = false,
 
     -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
-    prevMouse1 = false
+    prevMouse1 = false,
     
     -- 카메라 전환 직후 마우스 델타 튐 방지용
     cameraSwitchGuardTime = 0.0,

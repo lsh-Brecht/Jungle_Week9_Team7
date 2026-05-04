@@ -1,4 +1,5 @@
 local State = require("Game.GameState")
+print("[GM] GameManager.lua loaded")
 
 local Config = {
     PlayerName = "Player",
@@ -7,7 +8,7 @@ local Config = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
-    AutoStart = false,
+    AutoStart = true,
     Creators = {
         "KraftonEngine Team 7",
         "Programmer: replace this name",
@@ -26,15 +27,4 @@ end
 
 function EndPlay()
     print("[GameManager] EndPlay")
-end
-
-function OnUIEvent(eventName)
-    if eventName == "start" then
-        State.Mode = "Ready"
-        State.StartGame()
-
-        if type(MapManager_Reset) == "function" then
-            MapManager_Reset()
-        end
-    end
 end

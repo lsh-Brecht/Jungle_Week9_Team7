@@ -8,6 +8,9 @@
         <div id="score-card" class="score-chip">
             <div class="score-label">SCORE</div>
             <div id="score-value" class="score-value">0</div>
+
+            <div class="best-score-label">BEST</div>
+            <div id="best-score-value" class="best-score-value">0</div>
         </div>
     </div>
 </body>

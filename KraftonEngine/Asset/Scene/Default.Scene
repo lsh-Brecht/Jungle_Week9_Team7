@@ -210,6 +210,13 @@
             "bTickEnable" : true
           }
         }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/GameManager.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
           "ClassName" : "UParryComponent",
           "Properties" : {
             "bEditorOnly" : false,
