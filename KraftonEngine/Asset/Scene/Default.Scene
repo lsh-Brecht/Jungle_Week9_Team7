@@ -1239,20 +1239,50 @@
       },
       "Tags" : ["Vehicle"],
       "bVisible" : true
+    }, {
+      "ActorUUID" : 405,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/MapManager.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Generate Overlap Events" : true,
+          "Location" : [-3.433448, 3.938135, 12.454313],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "None",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "Tags" : [],
+      "bVisible" : true
     }],
   "ClassName" : "UWorld",
   "ContextHandle" : "Default",
   "ContextName" : "Default",
   "Name" : "Default",
   "PerspectiveCamera" : {
-    "AspectRatio" : 1.846276,
+    "AspectRatio" : 2.020602,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-8.564737, 1.949319, 10.275459],
+    "Location" : [-13.445621, 4.108686, 13.842822],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [-0.000001, 37.578331, -5.450863]
+    "Rotation" : [0.000000, 28.428741, -10.250296]
   },
   "Primitives" : {
     "102" : {
