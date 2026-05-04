@@ -10,7 +10,8 @@ enum class SoundEffect : uint32
 {
 	Jump, 
 	Parry,
-	Death
+	Death,
+	Dash
 };
 
 

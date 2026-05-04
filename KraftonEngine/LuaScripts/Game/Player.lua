@@ -116,6 +116,7 @@ local CONFIG = {
 }
 
 local Player = {
+    prevGuiMouse = nil,
     initialized = false,
 
     ownerObject = nil,
@@ -137,7 +138,10 @@ local Player = {
     pitch = 0.0,
 
     lastInputSignature = "",
-    printedMove = false
+    printedMove = false,
+
+    -- Dash 에지 판정용 (직전 프레임의 MOUSE2 상태)
+    prevMouse2 = false
 }
 
 local function Log(msg)
@@ -253,7 +257,25 @@ local function GetKey(name)
         return false
     end
 
-    return Input.GetKey(name)
+    local ok, result = pcall(Input.GetKey, name)
+    if not ok then
+        return false
+    end
+    return result == true
+end
+
+local function GetKeyDown(name)
+    -- "이번 프레임에 새로 눌림"(에지). 엔진이 GetKeyDown을 노출하지 않거나
+    -- 알 수 없는 키 이름에 에러를 던질 경우 false로 떨어지도록 pcall로 감쌉니다.
+    if Input == nil or Input.GetKeyDown == nil then
+        return false
+    end
+
+    local ok, result = pcall(Input.GetKeyDown, name)
+    if not ok then
+        return false
+    end
+    return result == true
 end
 
 local function GetMouseDelta()
@@ -286,27 +308,61 @@ local function IsGuiUsingMouse()
 end
 
 local function BuildInputState()
+
+if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
+        local guiMouse = Input.IsGuiUsingMouse()
+        -- 상태가 바뀐 순간에만 로그 (매 프레임 도배 방지)
+        if guiMouse ~= Player.prevGuiMouse then
+            if guiMouse then
+                Log("[DIAG] Input.IsGuiUsingMouse() = true  ← 마우스가 GUI에 잡혀있음")
+            else
+                Log("[DIAG] Input.IsGuiUsingMouse() = false ← 마우스 GUI 캡처 해제")
+            end
+            Player.prevGuiMouse = guiMouse
+        end
+    end
     if IsGuiUsingKeyboard() then
+        Log("!!! GUI IS CONSUMING KEYBOARD")
         return {
             W = false,
             A = false,
             S = false,
             D = false,
             SHIFT = false,
+            Dash = false,
             any = false,
             signature = "GUI_KEYBOARD_CAPTURED"
         }
     end
+ 
+    -- MOUSE2 현재 상태 (레벨). 가드된 헬퍼만 사용.
+    local mouse2Now = GetKey("MOUSE2")
+
+    -- Dash 에지 판정:
+    --   1순위: 엔진의 GetKeyDown이 실제로 동작하면 그것을 사용
+    --   2순위(폴백): Lua 자체에서 이전 프레임 상태와 비교해 상승 에지를 검출
+    -- 한 번 호출 = 한 번 대시 보장을 Lua 측에서 책임집니다.
+    local engineEdge = GetKeyDown("MOUSE2")
+    local manualEdge = mouse2Now and (not Player.prevMouse2)
+    local dashEdge = engineEdge or manualEdge
+
+    if dashEdge then
+        Log("!!! MOUSE2 EDGE DETECTED !!!")
+    end
+
+    -- 다음 프레임 비교용으로 저장
+    Player.prevMouse2 = mouse2Now
 
     local state = {
         W = GetKey("W") or GetKey("w"),
         A = GetKey("A") or GetKey("a"),
         S = GetKey("S") or GetKey("s"),
         D = GetKey("D") or GetKey("d"),
-        SHIFT = GetKey("SHIFT") or GetKey("LSHIFT")
+        SHIFT = GetKey("SHIFT") or GetKey("LSHIFT"),
+        Dash = dashEdge
     }
 
-    state.any = state.W or state.A or state.S or state.D
+    state.any = state.W or state.A or state.S or state.D or state.Dash
 
     state.signature =
         "W=" .. BoolStr(state.W) ..
@@ -705,6 +761,14 @@ end
 local function UpdateMovement(dt, inputState)
     local worldDir, hasMove = ComputeWorldMoveDirection(inputState)
 
+    if inputState.Dash then
+        if IsValidHandle(Player.hopMovement) then
+            Player.hopMovement:Dash()
+            Log("[Player.lua] Dash Triggered!")
+
+         end
+    end
+
     if not hasMove then
         if IsValidHandle(Player.hopMovement) then
             Player.hopMovement.HopCoefficient = CONFIG.HopMovement.HopCoefficient
@@ -747,7 +811,7 @@ function BeginPlay()
     Bootstrap()
 end
 
-function Tick(deltaTime)
+function OnInput(deltaTime)
     Player.frame = Player.frame + 1
 
     if not Bootstrap() then

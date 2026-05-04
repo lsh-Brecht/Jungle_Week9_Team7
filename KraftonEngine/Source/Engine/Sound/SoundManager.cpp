@@ -13,7 +13,7 @@ void FSoundManager::initialize()
 	LoadEffect(SoundEffect::Jump, FPaths::Combine(FPaths::AssetDir(), L"Sound/Jump.wav"));
 	LoadEffect(SoundEffect::Death, FPaths::Combine(FPaths::AssetDir(), L"Sound/Death.wav"));
 	LoadEffect(SoundEffect::Parry, FPaths::Combine(FPaths::AssetDir(), L"Sound/Parry.wav"));
-	LoadEffect(SoundEffect::Parry, FPaths::Combine(FPaths::AssetDir(), L"Sound/Dash.wav"));
+	LoadEffect(SoundEffect::Dash, FPaths::Combine(FPaths::AssetDir(), L"Sound/Dash.wav"));
 
 }
 

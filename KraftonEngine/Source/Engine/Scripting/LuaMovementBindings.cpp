@@ -523,6 +523,13 @@ void RegisterHopMovementComponentBinding(sol::state& Lua)
 			FLuaHopMovementComponentHandle,
 			UHopMovementComponent,
 			StopSimulating()
+		),
+		LUA_COMPONENT_METHOD(
+        "HopMovementComponent",
+        "Dash",
+        FLuaHopMovementComponentHandle,
+        UHopMovementComponent,
+        Dash()
 		)
 	);
 }

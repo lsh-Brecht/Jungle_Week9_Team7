@@ -1,11 +1,11 @@
-#include "HopMovementComponent.h"
+﻿#include "HopMovementComponent.h"
 
 #include "Component/SceneComponent.h"
 #include "Math/MathUtils.h"
 #include "Object/ObjectFactory.h"
 #include "Render/Scene/FScene.h"
 #include "Serialization/Archive.h"
-
+#include "Sound/SoundManager.h"
 #include <cmath>
 #include <cstring>
 
@@ -69,6 +69,13 @@ UHopMovementComponent::UHopMovementComponent()
 {
 	bReceiveControllerInput = true;
 	ControllerInputPriority = 10;
+	DashDelegate.Add(
+		[]()
+		{
+			FSoundManager::Get().PlayEffect(SoundEffect::Dash);
+		}
+	);
+
 }
 
 void UHopMovementComponent::BeginPlay()
@@ -77,6 +84,7 @@ void UHopMovementComponent::BeginPlay()
 
 	HopElapsedTime = 0.0f;
 	AppliedHopOffset = 0.0f;
+	DashTimeRemaining = 0.0f;
 	PendingMovementInput = FVector::ZeroVector;
 	LastMovementInput = FVector::ZeroVector;
 	Velocity = FlattenOnWorldUp(Velocity);
@@ -100,51 +108,61 @@ void UHopMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	const FVector MoveInput = ClampInputMagnitude(RawInput);
 	const bool bHasMoveInput = MoveInput.Length() > KInputTolerance;
 
-	const float TargetSpeed = bHasMoveInput ? GetEffectiveMoveSpeed() : 0.0f;
-	const FVector TargetVelocity = MoveInput * TargetSpeed;
-	const float AccelRate = bHasMoveInput ? Acceleration : BrakingDeceleration;
-	const float ClampedAccelRate = Clamp(AccelRate, 0.0f, KMaxReasonableAcceleration);
-
-	Velocity = MoveTowards(FlattenOnWorldUp(Velocity), TargetVelocity, ClampedAccelRate * DeltaTime);
-	if (Velocity.Length() <= KVelocityStopTolerance)
+	if (IsDashing())
 	{
-		Velocity = FVector::ZeroVector;
+		DashTimeRemaining -= DeltaTime;
+		Velocity = FlattenOnWorldUp(Velocity);
+	}
+	else
+	{
+
+		const float TargetSpeed = bHasMoveInput ? GetEffectiveMoveSpeed() : 0.0f;
+		const FVector TargetVelocity = MoveInput * TargetSpeed;
+		const float AccelRate = bHasMoveInput ? Acceleration : BrakingDeceleration;
+		const float ClampedAccelRate = Clamp(AccelRate, 0.0f, KMaxReasonableAcceleration);
+
+		Velocity = MoveTowards(FlattenOnWorldUp(Velocity), TargetVelocity, ClampedAccelRate * DeltaTime);
+		if (Velocity.Length() <= KVelocityStopTolerance)
+		{
+			Velocity = FVector::ZeroVector;
+		}
+
+		const bool bIsHorizontallyMoving = Velocity.Length() > KVelocityStopTolerance;
+		const bool bShouldApplyHop = (HopHeight > 0.0f && HopFrequency > 0.0f)
+			&& (!bHopOnlyWhenMoving || bHasMoveInput || bIsHorizontallyMoving);
+
+		float NewHopOffset = 0.0f;
+		if (bShouldApplyHop)
+		{
+			HopElapsedTime += DeltaTime;
+			const float Phase = GetHopPhase(HopElapsedTime, Clamp(HopFrequency, 0.0f, KMaxReasonableHopFrequency));
+			const float ClampedHopHeight = Clamp(HopHeight, 0.0f, KMaxReasonableHopHeight);
+			NewHopOffset = std::sin(Phase * FMath::Pi) * ClampedHopHeight;
+		}
+		else if (bResetHopWhenIdle)
+		{
+			HopElapsedTime = 0.0f;
+		}
+
+		const float HopDelta = NewHopOffset - AppliedHopOffset;
+		AppliedHopOffset = NewHopOffset;
+
+		const FVector HorizontalDelta = Velocity * DeltaTime;
+		const FVector VerticalDelta(0.0f, 0.0f, HopDelta);
+
+		if (!HorizontalDelta.IsNearlyZero() && !SafeMoveUpdatedComponent(HorizontalDelta, nullptr))
+		{
+			Velocity = FVector::ZeroVector;
+		}
+
+		// 임시 유지: 현재 구조에서는 hop bobbing이 UpdatedComponent에 직접 적용된다.
+		// 장기적으로는 충돌 root가 아니라 visual child component에만 적용하는 편이 맞다.
+		if (!VerticalDelta.IsNearlyZero())
+		{
+			UpdatedSceneComponent->SetWorldLocation(UpdatedSceneComponent->GetWorldLocation() + VerticalDelta);
+		}
 	}
 
-	const bool bIsHorizontallyMoving = Velocity.Length() > KVelocityStopTolerance;
-	const bool bShouldApplyHop = (HopHeight > 0.0f && HopFrequency > 0.0f)
-		&& (!bHopOnlyWhenMoving || bHasMoveInput || bIsHorizontallyMoving);
-
-	float NewHopOffset = 0.0f;
-	if (bShouldApplyHop)
-	{
-		HopElapsedTime += DeltaTime;
-		const float Phase = GetHopPhase(HopElapsedTime, Clamp(HopFrequency, 0.0f, KMaxReasonableHopFrequency));
-		const float ClampedHopHeight = Clamp(HopHeight, 0.0f, KMaxReasonableHopHeight);
-		NewHopOffset = std::sin(Phase * FMath::Pi) * ClampedHopHeight;
-	}
-	else if (bResetHopWhenIdle)
-	{
-		HopElapsedTime = 0.0f;
-	}
-
-	const float HopDelta = NewHopOffset - AppliedHopOffset;
-	AppliedHopOffset = NewHopOffset;
-
-	const FVector HorizontalDelta = Velocity * DeltaTime;
-	const FVector VerticalDelta(0.0f, 0.0f, HopDelta);
-
-	if (!HorizontalDelta.IsNearlyZero() && !SafeMoveUpdatedComponent(HorizontalDelta, nullptr))
-	{
-		Velocity = FVector::ZeroVector;
-	}
-
-	// 임시 유지: 현재 구조에서는 hop bobbing이 UpdatedComponent에 직접 적용된다.
-	// 장기적으로는 충돌 root가 아니라 visual child component에만 적용하는 편이 맞다.
-	if (!VerticalDelta.IsNearlyZero())
-	{
-		UpdatedSceneComponent->SetWorldLocation(UpdatedSceneComponent->GetWorldLocation() + VerticalDelta);
-	}
 }
 
 void UHopMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
@@ -160,7 +178,9 @@ void UHopMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& O
 	OutProps.push_back({ "Hop Frequency", EPropertyType::Float, &HopFrequency, 0.0f, KMaxReasonableHopFrequency, 0.1f });
 	OutProps.push_back({ "Hop Only When Moving", EPropertyType::Bool, &bHopOnlyWhenMoving });
 	OutProps.push_back({ "Reset Hop When Idle", EPropertyType::Bool, &bResetHopWhenIdle });
-	OutProps.push_back({ "Simulating", EPropertyType::Bool, &bSimulating });
+	OutProps.push_back({ "Simulating", EPropertyType::Bool, &bSimulating });	
+	OutProps.push_back({ "Dash Speed", EPropertyType::Float, &DashSpeed, 0.0f, KMaxReasonableSpeed, 1.0f });
+	OutProps.push_back({ "Dash Duration", EPropertyType::Float, &DashDuration, 0.0f, 5.0f, 0.01f });
 }
 
 void UHopMovementComponent::Serialize(FArchive& Ar)
@@ -181,7 +201,8 @@ void UHopMovementComponent::Serialize(FArchive& Ar)
 	Ar << HopFrequency;
 	Ar << bHopOnlyWhenMoving;
 	Ar << bResetHopWhenIdle;
-
+	Ar << DashSpeed;
+	Ar << DashDuration;
 	if (Ar.IsLoading())
 	{
 		MovementInput = FVector::ZeroVector;
@@ -189,6 +210,7 @@ void UHopMovementComponent::Serialize(FArchive& Ar)
 		LastMovementInput = FVector::ZeroVector;
 		HopElapsedTime = 0.0f;
 		AppliedHopOffset = 0.0f;
+		DashTimeRemaining = 0.0f;          // ★ 추가
 		Velocity = FlattenOnWorldUp(Velocity);
 	}
 }
@@ -299,6 +321,7 @@ void UHopMovementComponent::StopMovementImmediately()
 	ClearMovementInput();
 	Velocity = FVector::ZeroVector;
 	HopElapsedTime = 0.0f;
+	DashTimeRemaining = 0.0f;
 	RemoveAppliedHopOffset();
 }
 
@@ -316,4 +339,37 @@ FVector UHopMovementComponent::GetPreviewVelocity() const
 		return FVector::ZeroVector;
 	}
 	return Input * GetEffectiveMoveSpeed();
+}
+
+void UHopMovementComponent::Dash()
+{
+	if (!bSimulating)
+	{
+		return;
+	}
+
+	if (IsDashing())
+	{
+		return;
+	}
+	USceneComponent* UpdatedSceneComponent = GetUpdatedComponent();
+	if (!UpdatedSceneComponent)
+	{
+		return;
+	}
+	// 캐릭터 Forward를 수평 평탄화 후 정규화. 평탄화 결과가 거의 0이면 (캐릭터가 거의 똑바로 위/아래를
+	// 보고 있는 극단적 상황) Dash를 포기. 일반 게임에서는 발생하지 않는다.
+	FVector Forward = FlattenOnWorldUp(UpdatedSceneComponent->GetForwardVector());
+	const float ForwardLength = Forward.Length();
+	if (ForwardLength <= KInputTolerance)
+	{
+		return;
+	}
+	Forward /= ForwardLength;
+
+	// Velocity 주입. Dash 동안 MoveTowards가 우회되므로 그대로 유지된다.
+	Velocity = Forward * DashSpeed;
+	DashTimeRemaining = DashDuration;
+
+	DashDelegate.BroadCast();
 }

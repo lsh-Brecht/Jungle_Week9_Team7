@@ -98,6 +98,8 @@
             "Auto Register Updated" : true,
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
+            "Dash Duration" : 0.150000,
+            "Dash Speed" : 50.000000,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 4.000000,
             "Hop Height" : 0.300000,
@@ -123,6 +125,25 @@
             "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
             "Receive Controller Input" : true,
             "Updated Component" : "",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UPawnOrientationComponent",
+          "Properties" : {
+            "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
+            "Facing Mode" : 1,
+            "Min Facing Input Size" : 0.010000,
+            "Min Facing Speed" : 1.000000,
+            "Rotation Speed" : 720.000000,
+            "Yaw Only" : true,
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
