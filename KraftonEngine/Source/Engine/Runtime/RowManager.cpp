@@ -138,7 +138,9 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
 
         if (Obstacle.SpawnedActor)
         {
-	        Obstacle.SpawnedActor->AddTag("__RuntimeSpawned");
+            Obstacle.SpawnedActor->AddTag("__RuntimeSpawned");
+            Obstacle.SpawnedActor->AddTag("__RuntimeMap");
+            Obstacle.SpawnedActor->AddTag("__RowManaged");
         }
     }
 
@@ -171,6 +173,10 @@ AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPa
 	if (SpawnedActor)
 	{
 		SpawnedActor->AddTag("__RuntimeSpawned");
+		SpawnedActor->AddTag("__RuntimeMap");
+		SpawnedActor->AddTag("__RuntimeVehicle");
+		SpawnedActor->AddTag("__RowManaged");
+		SpawnedActor->AddTag("Vehicle");
 		
 		Row.DynamicActors.push_back(SpawnedActor);
 		for (UActorComponent* Comp : SpawnedActor->GetComponents())

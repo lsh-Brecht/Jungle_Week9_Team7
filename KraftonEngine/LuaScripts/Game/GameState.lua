@@ -590,11 +590,29 @@ function State.ReturnToStartScreen(reason)
     end
 end
 
-function State.RestartRun()
-    if MapManager_Reset ~= nil then
-        MapManager_Reset()
+function State.StartFreshRun(reason)
+    local resetReason = reason or "FreshRun"
+
+    local resetFunc = nil
+
+    if _G ~= nil and _G.MapManager_Reset ~= nil then
+        resetFunc = _G.MapManager_Reset
+    elseif MapManager_Reset ~= nil then
+        resetFunc = MapManager_Reset
     end
-    State.StartGame()
+
+    if resetFunc ~= nil then
+        resetFunc(resetReason)
+    else
+        print("[GameState] StartFreshRun: _G.MapManager_Reset is nil")
+    end
+
+    State.Mode = "Ready"
+    State.StartGame(resetReason)
+end
+
+function State.RestartRun()
+    State.StartFreshRun("Restart")
 end
 
 function State.RestartLevel()

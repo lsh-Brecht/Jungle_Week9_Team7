@@ -557,6 +557,7 @@ void FGameUiSystem::ResetRunUi()
 	SetStatusText("READY");
 	SetIntroOptionsVisible(false);
 	SetIntroVisible(false);
+	SetPauseMenuVisible(false);
 	SetGameOverVisible(false);
 	SetHudVisible(true);
 }
@@ -754,14 +755,15 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "restart" || ElementId == "ui-restart")
 	{
+		// 인게임 재시작은 PIE/GameClient 세션 재시작이 아니라
+		// 현재 월드 안에서 런타임 맵과 플레이 상태만 다시 시작합니다.
 		ResetRunUi();
+		SetPauseMenuVisible(false);
+		SetGameOverVisible(false);
+		SetIntroVisible(false);
+		SetHudVisible(true);
+
 		QueueScriptEvent("restart");
-
-		if (Callbacks.OnRestart)
-		{
-			Callbacks.OnRestart();
-		}
-
 		return;
 	}
 	if (ElementId == "exit")
