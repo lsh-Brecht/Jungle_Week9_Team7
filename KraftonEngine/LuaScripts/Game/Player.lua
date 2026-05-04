@@ -40,8 +40,8 @@ local CONFIG = {
     },
 
     HopMovement = {
-        InitialSpeed = 10.0,
-        MaxSpeed = 15.0,
+        InitialSpeed = 8.0,
+        MaxSpeed = 18.0,
         HopCoefficient = 1.0,
         Acceleration = 2048.0,
         BrakingDeceleration = 4096.0,

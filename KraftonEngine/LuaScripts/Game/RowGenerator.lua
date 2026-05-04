@@ -81,6 +81,13 @@ local VehicleWeights = {
     { type = PREFABS.RACINGCAR, weight = 20 },
 }
 
+local VehicleSpeedMultipliers = {
+    [PREFABS.CARA] = 0.90,
+    [PREFABS.CARB] = 0.97,
+    [PREFABS.CARC] = 1.03,
+    [PREFABS.CARD] = 1.10,
+}
+
 function RowGenerator.ConfigureRows()
     SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
     SetRowBufferCounts(RowGenerator.MapConfig.KeepRowsBehind, RowGenerator.MapConfig.KeepRowsAhead)
@@ -207,6 +214,8 @@ function RowGenerator.GenerateRow(rowIndex)
             speed = 2.5 + (rowIndex * 0.016)
             interval = math.max(1.0, 10.0 - (rowIndex * 0.06))
         end
+
+        speed = speed * (VehicleSpeedMultipliers[selectedVehicle.type] or 1.0)
 
         -- 3. 결정된 데이터로 해당 Row에 스포너 등록 (Lua 단에서 스케줄링)
         if _G.AddDynamicSpawner then
