@@ -177,7 +177,7 @@ function RowGenerator.GenerateRow(rowIndex)
         -- 2. 뽑힌 차량의 종류에 따라 속도와 스폰 주기를 다르게 세팅
         if selectedVehicle.type == PREFABS.RACINGCAR or selectedVehicle.type == PREFABS.FIRECAR then
             -- 스포츠카, 경찰차: 매우 빠른 속도, 짧은 간격
-            speed = 20.0 + (rowIndex * 0.05)
+            speed = 15.0 + (rowIndex * 0.05)
             interval = math.max(4.0, 10.0 - (rowIndex * 0.015))
 
         elseif selectedVehicle.type == PREFABS.MINIBUS or selectedVehicle.type == PREFABS.POLICECAR then
