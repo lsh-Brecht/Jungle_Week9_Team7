@@ -14,7 +14,6 @@
                 <div id="options" class="menu-button">설정</div>
                 <div id="restart" class="menu-button">재시작</div>
                 <div id="exit" class="menu-button danger">종료</div>
-                <div class="hint">ESC를 다시 누르면 즉시 복귀합니다.</div>
             </div>
 
             <div id="options-panel">
