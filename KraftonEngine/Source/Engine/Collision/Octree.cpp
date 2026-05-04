@@ -145,7 +145,10 @@ bool FOctree::Remove(UPrimitiveComponent* Primitive)
 
 	if (Primitive->GetOctreeNode() == this)
 	{
-		return RemoveDirect(Primitive, true);
+		if (RemoveDirect(Primitive, true))
+		{
+			return true;
+		}
 	}
 
 	if (!IsLeaf())
