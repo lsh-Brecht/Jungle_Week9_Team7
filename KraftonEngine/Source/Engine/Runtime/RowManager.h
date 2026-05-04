@@ -37,7 +37,7 @@ struct FRowData
 	TArray<FStaticObstacleData> StaticObstacles;
 	TArray<AActor*> DynamicActors;
 
-	void ClearActors();
+	void ClearActors(bool bDestroyActors = false);
 };
 
 class FRowManager : public TSingleton<FRowManager>
@@ -52,7 +52,7 @@ private:
 
 public:
     void Initialize();
-    void Shutdown();
+    void Shutdown(bool bDestroyActors = false);
 
     FRowData* GetRowData(int32 RowIndex);
     FRowData& PushEmptyRow(int32 RowIndex);
