@@ -2,6 +2,7 @@
 #include "SolInclude.h"
 #include "LuaHandles.h"
 #include "LuaWorldLibrary.h"
+#include "LuaScriptSubsystem.h"
 
 #include "Core/Log.h"
 #include "GameFramework/World.h"
@@ -310,6 +311,18 @@ void RegisterWorldExtendedBinding(sol::state& Lua)
 	// Game 테이블
 	sol::table Game = Lua.get_or("Game", Lua.create_table());
 	Lua["Game"] = Game;
+
+	Game.set_function("DispatchEvent",
+		sol::overload(
+			[](const FString& EventName)
+			{
+				return FLuaScriptSubsystem::Get().DispatchGameEvent(EventName);
+			},
+			[](const FString& EventName, const FLuaGameObjectHandle& Instigator)
+			{
+				return FLuaScriptSubsystem::Get().DispatchGameEvent(EventName, Instigator.Resolve());
+			}
+		));
 
 	Game.set_function("Restart", []()
 	{

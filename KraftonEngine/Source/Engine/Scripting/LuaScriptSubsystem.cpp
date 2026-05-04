@@ -210,6 +210,33 @@ bool FLuaScriptSubsystem::DispatchUiEvent(const FString& EventName)
 	return InvokeLuaFunction(OnUiEventObject, "OnUIEvent");
 }
 
+bool FLuaScriptSubsystem::DispatchGameEvent(const FString& EventName, AActor* Instigator)
+{
+	if (!bInitialized || !Lua.lua_state())
+	{
+		return false;
+	}
+
+	sol::object OnGameEventObject = Lua["OnGameEvent"];
+	if (OnGameEventObject.get_type() != sol::type::function)
+	{
+		return false;
+	}
+
+	FLuaGameObjectHandle InstigatorHandle;
+	InstigatorHandle.UUID = Instigator ? Instigator->GetUUID() : 0;
+
+	sol::protected_function Function = OnGameEventObject.as<sol::protected_function>();
+	sol::protected_function_result Result = Function(EventName, InstigatorHandle);
+	if (!Result.valid())
+	{
+		sol::error Error = Result;
+		UE_LOG("[Lua Game] OnGameEvent failed: %s", Error.what());
+	}
+
+	return true;
+}
+
 // 문자열로 들어온 Lua 코드를 실행
 bool FLuaScriptSubsystem::ExecuteString(const FString& Code)
 {

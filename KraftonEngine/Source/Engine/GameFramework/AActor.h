@@ -110,6 +110,11 @@ public:
 	FActorTickFunction PrimaryActorTick;
 	
 	bool IsOverlappingActor(const AActor* Other) const;
+	bool HasTag(const FString& Tag) const;
+	void AddTag(const FString& Tag);
+	bool RemoveTag(const FString& Tag);
+	void SetTags(const TArray<FString>& InTags) { Tags = InTags; }
+	const TArray<FString>& GetTags() const { return Tags; }
 
 
 
@@ -133,4 +138,5 @@ protected:
 	bool bActorCollisionEnabled = true;
 	bool bIsPooledActor = false;
 	bool bIsPooledActorInactive = false;
+	TArray<FString> Tags;
 };

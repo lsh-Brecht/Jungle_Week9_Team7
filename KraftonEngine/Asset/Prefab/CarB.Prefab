@@ -19,6 +19,8 @@
           "bTickEnable" : true
         }
       }],
+    "Tags" : ["Vehicle"],
+    "NonSceneComponents" : [],
     "RootComponent" : {
       "Children" : [{
           "Children" : [],

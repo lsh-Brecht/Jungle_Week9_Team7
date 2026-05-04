@@ -320,8 +320,13 @@ ECollisionShapeType UPrimitiveComponent::GetCollisionShapeType() const
 {
 	return ECollisionShapeType::None;
 }
- 
+
 FBoundingBox UPrimitiveComponent::GetWorldAABB() const
 {
 	return GetWorldBoundingBox();
+}
+
+void UPrimitiveComponent::OnParry()
+{
+	SetRelativeScale(GetRelativeScale() * 1.5f);
 }

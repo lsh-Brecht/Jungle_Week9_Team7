@@ -27,6 +27,7 @@ void RegisterInterpToMovementComponentBinding(sol::state& Lua);
 void RegisterPendulumMovementComponentBinding(sol::state& Lua);
 void RegisterRotatingMovementComponentBinding(sol::state& Lua);
 void RegisterHopMovementComponentBinding(sol::state& Lua);
+void RegisterParryComponentBinding(sol::state& Lua);
 
 void RegisterShapeComponentBinding(sol::state& Lua);
 void RegisterBoxComponentBinding(sol::state& Lua);

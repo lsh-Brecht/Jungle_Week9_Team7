@@ -1,4 +1,4 @@
-#include "GameFramework/AActor.h"
+﻿#include "GameFramework/AActor.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/ActorComponent.h"
@@ -390,6 +390,7 @@ void AActor::Serialize(FArchive& Ar)
 	// 소유 포인터(OwnedComponents/RootComponent/Outer)는 직렬화 제외 — 복제 단계에서 재구성.
 	Ar << bVisible;
 	Ar << bNeedsTick;
+	Ar << Tags;
 }
 
 
@@ -507,4 +508,30 @@ bool AActor::IsOverlappingActor(const AActor* Other) const
 		}
 	}
 	return false;
+}
+
+//태그 return
+bool AActor::HasTag(const FString& Tag) const
+{
+	return std::find(Tags.begin(), Tags.end(), Tag) != Tags.end();
+}
+
+void AActor::AddTag(const FString& Tag)
+{
+	if (!Tag.empty() && !HasTag(Tag))
+	{
+		Tags.push_back(Tag);
+	}
+}
+
+bool AActor::RemoveTag(const FString& Tag)
+{
+	auto It = std::find(Tags.begin(), Tags.end(), Tag);
+	if (It == Tags.end())
+	{
+		return false;
+	}
+
+	Tags.erase(It);
+	return true;
 }

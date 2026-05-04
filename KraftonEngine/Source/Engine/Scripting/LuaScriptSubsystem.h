@@ -28,6 +28,7 @@ public:
 	}
 
 	bool DispatchUiEvent(const FString& EventName);
+	bool DispatchGameEvent(const FString& EventName, AActor* Instigator = nullptr);
 
 	bool ExecuteString(const FString& Code);
 	bool ExecuteFile(const FString& Path);

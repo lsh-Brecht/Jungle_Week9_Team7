@@ -24,6 +24,7 @@
 #include "Component/Movement/HopMovementComponent.h"
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Component/ControllerInputComponent.h"
+#include "Component/ParryComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/TextRenderComponent.h"
 
@@ -658,6 +659,7 @@ namespace
 			{ "pendulummovement", UPendulumMovementComponent::StaticClass(), true },
 			{ "rotatingmovement",URotatingMovementComponent::StaticClass(),true },
 			{ "hopmovement",UHopMovementComponent::StaticClass(),true },
+			{ "parry", UParryComponent::StaticClass(), true },
 		};
 
 		for (const FLuaAllowedComponentClass& Entry : AllowedComponents)

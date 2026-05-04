@@ -14,7 +14,7 @@
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
@@ -191,13 +191,6 @@
             "bTickEnable" : true
           }
         }, {
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/Player.lua",
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }, {
           "ClassName" : "UPawnOrientationComponent",
           "Properties" : {
             "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
@@ -213,6 +206,12 @@
           "ClassName" : "ULuaScriptComponent",
           "Properties" : {
             "ScriptPath" : "Game/Player.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UParryComponent",
+          "Properties" : {
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -1342,7 +1341,7 @@
     "AspectRatio" : 1.846276,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-4.898028, 1.599756, 7.393324],
+    "Location" : [-5.021687, 1.611228, 7.521828],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,

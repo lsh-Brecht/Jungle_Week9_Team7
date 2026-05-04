@@ -16,6 +16,7 @@
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
 #include "Component/Movement/HopMovementComponent.h"
+#include "Component/ParryComponent.h"
 #include "Core/CoreTypes.h"
 #include "Object/Object.h"
 #include "GameFramework/AActor.h"
@@ -356,6 +357,22 @@ struct FLuaPlayerControllerHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<APlayerController>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaParryComponentHandle
+{
+	uint32 UUID = 0;
+
+	UParryComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UParryComponent>(Object);
 	}
 
 	bool IsValid() const
