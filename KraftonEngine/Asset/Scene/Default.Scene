@@ -97,12 +97,16 @@
             "Acceleration" : 2048.000000,
             "Auto Register Updated" : true,
             "Braking Deceleration" : 4096.000000,
+            "Controller Input Priority" : 10,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 4.000000,
             "Hop Height" : 0.300000,
             "Hop Only When Moving" : true,
             "Initial Speed" : 10.000000,
+            "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+            "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
             "Max Speed" : 15.000000,
+            "Receive Controller Input" : true,
             "Reset Hop When Idle" : true,
             "Simulating" : true,
             "Updated Component" : "",
@@ -114,7 +118,23 @@
           "ClassName" : "UPawnMovementComponent",
           "Properties" : {
             "Auto Register Updated" : true,
+            "Controller Input Priority" : 0,
+            "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+            "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
+            "Receive Controller Input" : true,
             "Updated Component" : "",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UPawnOrientationComponent",
+          "Properties" : {
+            "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
+            "Facing Mode" : 1,
+            "Min Facing Input Size" : 0.010000,
+            "Min Facing Speed" : 1.000000,
+            "Rotation Speed" : 720.000000,
+            "Yaw Only" : true,
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -162,18 +182,22 @@
       "NonSceneComponents" : [{
           "ClassName" : "UControllerInputComponent",
           "Properties" : {
-            "Look Mode" : 0,
             "Look Sensitivity" : 0.080000,
             "Max Pitch" : 89.000000,
             "Min Pitch" : -89.000000,
             "Move Speed" : 10.000000,
-            "Movement Frame" : 1,
-            "PossessedActorUUID" : 108,
+            "Movement Basis" : 1,
             "Sprint Multiplier" : 2.500000,
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
         }],
+      "PlayerController" : {
+        "ActiveCameraComponentPath" : "Root",
+        "ActiveCameraOwnerUUID" : 115,
+        "ControlRotation" : [-0.000000, 0.000000, 0.000000],
+        "PossessedActorUUID" : 108
+      },
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -195,51 +219,120 @@
     }, {
       "ActorUUID" : 115,
       "ClassName" : "ACameraActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "UCameraRigComponent",
-          "Properties" : {
-            "Enable Mouse LookAhead" : true,
-            "Far Z" : 200.000000,
-            "LookAhead Lag Speed" : 8.000000,
-            "Mouse LookAhead Distance" : 1.000000,
-            "Near Z" : 0.010000,
-            "Orthographic View Offset" : [-3.000000, 3.000000, 3.000000],
-            "Orthographic Width" : 12.000000,
-            "Perspective Back Distance" : 5.000000,
-            "Perspective FOV" : 1.047198,
-            "Perspective Height" : 3.000000,
-            "Perspective Side Offset" : 0.000000,
-            "Position Lag Speed" : 6.000000,
-            "Snap On Projection Change" : false,
-            "Stabilize Vertical In Orthographic" : true,
-            "Target Offset" : [0.000000, 0.000000, 0.800000],
-            "Vertical Dead Zone" : 0.400000,
-            "Vertical Follow Strength" : 0.150000,
-            "Vertical Lag Speed" : 2.000000,
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
+      "NonSceneComponents" : [],
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UCameraComponent",
         "Properties" : {
           "Aspect Ratio" : 1.777778,
+          "Back Distance" : 5.000000,
+          "Blend FOV" : true,
+          "Blend Function" : 3,
+          "Blend Location" : true,
+          "Blend Near/Far" : false,
+          "Blend Ortho Width" : true,
+          "Blend Rotation" : true,
+          "Blend Time" : 0.350000,
+          "Enable Look Ahead" : false,
+          "Enable Smoothing" : true,
+          "Eye Height" : 1.600000,
           "FOV" : 1.047198,
+          "FOV Lag Speed" : 10.000000,
           "Far Z" : 1000.000000,
+          "First Person Use Control Rotation" : true,
+          "Follow Offset" : [0.000000, 0.000000, 0.000000],
+          "Follow Subject Auto" : true,
+          "Follow Target" : 0,
+          "Height" : 2.000000,
           "Location" : [1.347203, -2.598638, -0.500000],
+          "Location Lag Speed" : 12.000000,
+          "Look Ahead Distance" : 1.000000,
+          "Look Ahead Lag Speed" : 8.000000,
           "Near Z" : 0.100000,
           "Ortho Width" : 10.000000,
+          "Ortho Width Lag Speed" : 10.000000,
           "Orthographic" : false,
+          "Projection Switch Mode" : 1,
           "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Rotation Lag Speed" : 12.000000,
           "Scale" : [1.000000, 1.000000, 1.000000],
+          "Side Offset" : 0.000000,
+          "Stabilize Vertical In Orthographic" : true,
+          "Use Control Rotation Yaw" : true,
+          "Use Target Forward" : true,
+          "Vertical Dead Zone" : 0.400000,
+          "Vertical Follow Strength" : 0.150000,
+          "Vertical Lag Speed" : 2.000000,
+          "View Mode" : 0,
+          "View Offset" : [-5.000000, 5.000000, 5.000000],
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 124,
+      "ActorUUID" : 179,
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "179",
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [3.000000, 3.000000, 2.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UStaticMeshComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Cast Shadow" : true,
+              "Element 0" : {
+                "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+              },
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 1.020537],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [4.000000, 4.000000, 0.400000],
+              "Static Mesh" : "Data/BasicShape/Sphere.OBJ",
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [4.248634, -9.135523, -0.500001],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [0.200000, 0.200000, 2.000000],
+          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 185,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -268,7 +361,7 @@
             "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [-1.767735, -4.238609, -0.500000],
+          "Location" : [2.825923, -6.497190, -0.500000],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "Data/BasicShape/Cube.OBJ",
@@ -280,16 +373,17 @@
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 128,
+      "ActorUUID" : 189,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
-            "ClassName" : "UBoxComponent",
+            "ClassName" : "UCapsuleComponent",
             "Properties" : {
               "Blocks Movement" : true,
-              "Box Extent" : [1.000000, 1.000000, 1.000000],
+              "Capsule Half Height" : 1.000000,
+              "Capsule Radius" : 0.500000,
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
@@ -309,10 +403,10 @@
             "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [-2.443707, -0.578317, -0.500000],
+          "Location" : [7.945642, -4.915869, -0.500000],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Static Mesh" : "Data/BasicShape/Cylinder.obj",
           "Two Sided Shadow" : false,
           "Visible" : true,
           "bEditorOnly" : false,
@@ -321,21 +415,21 @@
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 132,
+      "ActorUUID" : 194,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
-            "ClassName" : "UBoxComponent",
+            "ClassName" : "USphereComponent",
             "Properties" : {
               "Blocks Movement" : true,
-              "Box Extent" : [1.000000, 1.000000, 1.000000],
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
               "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
+              "Sphere Radius" : 1.000000,
               "Two Sided Shadow" : false,
               "Visible" : true,
               "bEditorOnly" : false,
@@ -350,10 +444,10 @@
             "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [6.782084, -4.717004, -0.500000],
+          "Location" : [3.198805, -2.003806, -0.499999],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Static Mesh" : "Data/BasicShape/Sphere.OBJ",
           "Two Sided Shadow" : false,
           "Visible" : true,
           "bEditorOnly" : false,
@@ -362,7 +456,7 @@
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 136,
+      "ActorUUID" : 198,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -371,12 +465,12 @@
             "ClassName" : "UBoxComponent",
             "Properties" : {
               "Blocks Movement" : true,
-              "Box Extent" : [1.000000, 1.000000, 1.000000],
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
-              "Location" : [0.000000, 0.000000, 0.000000],
+              "Location" : [0.000000, 0.000000, 0.504003],
               "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Scale" : [1.946280, 0.914204, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
               "bEditorOnly" : false,
@@ -388,13 +482,40 @@
           "Blocks Movement" : true,
           "Cast Shadow" : true,
           "Element 0" : {
-            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+            "Path" : "Asset/Materials/Auto/blue_mat1.005.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/blue_mat3.004.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/blue_mat4.004.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/blue_mat5.004.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/blue_mat7.004.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/blue_mat8.002.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/blue_mat11.001.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/blue_mat12.001.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/blue_mat13.001.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/blue_mat14.001.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [7.238250, 4.774949, -0.500000],
+          "Location" : [7.580773, -0.135822, -0.500000],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Static Mesh" : "Data/VoxelCars/VoxelCarA.obj",
           "Two Sided Shadow" : false,
           "Visible" : true,
           "bEditorOnly" : false,
@@ -403,7 +524,7 @@
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 140,
+      "ActorUUID" : 213,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -412,12 +533,12 @@
             "ClassName" : "UBoxComponent",
             "Properties" : {
               "Blocks Movement" : true,
-              "Box Extent" : [1.000000, 1.000000, 1.000000],
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
-              "Location" : [0.000000, 0.000000, 0.000000],
+              "Location" : [0.000000, 0.000000, 0.504003],
               "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Scale" : [1.946280, 0.914204, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
               "bEditorOnly" : false,
@@ -429,13 +550,492 @@
           "Blocks Movement" : true,
           "Cast Shadow" : true,
           "Element 0" : {
-            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+            "Path" : "Asset/Materials/Auto/yellow_mat1.005.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat3.004.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat4.004.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat5.004.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat7.004.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat8.002.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat11.001.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat12.001.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat13.001.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/yellow_mat14.001.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [2.969699, 9.662370, -0.500000],
+          "Location" : [3.744048, 1.540645, -0.500000],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Static Mesh" : "Data/VoxelCars/VoxelCarB.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 228,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 0.504003],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.946280, 0.914204, 1.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/red_mat1.005.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/red_mat3.004.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/red_mat4.004.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/red_mat5.004.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/red_mat7.004.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/red_mat8.002.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/red_mat11.001.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/red_mat12.001.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/red_mat13.001.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/red_mat14.001.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [8.042778, 4.193509, -0.500000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/VoxelCars/VoxelCarC.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 243,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 0.504003],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.946280, 0.914204, 1.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/green_mat1.005.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/green_mat3.004.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/green_mat4.004.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/green_mat5.004.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/green_mat7.004.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/green_mat8.002.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/green_mat11.001.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/green_mat12.001.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/green_mat13.001.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/green_mat14.001.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [4.555468, 4.245340, -0.500000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/VoxelCars/VoxelCarD.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 258,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 0.229398],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.880399, 1.813011, 0.466532],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_badges1.mat"
+          },
+          "Element 1" : {
+            "Path" : "Asset/Materials/Auto/livery.mat"
+          },
+          "Element 10" : {
+            "Path" : "Asset/Materials/Auto/glass_surr.mat"
+          },
+          "Element 11" : {
+            "Path" : "Asset/Materials/Auto/light_glass.mat"
+          },
+          "Element 12" : {
+            "Path" : "Asset/Materials/Auto/mirrors.mat"
+          },
+          "Element 13" : {
+            "Path" : "Asset/Materials/Auto/red_glass.mat"
+          },
+          "Element 14" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_rotor_009.mat"
+          },
+          "Element 15" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_tyre_009.mat"
+          },
+          "Element 16" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_wheel_009.mat"
+          },
+          "Element 17" : {
+            "Path" : "Asset/Materials/Auto/intVehicle_Interior_mm_int1.mat"
+          },
+          "Element 18" : {
+            "Path" : "Asset/Materials/Auto/intVehicle_Interior_mm_mat01.mat"
+          },
+          "Element 19" : {
+            "Path" : "Asset/Materials/Auto/intVehicle_Interior_mm_mat05.mat"
+          },
+          "Element 2" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_ext1.mat"
+          },
+          "Element 20" : {
+            "Path" : "Asset/Materials/Auto/intVehicle_Interior_mm_mat07.mat"
+          },
+          "Element 21" : {
+            "Path" : "Asset/Materials/Auto/intVehicle_Interior_mm_sw1.mat"
+          },
+          "Element 3" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_lights1.mat"
+          },
+          "Element 4" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_misc1.mat"
+          },
+          "Element 5" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_windows1.mat"
+          },
+          "Element 6" : {
+            "Path" : "Asset/Materials/Auto/grille.mat"
+          },
+          "Element 7" : {
+            "Path" : "Asset/Materials/Auto/light_emissive.mat"
+          },
+          "Element 8" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_chassis1.mat"
+          },
+          "Element 9" : {
+            "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_cab1.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [9.201529, 8.993853, -0.500000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.200000, 1.200000, 1.200000],
+          "Static Mesh" : "Data/VoxelCars/RacingCar.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 285,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.020910, 0.527948],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.797667, 1.839359, 1.055667],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/UrbanObstacle.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [3.495102, 6.825266, -0.500000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/Obstacles/Obstacle.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 289,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [-0.004103, -0.001059, 0.398582],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.631491, 1.942770, 0.812024],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/weathered_concrete_barriers.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [7.741088, 12.061575, -0.500000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/Obstacles/ObstacleB.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 293,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.047824, -0.156921, 0.485547],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.594817, 0.604542, 1.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [-0.108513, 0.000000, 1.832060],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [2.058692, 2.076035, 1.604878],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/VoxelTreeA.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [3.256741, 9.625305, -0.500001],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/VoxelTrees/VoxelTreeA.obj",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 301,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.076862, 0.340300],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.761122, 0.744484, 0.677335],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.081730, 1.415659],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [2.203831, 2.217384, 1.285832],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.062151, 2.589615],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [0.760952, 0.760777, 0.830838],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/VoxelTreeB.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [12.715308, -3.348484, -0.500001],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "Data/VoxelTrees/VoxelTreeB.obj",
           "Two Sided Shadow" : false,
           "Visible" : true,
           "bEditorOnly" : false,
@@ -452,11 +1052,11 @@
     "AspectRatio" : 1.847861,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-28.128033, -2.116618, 11.742407],
+    "Location" : [-7.885139, 0.246277, 6.401345],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 16.128969, -0.501709]
+    "Rotation" : [0.000000, 17.478531, -1.099829]
   },
   "Primitives" : {
     "102" : {
@@ -464,6 +1064,13 @@
       "ObjStaticMeshAsset" : "Data/GouraudCube/GouraudCube.obj",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [30.000000, 30.000000, 1.000000],
+      "Type" : "StaticMeshComp"
+    },
+    "179" : {
+      "Location" : [4.248634, -9.135523, -0.500001],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [0.200000, 0.200000, 2.000000],
       "Type" : "StaticMeshComp"
     }
   },
