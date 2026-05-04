@@ -17,6 +17,15 @@ void FRowData::ClearActors()
         }
     }
     StaticObstacles.clear();
+
+	for (AActor* DynActor : DynamicActors)
+	{
+		if (DynActor)
+		{
+			FObjectPoolSystem::Get().ReleaseActor(DynActor);
+		}
+	}
+	DynamicActors.clear();
 }
 
 void FRowManager::Initialize()
@@ -76,6 +85,9 @@ void FRowManager::Tick(float DeltaTime)
 
 					if (SpawnedActor)
 					{
+						Row.DynamicActors.push_back(SpawnedActor);
+
+						UProjectileMovementComponent* TargetProjComp = nullptr;
 						// 6. ProjectileMovementComponent를 찾아서 속도 및 방향 설정
 						for (UActorComponent* Comp : SpawnedActor->GetComponents())
 						{
@@ -85,6 +97,16 @@ void FRowManager::Tick(float DeltaTime)
 								ProjComp->SetVelocity(FVector(0.0f, static_cast<float>(Spawner.DirectionX), 0.0f) * Spawner.Speed);
 								break;
 							}
+						}
+
+						if (!TargetProjComp)
+						{
+							TargetProjComp = SpawnedActor->AddComponent<UProjectileMovementComponent>();
+						}
+
+						if (TargetProjComp)
+						{
+							TargetProjComp->SetVelocity(FVector(0.0f, static_cast<float>(Spawner.DirectionX), 0.0f) * Spawner.Speed);
 						}
 					}
 				}

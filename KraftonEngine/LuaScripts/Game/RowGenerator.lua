@@ -19,7 +19,7 @@ local PREFABS = {
 
     TREE1 = "Asset/Prefab/TreeA.Prefab",
     TREE2 = "Asset/Prefab/TreeB.Prefab",
-    ROCK = "Asset/Prefab/BasicCube.Prefab",
+    PUBGBOX = "Asset/Prefab/PUBGBOX.Prefab",
 
     RacingCar = "Asset/Prefab/RacingCar.Prefab",
     CARA = "Asset/Prefab/CarA.Prefab",
@@ -45,29 +45,28 @@ local LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
 local BiomeWeights = {
     { type = BIOME.GRASS,   weight = 40 },   -- 50%
     { type = BIOME.ROAD,    weight = 60 },    -- 35%
-    { type = BIOME.RAILWAY, weight = 0 }  -- 15%
 }
 
 -- 장애물별 등장 가중치 설정 (합이 꼭 100일 필요는 없어)
 local ObstacleWeights = {
-    { prefab = PREFABS.TREE1, weight = 50 }, -- 50의 비중
-    { prefab = PREFABS.TREE2, weight = 50 }, -- 50의 비중
-    --{ prefab = PREFABS.SIGN, weight = 10 }  -- 10의 비중
+    { prefab = PREFABS.TREE1,   weight = 30 },
+    { prefab = PREFABS.TREE2,   weight = 30 },
+    { prefab = PREFABS.PUBGBOX, weight = 40 }
 }
 
 -- 차량 등장 확률 (가중치)
 local VehicleWeights = {
-    { type = PREFABS.RacingCar, weight = 20 },
-    { type = PREFABS.CARA, weight = 20 },
-    { type = PREFABS.CARB, weight = 20 },
-    { type = PREFABS.CARC, weight = 20 },
-    { type = PREFABS.CARD, weight = 20 },
-    { type = PREFABS.MiniBus, weight = 20 }
+    { type = PREFABS.RacingCar, weight = 30 },
+    { type = PREFABS.CARA, weight = 10 },
+    { type = PREFABS.CARB, weight = 10 },
+    { type = PREFABS.CARC, weight = 10 },
+    { type = PREFABS.CARD, weight = 10 },
+    { type = PREFABS.MiniBus, weight = 30 }
 }
 
 function RowGenerator.ConfigureRows()
     SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
-    SetRowBufferCounts(8, 8)
+    SetRowBufferCounts(10, 10)
 
     if World and World.WarmUpPrefabPool then
         World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
@@ -75,8 +74,14 @@ function RowGenerator.ConfigureRows()
 
         World.WarmUpPrefabPool(PREFABS.TREE1, 100)
         World.WarmUpPrefabPool(PREFABS.TREE2, 100)
-        -- World.WarmUpPrefabPool(PREFABS.CARA, 30)
-        -- World.WarmUpPrefabPool(PREFABS.ROCK, 20)
+        World.WarmUpPrefabPool(PREFABS.PUBGBOX, 100)
+
+        World.WarmUpPrefabPool(PREFABS.RacingCar, 10)
+        World.WarmUpPrefabPool(PREFABS.CARA, 10)
+        World.WarmUpPrefabPool(PREFABS.CARB, 10)
+        World.WarmUpPrefabPool(PREFABS.CARC, 10)
+        World.WarmUpPrefabPool(PREFABS.MiniBus, 10)
+
     end
 end
 
@@ -110,7 +115,7 @@ function RowGenerator.GenerateRow(rowIndex)
     local biome = ChooseWeighted(BiomeWeights)
     local biomeType = biome.type
     SetRowBiome(rowIndex, biomeType)
-    print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
+    -- print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
 
     for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
         if biomeType == BIOME.GRASS then
@@ -153,20 +158,20 @@ function RowGenerator.GenerateRow(rowIndex)
         local interval = 0
 
         -- 2. 뽑힌 차량의 종류에 따라 속도와 스폰 주기를 다르게 세팅
-        if selectedVehicle.type == PREFABS.CAR then
-            -- 승용차: 표준 속도, 표준 간격
-            speed = 5.0 + (rowIndex * 0.1)
-            interval = math.max(1.0, 3.0 - (rowIndex * 0.05))
+        if selectedVehicle.type == PREFABS.RacingCar then
+            -- 스포츠카: 매우 빠른 속도, 짧은 간격
+            speed = 10.0 + (rowIndex * 0.15)
+            interval = math.max(0.5, 2.0 - (rowIndex * 0.05))
 
-        elseif selectedVehicle.type == PREFABS.TRUCK then
-            -- 트럭: 느린 속도, 넓은 간격 (길막 주의)
+        elseif selectedVehicle.type == PREFABS.MiniBus then
+            -- 버스: 느린 속도, 넓은 간격
             speed = 3.5 + (rowIndex * 0.08)
             interval = math.max(2.0, 5.0 - (rowIndex * 0.03))
 
-        elseif selectedVehicle.type == PREFABS.SPORTS_CAR then
-            -- 스포츠카: 매우 빠른 속도, 짧은 간격 (위협적)
-            speed = 10.0 + (rowIndex * 0.15)
-            interval = math.max(0.5, 2.0 - (rowIndex * 0.05))
+        else
+            -- 승용차: 표준 속도, 표준 간격
+            speed = 5.0 + (rowIndex * 0.1)
+            interval = math.max(1.0, 3.0 - (rowIndex * 0.05))
         end
 
         -- 3. 결정된 데이터로 해당 Row에 스포너 등록

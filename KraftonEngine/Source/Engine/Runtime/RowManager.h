@@ -47,6 +47,7 @@ struct FRowData
     ERowBiome Biome = ERowBiome::Grass;
     TArray<FStaticObstacleData> StaticObstacles;
 	TArray<FSpawnerData> Spawners;
+	TArray<AActor*> DynamicActors;
 
     void ClearActors();
 };

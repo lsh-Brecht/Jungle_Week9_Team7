@@ -1,9 +1,24 @@
 {
   "Name" : "RacingCar",
   "RootActor" : {
-    "ActorUUID" : 126,
+    "ActorUUID" : 258,
     "ClassName" : "AActor",
-    "NonSceneComponents" : [],
+    "NonSceneComponents" : [{
+        "ClassName" : "UProjectileMovementComponent",
+        "Properties" : {
+          "Auto Register Updated" : true,
+          "Controller Input Priority" : 0,
+          "Initial Speed" : 0.000000,
+          "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+          "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
+          "Max Speed" : 100.000000,
+          "Receive Controller Input" : false,
+          "Updated Component" : "",
+          "Velocity" : [0.000000, 0.000000, 0.000000],
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }],
     "RootComponent" : {
       "Children" : [{
           "Children" : [],
@@ -14,7 +29,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.000000, 0.229398],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [0.880399, 1.813011, 0.466532],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -93,8 +108,8 @@
           "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_cab1.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [2.801796, -16.985468, 2.481843],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
+        "Location" : [0.000000, 0.000000, 0.000000],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [1.200000, 1.200000, 1.200000],
         "Static Mesh" : "Data/VoxelCars/RacingCar.obj",
         "Two Sided Shadow" : false,
