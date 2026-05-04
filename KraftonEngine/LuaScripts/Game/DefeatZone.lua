@@ -5,7 +5,9 @@ function BeginPlay()
 end
 
 function OnOverlap(otherActor)
-    if State.IsPlayer(otherActor) then
+    if State.IsPlaying ~= nil
+        and State.IsPlaying()
+        and State.IsPlayer(otherActor) then
         State.GameOver("Touched defeat zone")
     end
 end

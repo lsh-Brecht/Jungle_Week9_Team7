@@ -416,7 +416,29 @@ function State.SetMenuObjectsVisible(visible)
     set_visible(find_actor(State.Config.RestartButtonName), visible)
 end
 
+function State.IsIntro()
+    return State.Mode == "Intro" or State.Mode == "Ready" or State.Mode == "Boot"
+end
+
+function State.IsPlaying()
+    return State.Mode == "Playing"
+end
+
+function State.IsGameOver()
+    return State.Mode == "GameOver"
+end
+
+function State.CanStartFromWorldButton()
+    -- 시작은 RML Intro UI / IntroCameraController가 담당합니다.
+    -- 3D StartButton overlap으로 자동 시작되는 것을 막습니다.
+    return false
+end
+
 function State.UpdateHUD()
+    if State.Mode == "Intro" or State.Mode == "Ready" or State.Mode == "Boot" then
+        set_visible(State.CachedHUDText, false)
+        return
+    end
     local text =
         "State: " .. tostring(State.Mode) ..
         "\nScore: " .. tostring(State.Score or 0) ..
@@ -432,6 +454,36 @@ function State.UpdateHUD()
     if not set_text(State.CachedHUDText, text, true) then
         print(text)
     end
+end
+
+function State.ResetToIntro()
+    State.Mode = "Intro"
+    State.Score = 0
+    State.StartScoreRow = 0
+    State.Elapsed = 0.0
+    State.bCreditsPrinted = false
+
+    hide_game_over_ui()
+
+    State.SetPlayerMovementEnabled(false)
+
+    -- RML Intro UI를 쓰므로 월드 Start/Restart 버튼은 숨깁니다.
+    State.SetMenuObjectsVisible(false)
+
+    set_visible(State.CachedHUDText, false)
+    set_visible(State.CachedCreditsText, false)
+
+    if UI ~= nil then
+        if UI.ShowHUD ~= nil then
+            UI.ShowHUD(false)
+        end
+
+        if UI.ShowIntro ~= nil then
+            UI.ShowIntro(true)
+        end
+    end
+
+    push_score_to_ui()
 end
 
 function State.BeginPlay()
@@ -453,41 +505,17 @@ function State.BeginPlay()
         end
     end
 
-    State.Score = 0
-    State.StartScoreRow = 0
-    State.Elapsed = 0.0
-    State.bCreditsPrinted = false
-
-    hide_game_over_ui()
-
-    if UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(false)
-        end
-
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(true)
-        end
-
-        State.bUIReady = true
-    end
-
-    push_score_to_ui()
-
     if State.Config.AutoStart then
-        State.StartGame()
+        State.StartGame("AutoStart")
     else
-        State.Mode = "Ready"
-        State.SetPlayerMovementEnabled(false)
-        State.SetMenuObjectsVisible(true)
-        set_visible(State.CachedCreditsText, false)
-        State.UpdateHUD()
+        State.ResetToIntro()
     end
 
+    State.bUIReady = true
     State.bInitialized = true
 end
 
-function State.StartGame()
+function State.StartGame(reason)
     if State.Mode == "Playing" then
         return
     end
@@ -515,7 +543,7 @@ function State.StartGame()
 
     local player = State.GetPlayer()
     if is_valid(player) and State.Config.StartLocation ~= nil then
-        player.Location = clone_vector(State.Config.StartLocation)
+        player.Location = FVector.new(0.0, 0.501545, -0.251383)
     end
 
     if is_valid(player) then
@@ -533,8 +561,8 @@ function State.StartGame()
     set_visible(State.CachedCreditsText, false)
     push_score_to_ui()
     State.UpdateHUD()
-
-    print("[Game] Start")
+    
+    print("[Game] Start reason=" .. tostring(reason or "unknown"))
 end
 
 function State.ReturnToStartScreen(reason)
@@ -549,7 +577,7 @@ function State.ReturnToStartScreen(reason)
 
     local player = State.GetPlayer()
     if is_valid(player) and State.Config.StartLocation ~= nil then
-        player.Location = State.Config.StartLocation
+        player.Location = FVector.new(0.0, 0.501545, -0.251383) 
     end
 
     State.SetPlayerMovementEnabled(false)

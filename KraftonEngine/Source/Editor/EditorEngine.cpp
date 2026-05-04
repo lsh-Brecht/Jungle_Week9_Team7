@@ -21,6 +21,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Materials/MaterialManager.h"
 #include "Engine/Platform/Paths.h"
+#include "Runtime/RowManager.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
@@ -256,6 +257,9 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
 
+	FRowManager::Get().Shutdown();
+	FRowManager::Get().Initialize();
+
 	// 1) 현재 에디터 월드를 복제해 PIE 월드 생성 (UE의 CreatePIEWorldByDuplication 대응).
 	UWorld* EditorWorld = GetWorld();
 	if (!EditorWorld)
@@ -365,8 +369,15 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		{
 			RequestEndPlayMap();
 		};
-		PIEViewportClient->GetGameUiSystem().SetCallbacks(std::move(UiCallbacks));
-		PIEViewportClient->GetGameUiSystem().Initialize(Window, Renderer, PIEViewportClient);
+		FGameUiSystem& GameUi = PIEViewportClient->GetGameUiSystem();
+
+		if (!GameUi.Initialize(Window, Renderer, PIEViewportClient))
+		{
+			UE_LOG("[PIE] Failed to initialize Game UI.");
+			return;
+		}
+
+		GameUi.SetCallbacks(std::move(UiCallbacks));
 	}
 	EnterPIEPossessedMode();
 	
@@ -387,7 +398,8 @@ void UEditorEngine::EndPlayMap()
 	{
 		return;
 	}
-
+	FRowManager::Get().Shutdown(true);
+	TaskScheduler.Clear();
 	// 활성 월드를 PIE 시작 전 핸들로 복원.
 	const FName PrevHandle = PlayInEditorSessionInfo->PreviousActiveWorldHandle;
 	SetActiveWorld(PrevHandle);
