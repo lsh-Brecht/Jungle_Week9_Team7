@@ -61,6 +61,7 @@ public:
 
 protected:
 	bool SafeMoveUpdatedComponent(const FVector& Delta, FHitResult* OutHit = nullptr);
+	bool SafeMoveUpdatedComponentPreserveAxes(const FVector& Delta, FVector* OutAppliedDelta = nullptr, FHitResult* OutHit = nullptr);
 	void TryAutoRegisterUpdatedComponent();
 	USceneComponent* FindUpdatedComponentByPath(const FString& InPath) const;
 

@@ -172,6 +172,79 @@ bool UMovementComponent::SafeMoveUpdatedComponent(const FVector& Delta, FHitResu
 	return true;
 }
 
+bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Delta, FVector* OutAppliedDelta, FHitResult* OutHit)
+{
+	if (OutAppliedDelta)
+	{
+		*OutAppliedDelta = FVector::ZeroVector;
+	}
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	if (Delta.IsNearlyZero())
+	{
+		return true;
+	}
+
+	FHitResult FullMoveHit;
+	if (SafeMoveUpdatedComponent(Delta, &FullMoveHit))
+	{
+		if (OutAppliedDelta)
+		{
+			*OutAppliedDelta = Delta;
+		}
+		return true;
+	}
+
+	if (OutHit)
+	{
+		*OutHit = FullMoveHit;
+	}
+
+	FVector AppliedDelta = FVector::ZeroVector;
+	FHitResult LastBlockingHit = FullMoveHit;
+	bool bMovedAnyAxis = false;
+
+	const FVector AxisDeltas[3] =
+	{
+		FVector(Delta.X, 0.0f, 0.0f),
+		FVector(0.0f, Delta.Y, 0.0f),
+		FVector(0.0f, 0.0f, Delta.Z)
+	};
+
+	for (const FVector& AxisDelta : AxisDeltas)
+	{
+		if (AxisDelta.IsNearlyZero())
+		{
+			continue;
+		}
+
+		FHitResult AxisHit;
+		if (SafeMoveUpdatedComponent(AxisDelta, &AxisHit))
+		{
+			AppliedDelta += AxisDelta;
+			bMovedAnyAxis = true;
+		}
+		else
+		{
+			LastBlockingHit = AxisHit;
+		}
+	}
+
+	if (OutAppliedDelta)
+	{
+		*OutAppliedDelta = AppliedDelta;
+	}
+	if (OutHit && LastBlockingHit.bHit)
+	{
+		*OutHit = LastBlockingHit;
+	}
+
+	return bMovedAnyAxis;
+}
+
 void UMovementComponent::TryAutoRegisterUpdatedComponent()
 {
 	if (!bAutoRegisterUpdatedComponent)

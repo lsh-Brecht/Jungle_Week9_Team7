@@ -73,5 +73,5 @@ void UPawnMovementComponent::ApplyPendingMovement()
 	{
 		return;
 	}
-	SafeMoveUpdatedComponent(Delta, nullptr);
+	SafeMoveUpdatedComponentPreserveAxes(Delta, nullptr, nullptr);
 }
