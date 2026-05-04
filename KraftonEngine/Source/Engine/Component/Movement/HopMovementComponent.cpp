@@ -236,6 +236,7 @@ void UHopMovementComponent::Serialize(FArchive& Ar)
 		VisualHopComponent = nullptr;
 		bHasVisualHopBaseRelativeLocation = false;
 		bHasLockedGameplayPlaneZ = false;
+		PlaneLockedComponent = nullptr;
 	}
 }
 
@@ -246,6 +247,17 @@ void UHopMovementComponent::PostEditProperty(const char* PropertyName)
 	if (std::strcmp(PropertyName, "Visual Hop Component") == 0)
 	{
 		ResolveVisualHopComponent(true);
+		return;
+	}
+
+	if (std::strcmp(PropertyName, "Updated Component") == 0)
+	{
+		bHasLockedGameplayPlaneZ = false;
+		PlaneLockedComponent = nullptr;
+		bHasVisualHopBaseRelativeLocation = false;
+		CaptureGameplayPlane();
+		ResolveVisualHopComponent(true);
+		LockUpdatedComponentToGameplayPlane();
 	}
 }
 
@@ -354,16 +366,20 @@ void UHopMovementComponent::RemoveAppliedHopOffset()
 
 void UHopMovementComponent::CaptureGameplayPlane()
 {
-	if (bHasLockedGameplayPlaneZ)
+	USceneComponent* UpdatedSceneComponent = GetUpdatedComponent();
+	if (!UpdatedSceneComponent)
 	{
 		return;
 	}
 
-	if (USceneComponent* UpdatedSceneComponent = GetUpdatedComponent())
+	if (bHasLockedGameplayPlaneZ && PlaneLockedComponent == UpdatedSceneComponent)
 	{
-		LockedGameplayPlaneZ = UpdatedSceneComponent->GetWorldLocation().Z;
-		bHasLockedGameplayPlaneZ = true;
+		return;
 	}
+
+	LockedGameplayPlaneZ = UpdatedSceneComponent->GetWorldLocation().Z;
+	PlaneLockedComponent = UpdatedSceneComponent;
+	bHasLockedGameplayPlaneZ = true;
 }
 
 void UHopMovementComponent::LockUpdatedComponentToGameplayPlane()
@@ -400,6 +416,11 @@ bool UHopMovementComponent::ResolveVisualHopComponent(bool bResetBaseLocation)
 		VisualHopComponent = nullptr;
 	}
 
+	if (!VisualHopComponent)
+	{
+		VisualHopComponent = FindFallbackVisualHopComponent();
+	}
+
 	if (!VisualHopComponent || VisualHopComponent == GetUpdatedComponent())
 	{
 		VisualHopComponent = nullptr;
@@ -416,6 +437,18 @@ bool UHopMovementComponent::ResolveVisualHopComponent(bool bResetBaseLocation)
 	return true;
 }
 
+USceneComponent* UHopMovementComponent::FindFallbackVisualHopComponent() const
+{
+	USceneComponent* UpdatedSceneComponent = GetUpdatedComponent();
+	if (!UpdatedSceneComponent)
+	{
+		return nullptr;
+	}
+
+	const TArray<USceneComponent*>& Children = UpdatedSceneComponent->GetChildren();
+	return Children.empty() ? nullptr : Children.front();
+}
+
 void UHopMovementComponent::ApplyVisualHopOffset(float NewHopOffset)
 {
 	if (!ResolveVisualHopComponent(false) || !bHasVisualHopBaseRelativeLocation)
@@ -423,8 +456,18 @@ void UHopMovementComponent::ApplyVisualHopOffset(float NewHopOffset)
 		return;
 	}
 
+	float ParentScaleZ = 1.0f;
+	if (USceneComponent* Parent = VisualHopComponent->GetParent())
+	{
+		ParentScaleZ = Parent->GetWorldScale().Z;
+	}
+	if (std::fabs(ParentScaleZ) <= KInputTolerance)
+	{
+		ParentScaleZ = 1.0f;
+	}
+
 	FVector VisualLocation = VisualHopBaseRelativeLocation;
-	VisualLocation.Z += NewHopOffset;
+	VisualLocation.Z += NewHopOffset / ParentScaleZ;
 	VisualHopComponent->SetRelativeLocation(VisualLocation);
 }
 

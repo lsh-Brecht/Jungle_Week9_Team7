@@ -169,7 +169,7 @@
             "Controller Input Priority" : 0,
             "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
             "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
-            "Receive Controller Input" : true,
+            "Receive Controller Input" : false,
             "Updated Component" : "",
             "bEditorOnly" : false,
             "bTickEnable" : true
@@ -214,35 +214,25 @@
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
               "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [0.402405, 0.402405, 0.402405],
+              "Scale" : [1.000000, 1.000000, 1.000000],
               "Static Mesh" : "Data/Chicken/Chicken.obj",
               "Two Sided Shadow" : false,
               "Visible" : true,
               "bEditorOnly" : false,
               "bTickEnable" : true
             }
-          }, {
-            "Children" : [],
-            "ClassName" : "UBoxComponent",
-            "Properties" : {
-              "Blocks Movement" : true,
-              "Box Extent" : [0.500000, 0.300000, 0.500000],
-              "Cast Shadow" : true,
-              "Generate Overlap Events" : true,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [0.402405, 0.402405, 0.402405],
-              "Two Sided Shadow" : false,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
           }],
-        "ClassName" : "USceneComponent",
+        "ClassName" : "UBoxComponent",
         "Properties" : {
+          "Blocks Movement" : true,
+          "Box Extent" : [0.500000, 0.300000, 0.500000],
+          "Cast Shadow" : true,
+          "Generate Overlap Events" : true,
           "Location" : [0.000000, 0.501545, -0.251383],
           "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Scale" : [0.402405, 0.402405, 0.402405],
+          "Two Sided Shadow" : false,
+          "Visible" : true,
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
