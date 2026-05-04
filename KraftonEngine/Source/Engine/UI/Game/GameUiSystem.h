@@ -102,6 +102,8 @@ private:
 	void BindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount);
 	void UnbindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount);
 	void HandleClick(const FString& ElementId);
+	void QueueScriptEvent(const FString& EventName);
+	void FlushQueuedScriptEvents();
 	void DispatchScriptEvent(const FString& EventName);
 
 	void SetOptionsVisible(bool bVisible);
@@ -118,6 +120,9 @@ private:
 	FViewportPresentationRect PresentationRect;
 	FGameUiCallbacks Callbacks;
 	std::function<void(const FString&)> ScriptEventHandler;
+	TArray<FString> PendingScriptEvents;
+	bool bFlushingScriptEvents = false;
+	bool bStartEventQueuedOrDispatched = false;
 
 	std::unique_ptr<FRmlD3D11RenderInterface> RenderInterface;
 	std::unique_ptr<FRmlWin32SystemInterface> SystemInterface;

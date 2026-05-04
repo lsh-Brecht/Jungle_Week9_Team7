@@ -3,6 +3,7 @@
 
 #include "Core/Log.h"
 #include "Engine/Runtime/Engine.h"
+#include "Scripting/LuaScriptSubsystem.h"
 #include "Engine/UI/Game/GameUiSystem.h"
 #include "Viewport/GameViewportClient.h"
 
@@ -13,6 +14,11 @@
 namespace
 {
 	std::function<void(const FString&)> GPendingUiEventHandler;
+
+	void RouteUiEventToCurrentLua(const FString& EventName)
+	{
+		FLuaScriptSubsystem::Get().DispatchUiEvent(EventName);
+	}
 
 	FGameUiSystem* GetGameUiSystem()
 	{
@@ -48,43 +54,62 @@ namespace
 	}
 }
 
+void InstallLuaUiEventRouter()
+{
+	// This handler is intentionally native-only. It never captures sol::function,
+	// so it remains safe when the active Lua state is replaced during hot reload.
+	GPendingUiEventHandler = [](const FString& EventName)
+	{
+		RouteUiEventToCurrentLua(EventName);
+	};
+
+	if (FGameUiSystem* GameUi = GetGameUiSystem())
+	{
+		GameUi->SetScriptEventHandler(GPendingUiEventHandler);
+	}
+}
+
+void ClearLuaUiEventHandler()
+{
+	GPendingUiEventHandler = nullptr;
+	if (FGameUiSystem* GameUi = GetGameUiSystem())
+	{
+		GameUi->ClearScriptEventHandler();
+	}
+}
+
 void RegisterUiBinding(sol::state& Lua)
 {
 	sol::table UI = Lua.get_or("UI", Lua.create_table());
 	Lua["UI"] = UI;
 
 	UI.set_function("SetEventHandler",
-		[](sol::protected_function Handler)
+		[](sol::protected_function Handler, sol::this_state State)
 		{
-			GPendingUiEventHandler = [Handler](const FString& EventName) mutable
+			sol::state_view LuaView(State);
+			sol::table UiTable = LuaView["UI"];
+			if (Handler.valid())
 			{
-				if (!Handler.valid())
-				{
-					return;
-				}
-
-				sol::protected_function_result Result = Handler(EventName);
-				if (!Result.valid())
-				{
-					sol::error Error = Result;
-					UE_LOG("[Lua UI] OnUIEvent failed: %s", Error.what());
-				}
-			};
-
-			if (FGameUiSystem* GameUi = GetGameUiSystem())
+				UiTable["_EventHandler"] = Handler;
+				InstallLuaUiEventRouter();
+			}
+			else
 			{
-				GameUi->SetScriptEventHandler(GPendingUiEventHandler);
+				UiTable["_EventHandler"] = sol::nil;
 			}
 		});
 
 	UI.set_function("ClearEventHandler",
-		[]()
+		[](sol::this_state State)
 		{
-			GPendingUiEventHandler = nullptr;
-			if (FGameUiSystem* GameUi = GetGameUiSystem())
+			sol::state_view LuaView(State);
+			sol::object UiObject = LuaView["UI"];
+			if (UiObject.get_type() == sol::type::table)
 			{
-				GameUi->ClearScriptEventHandler();
+				sol::table UiTable = UiObject.as<sol::table>();
+				UiTable["_EventHandler"] = sol::nil;
 			}
+			ClearLuaUiEventHandler();
 		});
 
 	UI.set_function("ShowIntro",

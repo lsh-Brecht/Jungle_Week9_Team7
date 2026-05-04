@@ -10,6 +10,7 @@
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Render/Pipeline/Renderer.h"
 #include "Viewport/GameViewportClient.h"
+#include "Core/Log.h"
 
 #include <algorithm>
 #include <string>
@@ -290,6 +291,12 @@ void FGameUiSystem::Shutdown()
 	RenderInterface.reset();
 	SystemInterface.reset();
 
+	ScriptEventHandler = nullptr;
+	PendingScriptEvents.clear();
+	bFlushingScriptEvents = false;
+	bStartEventQueuedOrDispatched = false;
+	Callbacks = {};
+
 	OwnerWindow = nullptr;
 	ViewportClient = nullptr;
 
@@ -316,6 +323,8 @@ void FGameUiSystem::SetScriptEventHandler(std::function<void(const FString&)> In
 void FGameUiSystem::ClearScriptEventHandler()
 {
 	ScriptEventHandler = nullptr;
+	PendingScriptEvents.clear();
+	bFlushingScriptEvents = false;
 }
 
 void FGameUiSystem::SetPresentationRect(const FViewportPresentationRect& InRect)
@@ -368,6 +377,8 @@ void FGameUiSystem::Update(float DeltaTime)
 		Context->Update();
 	}
 #endif
+
+	FlushQueuedScriptEvents();
 }
 
 void FGameUiSystem::Render()
@@ -388,6 +399,7 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	bIntroVisible = bVisible;
 	if (bVisible)
 	{
+		bStartEventQueuedOrDispatched = false;
 		bPauseMenuVisible = false;
 		bGameOverVisible = false;
 		bHudVisible = false;
@@ -570,6 +582,8 @@ void FGameUiSystem::BindUiEvents()
 		EventListener = std::make_unique<FGameUiEventListener>(this);
 	}
 
+	UnbindPauseMenuEvents();
+
 	static const char* IntroIds[] = {
 		"ui-start",
 		"ui-exit"
@@ -643,13 +657,20 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 {
 	if (ElementId == "ui-start")
 	{
+		if (bStartEventQueuedOrDispatched)
+		{
+			UE_LOG("[GameUI] Duplicate ui-start ignored.");
+			return;
+		}
+
+		bStartEventQueuedOrDispatched = true;
 		ResetRunUi();
-		DispatchScriptEvent("start");
+		QueueScriptEvent("start");
 		return;
 	}
 	if (ElementId == "ui-exit" || ElementId == "ui-gameover-exit")
 	{
-		DispatchScriptEvent("exit");
+		QueueScriptEvent("exit");
 		if (Callbacks.OnExit)
 		{
 			Callbacks.OnExit();
@@ -658,7 +679,7 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "continue")
 	{
-		DispatchScriptEvent("continue");
+		QueueScriptEvent("continue");
 		if (Callbacks.OnContinue)
 		{
 			Callbacks.OnContinue();
@@ -673,7 +694,7 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	if (ElementId == "restart" || ElementId == "ui-restart")
 	{
 		ResetRunUi();
-		DispatchScriptEvent("restart");
+		QueueScriptEvent("restart");
 		if (ElementId == "restart" && Callbacks.OnRestart)
 		{
 			Callbacks.OnRestart();
@@ -682,7 +703,7 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "exit")
 	{
-		DispatchScriptEvent("exit");
+		QueueScriptEvent("exit");
 		if (Callbacks.OnExit)
 		{
 			Callbacks.OnExit();
@@ -694,7 +715,7 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 		SetGameOverVisible(false);
 		SetHudVisible(false);
 		SetIntroVisible(true);
-		DispatchScriptEvent("main_menu");
+		QueueScriptEvent("main_menu");
 		return;
 	}
 	if (ElementId == "back")
@@ -725,6 +746,44 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 		RefreshOptionLabels();
 		return;
 	}
+}
+
+void FGameUiSystem::QueueScriptEvent(const FString& EventName)
+{
+	if (EventName.empty())
+	{
+		return;
+	}
+
+	for (const FString& PendingEvent : PendingScriptEvents)
+	{
+		if (PendingEvent == EventName)
+		{
+			UE_LOG("[GameUI] Duplicate pending script event ignored: %s", EventName.c_str());
+			return;
+		}
+	}
+
+	PendingScriptEvents.push_back(EventName);
+}
+
+void FGameUiSystem::FlushQueuedScriptEvents()
+{
+	if (bFlushingScriptEvents || PendingScriptEvents.empty())
+	{
+		return;
+	}
+
+	bFlushingScriptEvents = true;
+	TArray<FString> Events = std::move(PendingScriptEvents);
+	PendingScriptEvents.clear();
+
+	for (const FString& EventName : Events)
+	{
+		DispatchScriptEvent(EventName);
+	}
+
+	bFlushingScriptEvents = false;
 }
 
 void FGameUiSystem::DispatchScriptEvent(const FString& EventName)

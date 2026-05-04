@@ -1,4 +1,4 @@
-#include "LuaScriptSubsystem.h"
+﻿#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -152,8 +152,10 @@ void FLuaScriptSubsystem::Shutdown()
 	}
 	WatchSubs.clear();
 
+	ClearLuaUiEventHandler();
 	CancelAllComponentTasks();
 	ComponentBindings.clear();
+	++LuaGeneration;
 	Lua = sol::state();
 
 	LoadedScripts.clear();
@@ -164,6 +166,48 @@ void FLuaScriptSubsystem::Shutdown()
 	DependencyContextStack.clear();
 	bInitialized = false;
 	UE_LOG("[Lua] Lua Scripting Shutdown.");
+}
+
+
+bool FLuaScriptSubsystem::DispatchUiEvent(const FString& EventName)
+{
+	if (!bInitialized || !Lua.lua_state())
+	{
+		return false;
+	}
+
+	auto InvokeLuaFunction = [&EventName](const sol::object& FunctionObject, const char* FunctionName) -> bool
+	{
+		if (FunctionObject.get_type() != sol::type::function)
+		{
+			return false;
+		}
+
+		sol::protected_function Function = FunctionObject.as<sol::protected_function>();
+		sol::protected_function_result Result = Function(EventName);
+		if (!Result.valid())
+		{
+			sol::error Error = Result;
+			UE_LOG("[Lua UI] %s failed: %s", FunctionName ? FunctionName : "OnUIEvent", Error.what());
+		}
+		return true;
+	};
+
+	// Backward-compatible path for UI.SetEventHandler(function(eventName) ... end).
+	sol::object UiObject = Lua["UI"];
+	if (UiObject.get_type() == sol::type::table)
+	{
+		sol::table UiTable = UiObject.as<sol::table>();
+		sol::object HandlerObject = UiTable["_EventHandler"];
+		if (InvokeLuaFunction(HandlerObject, "UI.SetEventHandler"))
+		{
+			return true;
+		}
+	}
+
+	// New hot-reload-safe convention: define function OnUIEvent(eventName).
+	sol::object OnUiEventObject = Lua["OnUIEvent"];
+	return InvokeLuaFunction(OnUiEventObject, "OnUIEvent");
 }
 
 // 문자열로 들어온 Lua 코드를 실행
@@ -253,6 +297,7 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 	Binding.OnInput = Binding.Environment["OnInput"];
 	Binding.Tick = Binding.Environment["Tick"];
 	Binding.EndPlay = Binding.Environment["EndPlay"];
+	Binding.OnHotReload = Binding.Environment["OnHotReload"];
 	Binding.OnSpawnFromPool = Binding.Environment["OnSpawnFromPool"];
 	Binding.OnReturnToPool = Binding.Environment["OnReturnToPool"];
 	Binding.OnOverlap = Binding.Environment["OnOverlap"];
@@ -284,59 +329,88 @@ void FLuaScriptSubsystem::CallComponentBeginPlay(ULuaScriptComponent* Component)
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ComponentUUID);
+	}
+}
+
+void FLuaScriptSubsystem::CallComponentHotReload(ULuaScriptComponent* Component)
+{
+	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
+	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
+		AssignComponentBindingHandles(Binding->Environment, Component);
+		if (Binding->OnHotReload.valid())
+		{
+			StartCoroutine("OnHotReload", Binding->OnHotReload, Binding->ComponentUUID);
+		}
+		else
+		{
+			StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ComponentUUID);
+		}
 	}
 }
 
 
 void FLuaScriptSubsystem::CallInput(UWorld* World, float DeltaTime)
 {
-    if (!bInitialized || !World)
-    {
-        return;
-    }
+	if (!bInitialized || !World)
+	{
+		return;
+	}
 
-    TArray<AActor*> ActorSnapshot = World->GetActors();
-    for (AActor* Actor : ActorSnapshot)
-    {
-        if (!Actor || !IsAliveObject(Actor) || !World->IsActorInWorld(Actor) || Actor->IsPooledActorInactive())
-        {
-            continue;
-        }
+	TArray<AActor*> ActorSnapshot = World->GetActors();
+	for (AActor* Actor : ActorSnapshot)
+	{
+		if (!Actor || !IsAliveObject(Actor) || !World->IsActorInWorld(Actor) || Actor->IsPooledActorInactive())
+		{
+			continue;
+		}
 
-        TArray<UActorComponent*> ComponentSnapshot = Actor->GetComponents();
-        for (UActorComponent* ComponentBase : ComponentSnapshot)
-        {
-            ULuaScriptComponent* Component = Cast<ULuaScriptComponent>(ComponentBase);
-            if (!Component || !IsAliveObject(Component))
-            {
-                continue;
-            }
+		TArray<UActorComponent*> ComponentSnapshot = Actor->GetComponents();
+		for (UActorComponent* ComponentBase : ComponentSnapshot)
+		{
+			ULuaScriptComponent* Component = Cast<ULuaScriptComponent>(ComponentBase);
+			if (!Component || !IsAliveObject(Component))
+			{
+				continue;
+			}
 
-            FLuaComponentBinding* Binding = FindComponentBinding(Component->GetUUID());
-            if (!Binding || !Binding->OnInput.valid())
-            {
-                continue;
-            }
+			FLuaComponentBinding* Binding = FindComponentBinding(Component->GetUUID());
+			if (!Binding || Binding->bDisabledByError || !Binding->OnInput.valid())
+			{
+				continue;
+			}
 
-            AssignComponentBindingHandles(Binding->Environment, Component);
+			AssignComponentBindingHandles(Binding->Environment, Component);
 
-            sol::protected_function OnInput = Binding->OnInput;
-            sol::protected_function_result Result = OnInput(DeltaTime);
-            if (!Result.valid())
-            {
-                sol::error Error = Result;
-                UE_LOG("[Lua] Lua Component OnInput Error (%s): %s", Binding->ScriptPath.c_str(), Error.what());
-            }
-        }
-    }
+			sol::protected_function OnInput = Binding->OnInput;
+			sol::protected_function_result Result = OnInput(DeltaTime);
+			if (!Result.valid())
+			{
+				sol::error Error = Result;
+				UE_LOG("[Lua] Lua Component OnInput Error (%s): %s", Binding->ScriptPath.c_str(), Error.what());
+				DisableComponentBindingByError(Binding->ComponentUUID, "OnInput", Error.what());
+			}
+		}
+	}
 }
 
 void FLuaScriptSubsystem::CallComponentTick(ULuaScriptComponent* Component, float DeltaTime)
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("Tick", Binding->Tick, Binding->ComponentUUID, DeltaTime);
 	}
@@ -346,6 +420,10 @@ void FLuaScriptSubsystem::CallComponentEndPlay(ULuaScriptComponent* Component)
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("EndPlay", Binding->EndPlay, Binding->ComponentUUID);
 	}
@@ -355,6 +433,10 @@ void FLuaScriptSubsystem::CallComponentSpawnFromPool(ULuaScriptComponent* Compon
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("OnSpawnFromPool", Binding->OnSpawnFromPool, Binding->ComponentUUID);
 	}
@@ -364,6 +446,10 @@ void FLuaScriptSubsystem::CallComponentReturnToPool(ULuaScriptComponent* Compone
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("OnReturnToPool", Binding->OnReturnToPool, Binding->ComponentUUID);
 	}
@@ -373,6 +459,10 @@ void FLuaScriptSubsystem::CallComponentOverlap(ULuaScriptComponent* Component, A
 {
 	if (FLuaComponentBinding* Binding = FindComponentBinding(Component ? Component->GetUUID() : 0))
 	{
+		if (Binding->bDisabledByError)
+		{
+			return;
+		}
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		FLuaGameObjectHandle OtherHandle;
 		OtherHandle.UUID = OtherActor ? OtherActor->GetUUID() : 0;
@@ -421,6 +511,29 @@ void FLuaScriptSubsystem::CancelAllComponentTasks()
 		(void)Binding;
 		GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
 	}
+}
+
+void FLuaScriptSubsystem::DisableComponentBindingByError(uint32 ComponentUUID, const FString& Context, const char* Error)
+{
+	FLuaComponentBinding* Binding = FindComponentBinding(ComponentUUID);
+	if (!Binding)
+	{
+		return;
+	}
+
+	Binding->bDisabledByError = true;
+	Binding->LastError = Error ? Error : "unknown error";
+	Binding->ActiveCoroutineFunctions.clear();
+
+	if (GEngine)
+	{
+		GEngine->GetTaskScheduler().CancelTasks(ComponentUUID);
+	}
+
+	UE_LOG("[Lua] Component script disabled after error (%s, %s): %s",
+		Binding->ScriptPath.c_str(),
+		Context.c_str(),
+		Binding->LastError.c_str());
 }
 
 namespace
@@ -549,6 +662,7 @@ void FLuaScriptSubsystem::HandleCoroutineResult(int Status, sol::thread Thread, 
 	{
 		const char* Error = lua_tostring(ThreadState, -1);
 		UE_LOG("[Lua] Lua Component Coroutine Error (%s): %s", FunctionName.c_str(), Error ? Error : "unknown error");
+		DisableComponentBindingByError(OwnerUUID, FunctionName, Error);
 	}
 
 	lua_settop(ThreadState, 0);
@@ -562,17 +676,22 @@ void FLuaScriptSubsystem::ScheduleCoroutineResume(float Delay, sol::thread Threa
 		return;
 	}
 
+	const uint64 ScheduledGeneration = LuaGeneration;
 	GEngine->GetTaskScheduler().Schedule(Delay,
-		[this, Thread = std::move(Thread), OwnerUUID, FunctionName]() mutable
+		[this, Thread = std::move(Thread), OwnerUUID, FunctionName, ScheduledGeneration]() mutable
 		{
-			if (!bInitialized)
+			if (!bInitialized || ScheduledGeneration != LuaGeneration)
 			{
 				return;
 			}
 
-			if (OwnerUUID != 0 && !FindComponentBinding(OwnerUUID))
+			if (OwnerUUID != 0)
 			{
-				return;
+				FLuaComponentBinding* Binding = FindComponentBinding(OwnerUUID);
+				if (!Binding || Binding->bDisabledByError)
+				{
+					return;
+				}
 			}
 
 			ResumeCoroutine(Thread, OwnerUUID, FunctionName, 0);
@@ -801,10 +920,10 @@ bool FLuaScriptSubsystem::ExecuteEntryScript(sol::state_view LuaView, const FStr
 
 bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath)
 {
-	return ExecuteScriptFile(LuaView, NormalizedPath, nullptr);
+	return ExecuteScriptFile(LuaView, NormalizedPath, nullptr, nullptr);
 }
 
-bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment)
+bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment, sol::object* OutResult)
 {
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
 	if (AbsolutePath.empty())
@@ -819,6 +938,7 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 		UE_LOG("[Lua] Lua File Execution Error (%s): Cannot open file", NormalizedPath.c_str());
 		return false;
 	}
+
 	const std::string Content((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
 
 	sol::load_result LoadResult = LuaView.load_buffer(Content.data(), Content.size(), "@" + AbsolutePath);
@@ -842,6 +962,18 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 		sol::error Error = Result;
 		UE_LOG("[Lua] Lua File Execution Error (%s): %s", NormalizedPath.c_str(), Error.what());
 		return false;
+	}
+
+	if (OutResult)
+	{
+		if (Result.return_count() > 0)
+		{
+			*OutResult = Result[0].get<sol::object>();
+		}
+		else
+		{
+			*OutResult = sol::make_object(LuaView, true);
+		}
 	}
 
 	return true;
@@ -911,22 +1043,35 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 		}
 	}
 
+	ClearLuaUiEventHandler();
 	CancelAllComponentTasks();
 	ComponentBindings.clear();
 
 	Lua = std::move(NewLua);
+	++LuaGeneration;
 	LoadedScripts = std::move(NewLoadedScripts);
 	LoadedScriptOrder = std::move(NewLoadedScriptOrder);
 	ScriptIncludes = std::move(NewScriptIncludes);
 	ModulePaths = std::move(NewModulePaths);
 	RebuildIncludeDependents();
 
+	// Keep GameUiSystem connected to the current Lua state only.
+	// The router is native-only; it looks up the Lua receiver in the active state at dispatch time.
+	InstallLuaUiEventRouter();
+
 	for (const auto& [ComponentUUID, ScriptPath] : ComponentBindingsToRestore)
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(ComponentUUID);
 		if (ULuaScriptComponent* Component = Cast<ULuaScriptComponent>(Object))
 		{
-			BindComponent(Component, ScriptPath);
+			if (BindComponent(Component, ScriptPath))
+			{
+				AActor* Owner = Component->GetOwner();
+				if (Owner && Owner->HasActorBegunPlay())
+				{
+					CallComponentHotReload(Component);
+				}
+			}
 		}
 	}
 
@@ -1138,18 +1283,13 @@ sol::object FLuaScriptSubsystem::RequireModule(const FString& ModuleName, sol::t
 	TMap<FString, FString>& ActiveModulePaths = GetActiveModulePaths();
 	ActiveModulePaths[ModuleName] = NormalizedPath;
 
-	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr))
+	sol::object Result;
+	// 실행 성공 여부를 bool로 체크하고, 결과값은 Result에 담아옵니다.
+	if (!ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr, &Result))
 	{
 		return sol::nil;
 	}
 
-	sol::object LoadedModule = Loaded[ModuleName];
-	if (LoadedModule.valid() && LoadedModule.get_type() != sol::type::nil)
-	{
-		return LoadedModule;
-	}
-
-	sol::object Result = sol::make_object(LuaView, true);
 	Loaded[ModuleName] = Result;
 	return Result;
 }
