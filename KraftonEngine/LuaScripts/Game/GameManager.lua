@@ -25,6 +25,13 @@ function Tick(deltaTime)
     State.Tick(deltaTime)
 end
 
+_G.OnGameEvent = function(eventName, instigator)
+    print("[GameManager] OnGameEvent triggered: " .. tostring(eventName))
+    if eventName == "Defeat" then
+        State.GameOver("Defeat")
+    end
+end
+
 function EndPlay()
     print("[GameManager] EndPlay")
 end

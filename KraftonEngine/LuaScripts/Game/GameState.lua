@@ -1,4 +1,5 @@
 local MODULE_NAME = "Game.GameState"
+local Vec = FVector.new
 
 local State = package.loaded[MODULE_NAME]
 if type(State) ~= "table" then
@@ -91,6 +92,19 @@ local function find_actor(name)
     return World.FindActorByName(name)
 end
 
+local function get_possessed_player_actor()
+    if World == nil or World.GetPlayerController == nil then
+        return nil
+    end
+
+    local controller = World.GetPlayerController(0)
+    if not is_valid(controller) or controller.GetPossessedActor == nil then
+        return nil
+    end
+
+    return controller:GetPossessedActor()
+end
+
 local function get_player_controller()
     if World == nil then
         return nil
@@ -160,11 +174,9 @@ local function same_actor(a, b)
     if not is_valid(a) or not is_valid(b) then
         return false
     end
-
     if a.UUID ~= nil and b.UUID ~= nil then
         return a.UUID == b.UUID
     end
-
     return get_actor_name(a) ~= "" and get_actor_name(a) == get_actor_name(b)
 end
 
@@ -184,7 +196,6 @@ local function get_or_create_actor(name, location)
     if is_valid(actor) then
         actor.Name = name
     end
-
     return actor
 end
 
@@ -192,12 +203,10 @@ local function get_text_component(actor)
     if not is_valid(actor) then
         return nil
     end
-
     local component = actor:GetOrAddComponent("TextRender")
     if component ~= nil and component.IsValid ~= nil and component:IsValid() then
         return component
     end
-
     return nil
 end
 
@@ -214,11 +223,9 @@ end
 
 local function format_time(seconds)
     seconds = math.max(0.0, seconds or 0.0)
-
     local whole = math.floor(seconds)
     local minutes = math.floor(whole / 60)
     local remain = whole - minutes * 60
-
     return string.format("%02d:%02d", minutes, remain)
 end
 
@@ -301,13 +308,10 @@ end
 
 local function build_credit_text(reason)
     local lines = {}
-
     lines[#lines + 1] = "GAME OVER"
-
     if reason ~= nil and reason ~= "" then
         lines[#lines + 1] = "Reason: " .. tostring(reason)
     end
-
     lines[#lines + 1] = "Score: " .. tostring(State.Score or 0)
     lines[#lines + 1] = "Best: " .. tostring(State.BestScore or 0)
     lines[#lines + 1] = "Time: " .. format_time(State.Elapsed or 0.0)
@@ -321,7 +325,6 @@ local function build_credit_text(reason)
 
     lines[#lines + 1] = ""
     lines[#lines + 1] = "Press R or Enter to restart"
-
     return table.concat(lines, "\n")
 end
 
@@ -336,15 +339,17 @@ function State.Configure(config)
     end
 
     copy_defaults(State.Config, DEFAULT_CONFIG)
-    load_best_score()
 end
 
 function State.RefreshReferences()
     copy_defaults(State.Config, DEFAULT_CONFIG)
 
-    State.CachedPlayer = resolve_player()
-    State.CachedHUDText = get_or_create_actor(State.Config.HUDTextName, make_vector(0.0, 0.0, 180.0))
-    State.CachedCreditsText = get_or_create_actor(State.Config.CreditsTextName, make_vector(0.0, 0.0, 230.0))
+    State.CachedPlayer = find_actor(State.Config.PlayerName)
+    if not is_valid(State.CachedPlayer) then
+        State.CachedPlayer = get_possessed_player_actor()
+    end
+    State.CachedHUDText = get_or_create_actor(State.Config.HUDTextName, Vec(0.0, 0.0, 180.0))
+    State.CachedCreditsText = get_or_create_actor(State.Config.CreditsTextName, Vec(0.0, 0.0, 230.0))
 
     if is_valid(State.CachedCreditsText) then
         set_visible(State.CachedCreditsText, false)
@@ -353,9 +358,12 @@ end
 
 function State.GetPlayer()
     if not is_valid(State.CachedPlayer) then
-        State.CachedPlayer = resolve_player()
+        State.CachedPlayer = find_actor(State.Config.PlayerName)
     end
 
+    if not is_valid(State.CachedPlayer) then
+        State.CachedPlayer = get_possessed_player_actor()
+    end
     return State.CachedPlayer
 end
 
@@ -525,6 +533,31 @@ function State.StartGame()
     print("[Game] Start")
 end
 
+function State.ReturnToStartScreen(reason)
+    if State.Mode ~= "Playing" then
+        return
+    end
+
+    State.Mode = "Ready"
+    State.Score = 0
+    State.Elapsed = 0.0
+    State.bCreditsPrinted = false
+
+    local player = State.GetPlayer()
+    if is_valid(player) and State.Config.StartLocation ~= nil then
+        player.Location = State.Config.StartLocation
+    end
+
+    State.SetPlayerMovementEnabled(false)
+    State.SetMenuObjectsVisible(true)
+    set_visible(State.CachedCreditsText, false)
+    State.UpdateHUD()
+
+    if reason ~= nil and reason ~= "" then
+        print("[Game] ReturnToStartScreen: " .. tostring(reason))
+    end
+end
+
 function State.RestartRun()
     State.StartGame()
 end
@@ -534,7 +567,6 @@ function State.RestartLevel()
         Game.Restart()
         return
     end
-
     State.RestartRun()
 end
 
