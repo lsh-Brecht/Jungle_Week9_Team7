@@ -1,4 +1,4 @@
-﻿#include "GameFramework/World.h"
+#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -40,6 +40,7 @@ static void RemapActor(UWorld* NewWorld, const TMap<uint32, uint32>& ActorUUIDRe
 				Component->RemapActorReferences(ActorUUIDRemap);
 			}
 		}
+		Actor->RemapActorReferences(ActorUUIDRemap);
 	}
 }
 
@@ -458,7 +459,35 @@ void UWorld::Tick(float DeltaTime, ELevelTick TickType)
 
 	UpdateCollision();
 
+	UpdatePlayerCameraManagers(DeltaTime);
+
 	ApplyCollisionDebugVisualization();
+}
+
+
+void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
+{
+	const bool bCanDriveWorldView = GetWorldType() != EWorldType::Editor || HasBegunPlay();
+
+	for (APlayerController* Controller : PlayerControllers)
+	{
+		if (!Controller || !IsActorInWorld(Controller))
+		{
+			continue;
+		}
+
+		FPlayerCameraManager& Manager = Controller->GetCameraManager();
+		Manager.UpdateCamera(DeltaTime);
+
+		if (bCanDriveWorldView)
+		{
+			if (UCameraComponent* OutputCamera = Manager.GetOutputCameraIfValid())
+			{
+				SetViewCamera(OutputCamera);
+				SetActiveCamera(OutputCamera);
+			}
+		}
+	}
 }
 
 void UWorld::SetActiveCamera(UCameraComponent* InCamera)
@@ -512,37 +541,64 @@ bool UWorld::IsComponentInWorld(const UActorComponent* Component) const
 
 void UWorld::CleanupActorReferences(AActor* Actor)
 {
-	if (!Actor)
+	if (!Actor || !IsAliveObject(Actor))
 	{
 		return;
 	}
 
-	for (APlayerController* Controller : PlayerControllers)
+	TArray<APlayerController*> ControllerSnapshot = PlayerControllers;
+
+	for (APlayerController* Controller : ControllerSnapshot)
 	{
-		if (!Controller || Controller == Actor)
+		if (!Controller || !IsAliveObject(Controller) || Controller == Actor)
 		{
 			continue;
 		}
+
+		Controller->ClearCameraReferencesForActor(Actor);
 
 		if (Controller->GetPossessedActor() == Actor)
 		{
 			Controller->UnPossess();
 		}
-		if (Controller->GetViewTarget() == Actor)
+	}
+
+	TArray<AActor*> ActorSnapshot = GetActors();
+
+	for (AActor* OtherActor : ActorSnapshot)
+	{
+		if (!OtherActor || !IsAliveObject(OtherActor) || !IsActorInWorld(OtherActor))
 		{
-			Controller->SetViewTarget(nullptr);
+			continue;
+		}
+
+		const TArray<UActorComponent*>& Components = OtherActor->GetComponents();
+
+		for (UActorComponent* Component : Components)
+		{
+			if (!Component || !IsAliveObject(Component))
+			{
+				continue;
+			}
+
+			if (UCameraComponent* Camera = Cast<UCameraComponent>(Component))
+			{
+				Camera->ClearTargetActorIfMatches(Actor);
+			}
 		}
 	}
 
-	if (ViewCamera && ViewCamera->GetOwner() == Actor)
+	if (ViewCamera && IsAliveObject(ViewCamera) && ViewCamera->GetOwner() == Actor)
 	{
 		ViewCamera = nullptr;
 	}
-	if (ActiveCamera && ActiveCamera->GetOwner() == Actor)
+
+	if (ActiveCamera && IsAliveObject(ActiveCamera) && ActiveCamera->GetOwner() == Actor)
 	{
 		ActiveCamera = nullptr;
 	}
-	if (LastLODUpdateCamera && LastLODUpdateCamera->GetOwner() == Actor)
+
+	if (LastLODUpdateCamera && IsAliveObject(LastLODUpdateCamera) && LastLODUpdateCamera->GetOwner() == Actor)
 	{
 		LastLODUpdateCamera = nullptr;
 		bHasLastFullLODUpdateCameraPos = false;
@@ -551,23 +607,69 @@ void UWorld::CleanupActorReferences(AActor* Actor)
 
 void UWorld::CleanupComponentReferences(UActorComponent* Component)
 {
-	if (!Component)
+	if (!Component || !IsAliveObject(Component))
 	{
 		return;
+	}
+
+	USceneComponent* RemovedSceneComponent = Cast<USceneComponent>(Component);
+
+	TArray<APlayerController*> ControllerSnapshot = PlayerControllers;
+
+	for (APlayerController* Controller : ControllerSnapshot)
+	{
+		if (!Controller || !IsAliveObject(Controller))
+		{
+			continue;
+		}
+
+		Controller->ClearCameraReferencesForComponent(Component);
 	}
 
 	if (ViewCamera == Component)
 	{
 		ViewCamera = nullptr;
 	}
+
 	if (ActiveCamera == Component)
 	{
 		ActiveCamera = nullptr;
 	}
+
 	if (LastLODUpdateCamera == Component)
 	{
 		LastLODUpdateCamera = nullptr;
 		bHasLastFullLODUpdateCameraPos = false;
+	}
+
+	if (!RemovedSceneComponent)
+	{
+		return;
+	}
+
+	TArray<AActor*> ActorSnapshot = GetActors();
+
+	for (AActor* Actor : ActorSnapshot)
+	{
+		if (!Actor || !IsAliveObject(Actor) || !IsActorInWorld(Actor))
+		{
+			continue;
+		}
+
+		const TArray<UActorComponent*>& Components = Actor->GetComponents();
+
+		for (UActorComponent* OtherComponent : Components)
+		{
+			if (!OtherComponent || !IsAliveObject(OtherComponent))
+			{
+				continue;
+			}
+
+			if (UMovementComponent* Movement = Cast<UMovementComponent>(OtherComponent))
+			{
+				Movement->ClearUpdatedComponentIfMatches(RemovedSceneComponent);
+			}
+		}
 	}
 }
 
@@ -675,49 +777,26 @@ void UWorld::AutoWirePlayerController(APlayerController* PreferredController)
 
 	if (!Controller->GetPossessedActor())
 	{
-		if (UControllerInputComponent* Input = Controller->FindControllerInputComponent())
+		if (APawn* Pawn = FindFirstPawn())
 		{
-			if (AActor* Target = FindActorByUUIDInWorld(Input->PossessedActorUUID))
-			{
-				Controller->Possess(Target);
-			}
+			Controller->Possess(Pawn);
 		}
-		if (!Controller->GetPossessedActor())
+		else if (AActor* Target = FindFirstPossessableActor())
 		{
-			if (AActor* Target = FindFirstPossessableActor())
-				Controller->Possess(Target);
+			Controller->Possess(Target);
 		}
 	}
 
-	if (!Controller->GetViewTarget())
+	if (!Controller->GetActiveCamera())
 	{
-		if (AActor* Target = Controller->GetPossessedActor())
-		{
-			Controller->SetViewTarget(Target);
-		}
-		else
-		{
-			UCameraComponent* Camera = GetActiveCamera();
-			if (!Camera)
-			{
-				Camera = FindFirstCamera();
-			}
-			if (Camera)
-			{
-				Controller->SetViewTarget(Camera->GetOwner());
-			}
-		}
+		Controller->SetActiveCameraFromPossessedPawn();
 	}
 
-	if (!GetActiveCamera())
+	if (UCameraComponent* Camera = ResolveGameplayViewCamera(Controller))
 	{
-		if (UCameraComponent* Camera = ResolveGameplayViewCamera(Controller))
-		{
-			SetActiveCamera(Camera);
-		}
+		SetViewCamera(Camera);
+		SetActiveCamera(Camera);
 	}
-
-	SetViewCamera(ResolveGameplayViewCamera(Controller));
 }
 
 UCameraComponent* UWorld::ResolveGameplayViewCamera(APlayerController* PreferredController) const
@@ -767,31 +846,54 @@ APlayerController* UWorld::GetPlayerController(int32 Index) const
 
 void UWorld::EndPlay()
 {
-	bHasBegunPlay = false;
-	TickManager.Reset();
-
-	PlayerControllers.clear();
-	ViewCamera = nullptr;
-	ActiveCamera = nullptr;
-
 	if (!PersistentLevel)
 	{
 		return;
 	}
 
+	bHasBegunPlay = false;
+	TickManager.Reset();
+
+	ViewCamera = nullptr;
+	ActiveCamera = nullptr;
+	LastLODUpdateCamera = nullptr;
+	bHasLastFullLODUpdateCameraPos = false;
+
 	FObjectPoolSystem::Get().ClearWorld(this);
 
+	// 1. 모든 Actor가 아직 World에 살아 있는 상태에서 EndPlay만 먼저 호출
 	PersistentLevel->EndPlay();
 
-	// Clear spatial partition while actors/components are still alive.
-	// Otherwise Octree teardown can dereference stale primitive pointers during shutdown.
+	// 2. Actor 목록은 파괴 중 변경되므로 반드시 스냅샷 사용
+	TArray<AActor*> ActorsToDestroy = PersistentLevel->GetActors();
+
+	// 3. 실제 파괴는 반드시 UWorld::DestroyActor() 경로로 통일
+	for (AActor* Actor : ActorsToDestroy)
+	{
+		if (!Actor || !IsAliveObject(Actor))
+		{
+			continue;
+		}
+
+		if (Actor->GetWorld() != this)
+		{
+			PersistentLevel->RemoveActor(Actor);
+			continue;
+		}
+
+		DestroyActor(Actor);
+	}
+
+	PlayerControllers.clear();
+
+	// 4. 남아 있을 수 있는 런타임 인덱스/캐시를 최종 비움
 	Partition.Reset(FBoundingBox());
 
-	PersistentLevel->Clear();
-	MarkWorldPrimitivePickingBVHDirty();
-	MarkWorldCollisionBVHDirty();
+	WorldPrimitivePickingBVH.Reset();
 
-	// PersistentLevel은 CreateObject로 생성되었으므로 DestroyObject로 해제해야 alloc count가 맞음
+	// 아래 Reset은 FWorldCollisionSystem에 추가하는 것을 권장
+	WorldCollisionSystem.Reset();
+
 	UObjectManager::Get().DestroyObject(PersistentLevel);
 	PersistentLevel = nullptr;
 }

@@ -7,6 +7,7 @@
 #include "Editor/Selection/SelectionManager.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Engine/Input/InputSystem.h"
+#include "Engine/Input/InputFrame.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -28,6 +29,9 @@
 #include "ImGui/imgui.h"
 #include "WICTextureLoader.h"
 #include "Component/CameraComponent.h"
+#include "Camera/CameraTypes.h"
+#include "Component/PawnOrientationComponent.h"
+#include "Component/Movement/PawnMovementComponent.h"
 #include "Component/GizmoComponent.h"
 #include "Component/Light/LightComponentBase.h"
 #include "Serialization/PrefabSaveManager.h"
@@ -38,6 +42,23 @@
 
 namespace
 {
+
+template <typename TComponent>
+TComponent* FindActorComponent(AActor* Actor)
+{
+	if (!Actor)
+	{
+		return nullptr;
+	}
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		if (TComponent* Typed = Cast<TComponent>(Component))
+		{
+			return Typed;
+		}
+	}
+	return nullptr;
+}
 enum class EToolbarIcon : int32
 {
 	Menu = 0,
@@ -1806,11 +1827,12 @@ void FLevelViewportLayout::HandleViewportContextMenuInput(const FPoint& MousePos
 		}
 
 		const bool bReleasedOverSameSlot = ViewportWindows[i]->IsHover(MousePos);
+		FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 		const bool bClickCandidate =
 			bReleasedOverSameSlot &&
 			ContextMenuState.RightClickTravelSq[i] <= RightClickPopupThresholdSq &&
-			!InputSystem::Get().GetRightDragging() &&
-			!InputSystem::Get().GetRightDragEnd();
+			!InputFrame.IsRightDragging() &&
+			!InputFrame.WasRightDragEnded();
 		const ImGuiIO& IO = ImGui::GetIO();
 		const bool bNoModifiers = !IO.KeyCtrl && !IO.KeyShift && !IO.KeyAlt && !IO.KeySuper;
 
@@ -2050,8 +2072,6 @@ AActor* FLevelViewportLayout::SpawnActorFromViewportMenu(EViewportPlaceActorType
 			{
 				Camera->SetWorldLocation(SpawnLocation);
 				Camera->LookAt(SpawnLocation + FVector(1.0f, 0.0f, 0.0f));
-				World->SetActiveCamera(Camera);
-				World->SetViewCamera(Camera);
 			}
 			SpawnedActor = Actor;
 		}

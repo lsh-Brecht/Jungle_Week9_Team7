@@ -55,6 +55,8 @@ public:
 	FWorldCollisionSystem(UWorld* InWorld);
 	~FWorldCollisionSystem();
 
+	void Reset();
+
 	void UpdateCollision();
 	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 

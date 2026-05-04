@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <windows.h>
 #include "Core/Singleton.h"
 
@@ -116,9 +116,9 @@ public:
     // GUI state
     FGuiInputState& GetGuiInputState() { return GuiState; }
     const FGuiInputState& GetGuiInputState() const { return GuiState; }
-    void SetGuiMouseCapture(bool bCapture) { GuiState.bUsingMouse = bCapture; }
-    void SetGuiKeyboardCapture(bool bCapture) { GuiState.bUsingKeyboard = bCapture; }
-    void SetGuiTextInputCapture(bool bCapture) { GuiState.bUsingTextInput = bCapture; }
+    void SetGuiMouseCapture(bool bCapture) { GuiState.bUsingMouse = bCapture; UpdateCurrentSnapshot(); }
+    void SetGuiKeyboardCapture(bool bCapture) { GuiState.bUsingKeyboard = bCapture; UpdateCurrentSnapshot(); }
+    void SetGuiTextInputCapture(bool bCapture) { GuiState.bUsingTextInput = bCapture; UpdateCurrentSnapshot(); }
     bool IsGuiUsingMouse() const { return GuiState.bUsingMouse; }
     bool IsGuiUsingKeyboard() const { return GuiState.bUsingKeyboard; }
     bool IsGuiUsingTextInput() const { return GuiState.bUsingTextInput; }

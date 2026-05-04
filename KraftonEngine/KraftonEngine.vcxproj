@@ -133,35 +133,35 @@
     <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)Build\$(Configuration)\</IntDir>
     <IncludePath>Source\Engine;Source;ThirdParty;ThirdParty\ImGui;Source\Editor;Source\ObjViewer;Source\GameClient;.;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)ThirdParty\SFML\lib\Debug;$(LibraryPath)</LibraryPath>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)Build\$(Configuration)\</IntDir>
     <IncludePath>Source\Engine;Source;ThirdParty;ThirdParty\ImGui;Source\Editor;Source\ObjViewer;Source\GameClient;.;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)ThirdParty\SFML\lib\Release;$(LibraryPath)</LibraryPath>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">
     <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)Build\$(Configuration)\</IntDir>
     <IncludePath>Source\Engine;Source;ThirdParty;ThirdParty\ImGui;Source\Editor;Source\ObjViewer;Source\GameClient;.;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)ThirdParty\SFML\lib\Release;$(LibraryPath)</LibraryPath>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">
     <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)Build\$(Configuration)\</IntDir>
     <IncludePath>Source\Engine;Source;ThirdParty;ThirdParty\ImGui;Source\Editor;Source\ObjViewer;Source\GameClient;.;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)ThirdParty\SFML\lib\Release;$(LibraryPath)</LibraryPath>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">
     <OutDir>$(ProjectDir)Bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)Build\$(Configuration)\</IntDir>
     <IncludePath>Source\Engine;Source;ThirdParty;ThirdParty\ImGui;Source\Editor;Source\ObjViewer;Source\GameClient;.;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)ThirdParty\SFML\lib\Release;$(LibraryPath)</LibraryPath>
     <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -206,30 +206,15 @@
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>
-        $(VcpkgInstalledRoot)\include\luajit;
-        $(VcpkgInstalledRoot)\include;
-        %(AdditionalIncludeDirectories)
-;     </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(VcpkgInstalledRoot)\lib;
-$(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories)
- </AdditionalLibraryDirectories>
-      <AdditionalDependencies>
-        lua51.lib;
-    sfml-audio-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies)
-      </AdditionalDependencies>
-      <PerUserRedirection>true</PerUserRedirection>
+      <AdditionalDependencies>sfml-audio-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-        xcopy /Y /D "$(VcpkgInstalledRoot)\bin\lua51.dll" "$(OutDir)"
-;
-xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)" 
-;  </Command>
+      <Command>xcopy /Y /D /I "$(ProjectDir)ThirdParty\SFML\bin\Debug\*.dll" "$(OutDir)"</Command>
+      <Message>Copying SFML Debug DLLs to $(OutDir)</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -248,19 +233,11 @@ xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>
-        lua51.lib;
-sfml-audio.lib;sfml-window.lib;sfml-system.lib; %(AdditionalDependencies)
-      </AdditionalDependencies>
-      <AdditionalLibraryDirectories>
-        $(VcpkgInstalledRoot)\lib;
-$(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories)
-      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-audio.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
- xcopy /Y /D "$(VcpkgInstalledRoot)\bin\lua51.dll" 
- xcopy /Y /D "$(ProjectDir)ThirdParty\SFML\bin\$(Configuration)\*.dll" "$(OutDir)"     </Command>
+      <Command>xcopy /Y /D /I "$(ProjectDir)ThirdParty\SFML\bin\Release\*.dll" "$(OutDir)"</Command>
+      <Message>Copying SFML Release DLLs to $(OutDir)</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">
@@ -279,7 +256,12 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sfml-audio.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D /I "$(ProjectDir)ThirdParty\SFML\bin\Release\*.dll" "$(OutDir)"</Command>
+      <Message>Copying SFML Release DLLs to $(OutDir)</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">
     <ClCompile>
@@ -297,7 +279,12 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sfml-audio.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D /I "$(ProjectDir)ThirdParty\SFML\bin\Release\*.dll" "$(OutDir)"</Command>
+      <Message>Copying SFML Release DLLs to $(OutDir)</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">
     <ClCompile>
@@ -315,7 +302,12 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sfml-audio.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D /I "$(ProjectDir)ThirdParty\SFML\bin\Release\*.dll" "$(OutDir)"</Command>
+      <Message>Copying SFML Release DLLs to $(OutDir)</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Engine\Runtime\RowManager.cpp" />
@@ -352,6 +344,7 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClCompile Include="Source\Editor\UI\NotificationToast.cpp" />
     <ClCompile Include="Source\Editor\Viewport\EditorViewportClient.cpp" />
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp" />
+    <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp" />
     <ClCompile Include="Source\Engine\Collision\MeshTriangleBVH.cpp" />
     <ClCompile Include="Source\Engine\Collision\Octree.cpp" />
@@ -365,11 +358,11 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClCompile Include="Source\Engine\Component\ActorComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\BillboardComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\CameraRigComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\CapsuleComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\ShapeComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp" />
+    <ClCompile Include="Source\Engine\Component\ComponentReferenceUtils.cpp" />
     <ClCompile Include="Source\Engine\Component\ControllerInputComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\CylindricalBillboardComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\DecalComponent.cpp" />
@@ -389,6 +382,7 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClCompile Include="Source\Engine\Component\Movement\PendulumMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp" />
+    <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp" />
@@ -415,6 +409,7 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClCompile Include="Source\Engine\GameFramework\PlayerController.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\World.cpp" />
+    <ClCompile Include="Source\Engine\Input\GameplayInputRouter.cpp" />
     <ClCompile Include="Source\Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Source\Engine\Materials\Material.cpp" />
     <ClCompile Include="Source\Engine\Materials\MaterialManager.cpp" />
@@ -511,6 +506,7 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaPawnOrientationBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
@@ -587,6 +583,8 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h" />
     <ClInclude Include="Source\Editor\Viewport\FLevelViewportLayout.h" />
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
+    <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
+    <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
     <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h" />
     <ClInclude Include="Source\Engine\Collision\MeshTriangleBVH.h" />
@@ -602,12 +600,12 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClInclude Include="Source\Engine\Component\ActorComponent.h" />
     <ClInclude Include="Source\Engine\Component\BillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\CameraComponent.h" />
-    <ClInclude Include="Source\Engine\Component\CameraRigComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\CapsuleComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\CollisionTypes.h" />
     <ClInclude Include="Source\Engine\Component\Collision\ShapeComponent.h" />
     <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h" />
+    <ClInclude Include="Source\Engine\Component\ComponentReferenceUtils.h" />
     <ClInclude Include="Source\Engine\Component\ControllerInputComponent.h" />
     <ClInclude Include="Source\Engine\Component\CylindricalBillboardComponent.h" />
     <ClInclude Include="Source\Engine\Component\DecalComponent.h" />
@@ -627,6 +625,7 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClInclude Include="Source\Engine\Component\Movement\PendulumMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h" />
+    <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h" />
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h" />
@@ -662,6 +661,8 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\World.h" />
     <ClInclude Include="Source\Engine\GameFramework\WorldContext.h" />
+    <ClInclude Include="Source\Engine\Input\GameplayInputRouter.h" />
+    <ClInclude Include="Source\Engine\Input\InputFrame.h" />
     <ClInclude Include="Source\Engine\Input\InputSystem.h" />
     <ClInclude Include="Source\Engine\Materials\Material.h" />
     <ClInclude Include="Source\Engine\Materials\MaterialManager.h" />
@@ -815,6 +816,124 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ClInclude Include="ThirdParty\ImGui\imstb_rectpack.h" />
     <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h" />
     <ClInclude Include="ThirdParty\ImGui\imstb_truetype.h" />
+    <ClInclude Include="ThirdParty\SFML\Audio.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\AudioResource.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\Export.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\InputSoundFile.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\Listener.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\Music.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\OutputSoundFile.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\PlaybackDevice.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\Sound.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundBuffer.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundBufferRecorder.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundChannel.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileFactory.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileFactory.inl" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileReader.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileWriter.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundRecorder.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundSource.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundStream.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Config.hpp" />
+    <ClInclude Include="ThirdParty\SFML\GpuPreference.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\BlendMode.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\CircleShape.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Color.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Color.inl" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\ConvexShape.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\CoordinateType.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Drawable.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Export.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Font.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glsl.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glsl.inl" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glyph.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Image.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\PrimitiveType.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Rect.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Rect.inl" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\RectangleShape.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderStates.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderTarget.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderTexture.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderWindow.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Shader.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Shape.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Sprite.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\StencilMode.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Text.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Texture.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transform.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transform.inl" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transformable.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\Vertex.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\VertexArray.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\VertexBuffer.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Graphics\View.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Main.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Dns.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Export.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Ftp.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Http.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\IpAddress.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Packet.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Sftp.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\Socket.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\SocketHandle.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\SocketSelector.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\TcpListener.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\TcpSocket.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Network\UdpSocket.hpp" />
+    <ClInclude Include="ThirdParty\SFML\OpenGL.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Angle.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Angle.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\Clock.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Err.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Exception.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Export.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\FileInputStream.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\InputStream.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\MemoryInputStream.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\NativeActivity.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Sleep.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\String.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\String.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\SuspendAwareClock.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Time.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Time.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\TimeoutWithPredicate.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Utf.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Utf.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\Vector2.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Vector2.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\Vector3.hpp" />
+    <ClInclude Include="ThirdParty\SFML\System\Vector3.inl" />
+    <ClInclude Include="ThirdParty\SFML\System\Version.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Clipboard.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Context.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\ContextSettings.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Cursor.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Event.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Event.inl" />
+    <ClInclude Include="ThirdParty\SFML\Window\Export.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\GlResource.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Joystick.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Keyboard.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Mouse.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Sensor.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Touch.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\VideoMode.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Vulkan.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\Window.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\WindowBase.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\WindowBase.inl" />
+    <ClInclude Include="ThirdParty\SFML\Window\WindowEnums.hpp" />
+    <ClInclude Include="ThirdParty\SFML\Window\WindowHandle.hpp" />
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -1058,9 +1177,6 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="VcpkgLua.props" />
-  </ItemGroup>
-  <ItemGroup>
-    <Media Include="Sound\BackgroundMusic.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,13 +4,14 @@
 #include "GameClient/GameClientPackageValidator.h"
 #include "Core/Notification.h"
 #include "Engine/Platform/Paths.h"
+#include "Engine/Input/GameplayInputRouter.h"
+#include "Engine/Input/InputFrame.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Runtime/RowManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/World.h"
-#include "Scripting/LuaInputLibrary.h"
 
 IMPLEMENT_CLASS(UGameClientEngine, UEngine)
 
@@ -29,10 +30,7 @@ void UGameClientEngine::InitCameraManager()
 		World->AutoWirePlayerController(PlayerController);
 	}
 
-	if (!CameraManager.FindStartupGameplayCamera())
-	{
-		CameraManager.CreateFallbackGameplayCamera();
-	}
+	CameraManager.FindStartupGameplayCamera();
 
 	if (World)
 	{
@@ -41,26 +39,10 @@ void UGameClientEngine::InitCameraManager()
 	CameraManager.SyncWorldViewCamera();
 }
 
-void UGameClientEngine::ConfigureWindow(FWindowsWindow* InWindow)
+void UGameClientEngine::Init(FWindowsWindow* InWindow)
 {
 	Settings.Load();
 
-	if (!InWindow)
-	{
-		return;
-	}
-
-	InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
-	InWindow->ResizeClient(static_cast<unsigned int>(Settings.WindowWidth), static_cast<unsigned int>(Settings.WindowHeight));
-	if (Settings.bFullscreen && !InWindow->IsFullscreen())
-	{
-		InWindow->ToggleFullscreen();
-	}
-}
-
-void UGameClientEngine::Init(FWindowsWindow* InWindow)
-{
-	// 윈도우 설정은 ConfigureWindow()에서 이미 완료됨
 	FString PackageValidationErrors;
 	if (!FGameClientPackageValidator::ValidateBeforeEngineInit(Settings, PackageValidationErrors))
 	{
@@ -71,6 +53,16 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 			MB_OK | MB_ICONERROR);
 		::PostQuitMessage(1);
 		return;
+	}
+
+	if (InWindow)
+	{
+		InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
+		InWindow->ResizeClient(static_cast<unsigned int>(Settings.WindowWidth), static_cast<unsigned int>(Settings.WindowHeight));
+		if (Settings.bFullscreen && !InWindow->IsFullscreen())
+		{
+			InWindow->ToggleFullscreen();
+		}
 	}
 
 	UEngine::Init(InWindow);
@@ -176,9 +168,12 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 	ProcessPendingCommands();
 
 	InputSystem::Get().Tick();
-	if (InputSystem::Get().GetKeyDown(VK_ESCAPE))
+	FInputFrame GlobalInputFrame(InputSystem::Get().MakeSnapshot());
+	const FInputSystemSnapshot& RawInput = GlobalInputFrame.GetRawSnapshotForGlobalShortcuts();
+	if (RawInput.WasPressed(VK_ESCAPE))
 	{
 		TogglePauseMenu();
+		GlobalInputFrame.ConsumeKey(VK_ESCAPE, "GameClientGlobalShortcut", "Toggle pause menu");
 	}
 
 	Overlay.Update(DeltaTime);
@@ -187,16 +182,20 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 
 void UGameClientEngine::TickInGame(float DeltaTime)
 {
-	const FInputSystemSnapshot Snapshot = InputSystem::Get().MakeSnapshot();
-	FLuaInputLibrary::SetFrameSnapshot(Snapshot);
+    FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
-	GameViewport.Tick(DeltaTime, Snapshot);
+    FGameplayInputRouteContext InputContext;
+    InputContext.World = GetWorld();
+    InputContext.ViewportClient = GameViewport.GetViewportClient();
+    InputContext.DeltaTime = DeltaTime;
+	
+    FGameplayInputRouter::Route(InputFrame, InputContext);
 
-	TaskScheduler.Tick(DeltaTime);
-	WorldTick(DeltaTime);
+    TaskScheduler.Tick(DeltaTime);
+    WorldTick(DeltaTime);
 	FRowManager::Get().Tick(DeltaTime);
 
-	CameraManager.SyncWorldViewCamera();
+    CameraManager.SyncWorldViewCamera();
 }
 
 void UGameClientEngine::ProcessPendingCommands()

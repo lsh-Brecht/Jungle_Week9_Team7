@@ -329,8 +329,11 @@ bool FGamePackageBuilder::CopyContentDirectories(const FEditorPackageSettings& S
 bool FGamePackageBuilder::CopyRuntimeDependencies(const FEditorPackageSettings& Settings, FString& OutError)
 {
 	const std::filesystem::path ClientExecutable = ProjectPath(Settings.ClientExecutablePath);
+	const std::filesystem::path SfmlBinDir =
+		(std::filesystem::path(FPaths::RootDir()) / L"ThirdParty" / L"SFML" / L"bin" / L"Release").lexically_normal();
 	const TArray<std::filesystem::path> ClientSearchDirectories = {
-		ClientExecutable.parent_path()
+		ClientExecutable.parent_path(),
+		SfmlBinDir
 	};
 
 	const std::filesystem::path D3DCompiler = FindRuntimeDll(L"d3dcompiler_47.dll", ClientSearchDirectories);
@@ -356,7 +359,35 @@ bool FGamePackageBuilder::CopyRuntimeDependencies(const FEditorPackageSettings& 
 		return false;
 	}
 
-	return CopyFileChecked(LuaDll, PackageRootPath(Settings) / L"lua51.dll", OutError);
+	if (!CopyFileChecked(LuaDll, PackageRootPath(Settings) / L"lua51.dll", OutError))
+	{
+		return false;
+	}
+
+	const wchar_t* SfmlDlls[] = {
+		L"sfml-audio-3.dll",
+		L"sfml-system-3.dll",
+		L"sfml-window-3.dll",
+		L"OpenAL32.dll",
+		L"libvorbis.dll",
+		L"libogg-0.dll",
+		L"libsndfile-1.dll"
+	};
+	for (const wchar_t* DllName : SfmlDlls)
+	{
+		const std::filesystem::path DllPath = FindRuntimeDll(DllName, ClientSearchDirectories);
+		if (DllPath.empty())
+		{
+			OutError = "Missing runtime dependency: " + ToUtf8Path(std::filesystem::path(DllName));
+			return false;
+		}
+		if (!CopyFileChecked(DllPath, PackageRootPath(Settings) / DllName, OutError))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 bool FGamePackageBuilder::CreateRuntimeWritableDirectories(const FEditorPackageSettings& Settings, FString& OutError)

@@ -313,7 +313,34 @@ void RegisterWorldExtendedBinding(sol::state& Lua)
 
 	Game.set_function("Restart", []()
 	{
-		// UGameClientEngine::RequestRestart와 연결은 별도 바인딩 계층에서 처리
-		UE_LOG("[Lua] Game.Restart() called — connect to engine restart from GameClient layer.");
+		if (!GEngine)
+		{
+			UE_LOG("[Lua] Game.Restart() failed: GEngine is null.");
+			return;
+		}
+
+		GEngine->RequestRestart();
+	});
+
+	Game.set_function("Exit", []()
+	{
+		if (!GEngine)
+		{
+			UE_LOG("[Lua] Game.Exit() failed: GEngine is null.");
+			return;
+		}
+
+		GEngine->RequestExit();
+	});
+
+	Game.set_function("Quit", []()
+	{
+		if (!GEngine)
+		{
+			UE_LOG("[Lua] Game.Quit() failed: GEngine is null.");
+			return;
+		}
+
+		GEngine->RequestExit();
 	});
 }

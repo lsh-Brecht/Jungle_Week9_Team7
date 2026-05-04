@@ -238,6 +238,7 @@ void UHopMovementComponent::AddLocalMovementInput(const FVector& InLocalDirectio
 
 bool UHopMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
 {
+	RecordControllerMovementInput(Input);
 	if (Input.WorldDirection.IsNearlyZero())
 	{
 		return false;

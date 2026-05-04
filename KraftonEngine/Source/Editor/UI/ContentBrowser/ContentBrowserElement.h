@@ -19,6 +19,8 @@ public:
 
 	std::wstring GetFileName() { return ContentItem.Path.filename(); }
 
+	void StartRename(ContentBrowserContext& Context);
+
 protected:
 	FString EllipsisText(const FString& text, float maxWidth);
 	virtual const char* GetDragItemType() { return "ParkSangHyeok"; }

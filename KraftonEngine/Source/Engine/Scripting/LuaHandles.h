@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
@@ -22,6 +22,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Component/ControllerInputComponent.h"
+#include "Component/PawnOrientationComponent.h"
 
 // Lua가 Object에 직접 접근할 수 없도록 감쌈
 // nullptr일 경우를 대비
@@ -307,6 +308,22 @@ struct FLuaCameraComponentHandle
 	{
 		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
 		return Cast<UCameraComponent>(Object);
+	}
+
+	bool IsValid() const
+	{
+		return Resolve() != nullptr;
+	}
+};
+
+struct FLuaPawnOrientationComponentHandle
+{
+	uint32 UUID = 0;
+
+	UPawnOrientationComponent* Resolve() const
+	{
+		UObject* Object = UObjectManager::Get().FindByUUID(UUID);
+		return Cast<UPawnOrientationComponent>(Object);
 	}
 
 	bool IsValid() const

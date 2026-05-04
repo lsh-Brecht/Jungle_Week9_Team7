@@ -7,8 +7,13 @@
 
 #include "Component/CameraComponent.h"
 #include "Component/SceneComponent.h"
+#include "GameFramework/AActor.h"
+#include "GameFramework/PlayerController.h"
 #include "Math/Vector.h"
 #include "Math/Rotator.h"
+
+#include <algorithm>
+#include <cctype>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -37,6 +42,65 @@ namespace
 			Handle.UUID = Component->GetUUID();
 		}
 		return Handle;
+	}
+
+	FString NormalizeCameraToken(FString Value)
+	{
+		Value.erase(
+			std::remove_if(Value.begin(), Value.end(), [](unsigned char Ch)
+			{
+				return Ch == ' ' || Ch == '_' || Ch == '-';
+			}),
+			Value.end());
+
+		for (char& Ch : Value)
+		{
+			Ch = static_cast<char>(std::toupper(static_cast<unsigned char>(Ch)));
+		}
+
+		return Value;
+	}
+
+	const char* CameraViewModeToString(ECameraViewMode Mode)
+	{
+		switch (Mode)
+		{
+		case ECameraViewMode::FirstPerson:
+			return "FirstPerson";
+		case ECameraViewMode::ThirdPerson:
+			return "ThirdPerson";
+		case ECameraViewMode::OrthographicFollow:
+			return "OrthographicFollow";
+		case ECameraViewMode::Custom:
+			return "Custom";
+		case ECameraViewMode::Static:
+		default:
+			return "Static";
+		}
+	}
+
+	ECameraViewMode CameraViewModeFromName(const FString& Name)
+	{
+		const FString Token = NormalizeCameraToken(Name);
+		if (Token == "FIRSTPERSON" || Token == "FP") return ECameraViewMode::FirstPerson;
+		if (Token == "THIRDPERSON" || Token == "TP") return ECameraViewMode::ThirdPerson;
+		if (Token == "ORTHOGRAPHIC" || Token == "ORTHOGRAPHICFOLLOW" || Token == "ORTHO") return ECameraViewMode::OrthographicFollow;
+		if (Token == "CUSTOM") return ECameraViewMode::Custom;
+		return ECameraViewMode::Static;
+	}
+
+	ECameraViewMode CameraViewModeFromIndex(int32 Index)
+	{
+		switch (Index)
+		{
+		case static_cast<int32>(ECameraViewMode::FirstPerson): return ECameraViewMode::FirstPerson;
+		case static_cast<int32>(ECameraViewMode::ThirdPerson): return ECameraViewMode::ThirdPerson;
+		case static_cast<int32>(ECameraViewMode::OrthographicFollow): return ECameraViewMode::OrthographicFollow;
+		case static_cast<int32>(ECameraViewMode::Custom): return ECameraViewMode::Custom;
+		case static_cast<int32>(ECameraViewMode::Static):
+		default:
+			return ECameraViewMode::Static;
+		}
 	}
 
 	void SetComponentWorldRotation(USceneComponent* Component, const FRotator& WorldRotation)
@@ -220,6 +284,22 @@ void RegisterCameraComponentBinding(sol::state& Lua)
 			}
 		),
 
+		"IsOrthographic",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> bool
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->IsOrthogonal() : false;
+			},
+			[](const FLuaCameraComponentHandle& Self, bool bOrtho)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetOrthographic(bOrtho);
+				}
+			}
+		),
+
 		"OrthoWidth",
 		sol::property(
 			[](const FLuaCameraComponentHandle& Self) -> float
@@ -238,6 +318,191 @@ void RegisterCameraComponentBinding(sol::state& Lua)
 				C->SetOrthoWidth(Clamp(Width, 0.1f, 100000.0f));
 			}
 		),
+
+		"ViewMode",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> FString
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? CameraViewModeToString(C->GetViewMode()) : FString();
+			},
+			[](const FLuaCameraComponentHandle& Self, const FString& ModeName)
+			{
+				UCameraComponent* C = Self.Resolve();
+				if (!C)
+				{
+					UE_LOG("[Lua] Invalid CameraComponent.ViewMode Access.");
+					return;
+				}
+				C->SetViewMode(CameraViewModeFromName(ModeName));
+			}
+		),
+
+		"ViewModeIndex",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> int32
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->GetViewModeIndex() : 0;
+			},
+			[](const FLuaCameraComponentHandle& Self, int32 ModeIndex)
+			{
+				UCameraComponent* C = Self.Resolve();
+				if (!C)
+				{
+					UE_LOG("[Lua] Invalid CameraComponent.ViewModeIndex Access.");
+					return;
+				}
+				C->SetViewMode(CameraViewModeFromIndex(ModeIndex));
+			}
+		),
+
+		"UseOwnerAsTarget",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> bool
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->UsesOwnerAsTarget() : false;
+			},
+			[](const FLuaCameraComponentHandle& Self, bool bUseOwner)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetUseOwnerAsTarget(bUseOwner);
+				}
+			}
+		),
+
+		"TargetOffset",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> FVector
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->GetTargetOffset() : FVector::ZeroVector;
+			},
+			[](const FLuaCameraComponentHandle& Self, const FVector& Offset)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetTargetOffset(Offset);
+				}
+			}
+		),
+
+		"BackDistance",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> float
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->GetBackDistance() : 0.0f;
+			},
+			[](const FLuaCameraComponentHandle& Self, float Value)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetBackDistance(Value);
+				}
+			}
+		),
+
+		"Height",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> float
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->GetHeight() : 0.0f;
+			},
+			[](const FLuaCameraComponentHandle& Self, float Value)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetHeight(Value);
+				}
+			}
+		),
+
+		"SideOffset",
+		sol::property(
+			[](const FLuaCameraComponentHandle& Self) -> float
+			{
+				UCameraComponent* C = Self.Resolve();
+				return C ? C->GetSideOffset() : 0.0f;
+			},
+			[](const FLuaCameraComponentHandle& Self, float Value)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetSideOffset(Value);
+				}
+			}
+		),
+
+		"SetAsActiveCamera",
+		sol::overload(
+			[](const FLuaCameraComponentHandle& Self)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetActiveCamera();
+				}
+			},
+			[](const FLuaCameraComponentHandle& Self, const FLuaPlayerControllerHandle& ControllerHandle)
+			{
+				UCameraComponent* C = Self.Resolve();
+				APlayerController* Controller = ControllerHandle.Resolve();
+				if (C && Controller)
+				{
+					Controller->SetActiveCamera(C);
+				}
+			}
+		),
+
+		"SetAsActiveCameraWithBlend",
+		sol::overload(
+			[](const FLuaCameraComponentHandle& Self)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetActiveCameraWithBlend();
+				}
+			},
+			[](const FLuaCameraComponentHandle& Self, const FLuaPlayerControllerHandle& ControllerHandle)
+			{
+				UCameraComponent* C = Self.Resolve();
+				APlayerController* Controller = ControllerHandle.Resolve();
+				if (C && Controller)
+				{
+					Controller->SetActiveCameraWithBlend(C);
+				}
+			}
+		),
+
+		"SetTargetActor",
+		sol::overload(
+			[](const FLuaCameraComponentHandle& Self, const FLuaGameObjectHandle& ActorHandle)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetTargetActor(ActorHandle.Resolve());
+				}
+			},
+			[](const FLuaCameraComponentHandle& Self, sol::nil_t)
+			{
+				if (UCameraComponent* C = Self.Resolve())
+				{
+					C->SetTargetActor(nullptr);
+				}
+			}
+		),
+
+		"ClearTargetActor",
+		[](const FLuaCameraComponentHandle& Self)
+		{
+			if (UCameraComponent* C = Self.Resolve())
+			{
+				C->ClearTargetActor();
+			}
+		},
 
 		"WorldLocation",
 		sol::property(

@@ -6,6 +6,7 @@
 class UCameraComponent;
 class FWindowsWindow;
 class FViewport;
+struct FInputFrame;
 
 // ObjViewer용 간이 뷰포트 클라이언트 — 마우스 오빗/줌/팬
 class FObjViewerViewportClient : public FViewportClient
@@ -33,7 +34,7 @@ public:
 	void RenderViewportImage();
 
 private:
-	void TickInput(float DeltaTime);
+	void TickInput(float DeltaTime, FInputFrame& InputFrame);
 
 private:
 	FViewport* Viewport = nullptr;

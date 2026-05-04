@@ -3,6 +3,7 @@
 #include "Component/CameraComponent.h"
 #include "Component/ControllerInputComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/Input/InputFrame.h"
 #include "Engine/Input/InputSystem.h"
 #include "Object/Object.h"
 
@@ -44,11 +45,6 @@ void UGameViewportClient::OnEndPIE()
 	ResetInputState();
 	bHasCursorClipRect = false;
 	Viewport = nullptr;
-}
-
-bool UGameViewportClient::ProcessPIEInput(const FInputSystemSnapshot& Snapshot, float DeltaTime)
-{
-	return Tick(DeltaTime, Snapshot);
 }
 
 void UGameViewportClient::SetPIEPossessedInputEnabled(bool bEnabled)
@@ -140,13 +136,13 @@ void UGameViewportClient::ResetInputState()
 	InputSystem::Get().ResetWheelDelta();
 }
 
-bool UGameViewportClient::Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UGameViewportClient::Tick(float DeltaTime, FInputFrame& InputFrame)
 {
 	if (!bPIEPossessedInputEnabled || !HasPossessedTarget())
 	{
 		return false;
 	}
-	if (!Snapshot.bWindowFocused)
+	if (!InputFrame.IsWindowFocused())
 	{
 		InputSystem::Get().SetUseRawMouse(false);
 		SetCursorCaptured(false);
@@ -155,10 +151,10 @@ bool UGameViewportClient::Tick(float DeltaTime, const FInputSystemSnapshot& Snap
 	}
 	InputSystem::Get().SetUseRawMouse(true);
 	SetCursorCaptured(true);
-	return ApplyInputToCameraOrActor(DeltaTime, Snapshot);
+	return ApplyInputToCameraOrActor(DeltaTime, InputFrame);
 }
 
-bool UGameViewportClient::ApplyInputToCameraOrActor(float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UGameViewportClient::ApplyInputToCameraOrActor(float DeltaTime, FInputFrame& InputFrame)
 {
 	if (!HasPossessedTarget())
 	{
@@ -169,7 +165,7 @@ bool UGameViewportClient::ApplyInputToCameraOrActor(float DeltaTime, const FInpu
 	{
 		if (UControllerInputComponent* InputComponent = SafeController->FindControllerInputComponent())
 		{
-			return InputComponent->ApplyInput(SafeController, PossessedCamera, DeltaTime, Snapshot);
+			return InputComponent->ApplyInput(SafeController, PossessedCamera, DeltaTime, InputFrame);
 		}
 	}
 	return false;

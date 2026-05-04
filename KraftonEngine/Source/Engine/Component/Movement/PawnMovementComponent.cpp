@@ -51,6 +51,7 @@ FVector UPawnMovementComponent::ConsumeMovementInputVector()
 
 bool UPawnMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
 {
+	RecordControllerMovementInput(Input);
 	if (Input.WorldDelta.IsNearlyZero())
 	{
 		return false;

@@ -5,22 +5,16 @@
 
 class APlayerController;
 class UCameraComponent;
-struct FInputSystemSnapshot;
+struct FInputFrame;
 class FArchive;
 
 enum class EControllerMovementFrame : int32
 {
 	World = 0,
-	Camera = 1,
+	ControlRotation = 1,
+	ViewCamera = 2,
 };
 
-enum class EControllerLookMode : int32
-{
-	Auto               = 0,
-	CameraOnly         = 1,
-	PawnYawPawnPitch   = 2,
-	PawnYawCameraPitch = 3,
-};
 
 class UControllerInputComponent : public UActorComponent
 {
@@ -34,15 +28,13 @@ public:
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void PostEditProperty(const char* PropertyName) override;
 
-	bool ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
-	bool ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot);
-	bool ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, const FInputSystemSnapshot& Snapshot);
+	bool ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame);
+	bool ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame);
+	bool ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame);
 
 	EControllerMovementFrame GetMovementFrame() const { return static_cast<EControllerMovementFrame>(MovementFrame); }
 	void SetMovementFrame(EControllerMovementFrame InFrame);
 
-	EControllerLookMode GetLookMode() const { return static_cast<EControllerLookMode>(LookMode); }
-	void SetLookMode(EControllerLookMode InMode);
 
 	float GetMoveSpeed() const { return MoveSpeed; }
 	void SetMoveSpeed(float InSpeed);
@@ -61,15 +53,12 @@ public:
 
 	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
 
-	uint32 PossessedActorUUID = 0;
-	
-private:
+	private:
 	UCameraComponent* ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const;
 	void NormalizeOptions();
 
 private:
-	int32 MovementFrame = static_cast<int32>(EControllerMovementFrame::Camera);
-	int32 LookMode = static_cast<int32>(EControllerLookMode::Auto);
+	int32 MovementFrame = static_cast<int32>(EControllerMovementFrame::ControlRotation);
 	float MoveSpeed = 10.0f;
 	float SprintMultiplier = 2.5f;
 	float LookSensitivity = 0.08f;

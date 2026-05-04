@@ -25,6 +25,7 @@
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Component/ControllerInputComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/TextRenderComponent.h"
 
 #include "Mesh/ObjManager.h"
 #include "Mesh/StaticMesh.h"
@@ -644,6 +645,7 @@ namespace
 			{ "scene", USceneComponent::StaticClass(), true },
 			{ "luascript", ULuaScriptComponent::StaticClass(), true },
 			{ "staticmesh", UStaticMeshComponent::StaticClass(), true },
+			{ "textrender", UTextRenderComponent::StaticClass(), true },
 			{ "shape", UShapeComponent::StaticClass(), false },
 			{ "box", UBoxComponent::StaticClass(), true },
 			{ "sphere", USphereComponent::StaticClass(), true },

@@ -22,8 +22,51 @@ bool ContentBrowserElement::RenderSelectSpace(ContentBrowserContext& Context)
 	DrawList->AddImage(Icon, Min, Max);
 
 	ImVec2 TextPos(Min.x, Max.y);
-	FString Text = EllipsisText(FPaths::ToUtf8(ContentItem.Name), Context.ContentSize.x);
-	DrawList->AddText(TextPos, ImGui::GetColorU32(ImGuiCol_Text), Text.c_str());
+
+	if (bIsSelected && Context.bIsRenaming)
+	{
+		ImVec2 SavedScreenPos = ImGui::GetCursorScreenPos();
+		ImGui::SetCursorScreenPos(TextPos);
+		ImGui::PushItemWidth(Context.ContentSize.x);
+		if (Context.bRenameFocusNeeded)
+		{
+			ImGui::SetKeyboardFocusHere();
+			Context.bRenameFocusNeeded = false;
+		}
+		bool bConfirmed = ImGui::InputText("##RenameInput", Context.RenameBuffer, sizeof(Context.RenameBuffer),
+			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		bool bDeactivated = ImGui::IsItemDeactivated();
+		ImGui::PopItemWidth();
+		ImGui::SetCursorScreenPos(SavedScreenPos);
+
+		if (bConfirmed)
+		{
+			std::wstring NewName = FPaths::ToWide(FString(Context.RenameBuffer));
+			if (!NewName.empty() && NewName != ContentItem.Path.filename().wstring())
+			{
+				std::filesystem::path NewPath = ContentItem.Path.parent_path() / NewName;
+				std::error_code ec;
+				std::filesystem::rename(ContentItem.Path, NewPath, ec);
+				if (!ec)
+				{
+					ContentItem.Path = NewPath;
+					ContentItem.Name = NewName;
+					Context.bIsNeedRefresh = true;
+				}
+			}
+			Context.bIsRenaming = false;
+		}
+		else if (bDeactivated)
+		{
+			Context.bIsRenaming = false;
+		}
+	}
+	else
+	{
+		FString Text = EllipsisText(FPaths::ToUtf8(ContentItem.Name), Context.ContentSize.x);
+		DrawList->AddText(TextPos, ImGui::GetColorU32(ImGuiCol_Text), Text.c_str());
+	}
+
 	ImGui::PopID();
 
 	return bIsClicked;
@@ -39,18 +82,42 @@ void ContentBrowserElement::Render(ContentBrowserContext& Context)
 	}
 
 	bool bDoubleClicked = ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-	if (bDoubleClicked)
+	if (bDoubleClicked && !Context.bIsRenaming)
 	{
 		OnDoubleLeftClicked(Context);
 	}
 
-	if (ImGui::BeginDragDropSource())
+	if (ImGui::BeginPopupContextItem())
+	{
+		if (ImGui::MenuItem("Rename"))
+		{
+			Context.SelectedElement = shared_from_this();
+			bIsSelected = true;
+			StartRename(Context);
+		}
+		ImGui::EndPopup();
+	}
+
+	if (bIsSelected && ImGui::IsKeyPressed(ImGuiKey_F2) && !Context.bIsRenaming)
+	{
+		StartRename(Context);
+	}
+
+	if (!Context.bIsRenaming && ImGui::BeginDragDropSource())
 	{
 		RenderSelectSpace(Context);
 		ImGui::SetDragDropPayload(GetDragItemType(), &ContentItem, sizeof(ContentItem));
 		OnDrag(Context);
 		ImGui::EndDragDropSource();
 	}
+}
+
+void ContentBrowserElement::StartRename(ContentBrowserContext& Context)
+{
+	Context.bIsRenaming = true;
+	Context.bRenameFocusNeeded = true;
+	FString CurrentName = FPaths::ToUtf8(ContentItem.Path.filename().wstring());
+	strncpy_s(Context.RenameBuffer, sizeof(Context.RenameBuffer), CurrentName.c_str(), _TRUNCATE);
 }
 
 FString ContentBrowserElement::EllipsisText(const FString& text, float maxWidth)

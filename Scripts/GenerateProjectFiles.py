@@ -90,8 +90,34 @@ INCLUDE_PATHS = [
     ".",
 ]
 
-# Library paths
+# Library paths (common to all configurations)
 LIBRARY_PATHS = []
+
+# ──────────────────────────────────────────────
+# SFML configuration
+# ──────────────────────────────────────────────
+# SFML modules in use (no graphics/network because the engine uses its own
+# DirectX-based renderer and doesn't need SFML networking).
+SFML_MODULES = ["audio", "window", "system"]
+
+# Base paths inside the project directory
+SFML_LIB_BASE = "$(ProjectDir)ThirdParty\\SFML\\lib"
+SFML_BIN_BASE = "$(ProjectDir)ThirdParty\\SFML\\bin"
+
+# Maps a project Configuration name to the SFML build flavor folder
+# ("Debug" or "Release"). Configurations not in this map are skipped (no
+# SFML link / DLL copy). Win32 configs are intentionally excluded — SFML is
+# x64-only in this project.
+SFML_CONFIG_FLAVOR = {
+    "Debug":         "Debug",
+    "Release":       "Release",
+    "ObjViewDebug":  "Release",
+    "Demo":          "Release",
+    "GameClient":    "Release",
+}
+
+# Platforms eligible for SFML linkage
+SFML_PLATFORMS = {"x64"}
 
 # Lua / vcpkg property sheet
 USE_VCPKG_LUA_PROPS = True
@@ -196,6 +222,40 @@ def collect_all_filters(files: dict[str, list[str]]) -> set[str]:
                 filters.add("\\".join(parts[:i]))
 
     return filters
+
+
+# ──────────────────────────────────────────────
+# SFML helpers
+# ──────────────────────────────────────────────
+def sfml_flavor_for(cfg: str, plat: str) -> str | None:
+    """Return 'Debug' or 'Release' for a given (cfg, plat), or None if SFML
+    should not be applied to this configuration."""
+    if plat not in SFML_PLATFORMS:
+        return None
+    return SFML_CONFIG_FLAVOR.get(cfg)
+
+
+def sfml_lib_names(flavor: str) -> list[str]:
+    """Return the .lib filenames for a given flavor.
+    Debug builds use the '-d' suffix per SFML naming convention."""
+    suffix = "-d" if flavor == "Debug" else ""
+    return [f"sfml-{m}{suffix}.lib" for m in SFML_MODULES]
+
+
+def sfml_post_build_command(flavor: str) -> str:
+    """Return the xcopy command that copies all SFML DLLs (and their
+    dependencies like OpenAL32.dll, libsndfile-1.dll) from the matching
+    bin\\<flavor>\\ folder to $(OutDir).
+
+    xcopy flags:
+      /Y  : overwrite existing files without prompting
+      /D  : copy only files whose source is newer than the destination
+      /I  : if destination doesn't exist and multiple files, treat as dir
+    The trailing '*' on $(OutDir) forces xcopy to treat it as a directory
+    (avoids the 'File or Directory?' interactive prompt).
+    """
+    src = f"{SFML_BIN_BASE}\\{flavor}\\*.dll"
+    return f'xcopy /Y /D /I "{src}" "$(OutDir)"'
 
 
 # ──────────────────────────────────────────────
@@ -317,10 +377,12 @@ def generate_vcxproj(files: dict[str, list[str]]):
     # OutDir, IntDir, IncludePath, LibraryPath, WorkingDirectory
     include_path_value = ";".join(INCLUDE_PATHS) + ";$(IncludePath)"
 
+    # Build a base library path (common to all configs). SFML's per-config
+    # path is appended below inside the configuration loop.
     if LIBRARY_PATHS:
-        library_path_value = ";".join(LIBRARY_PATHS) + ";$(LibraryPath)"
+        base_library_path = ";".join(LIBRARY_PATHS) + ";$(LibraryPath)"
     else:
-        library_path_value = "$(LibraryPath)"
+        base_library_path = "$(LibraryPath)"
 
     for cfg, plat in CONFIGURATIONS:
         cond = f"'$(Configuration)|$(Platform)'=='{cfg}|{plat}'"
@@ -330,6 +392,18 @@ def generate_vcxproj(files: dict[str, list[str]]):
         ET.SubElement(pg, "OutDir").text = "$(ProjectDir)Bin\\$(Configuration)\\"
         ET.SubElement(pg, "IntDir").text = "$(ProjectDir)Build\\$(Configuration)\\"
         ET.SubElement(pg, "IncludePath").text = include_path_value
+
+        # Per-config LibraryPath: prepend SFML lib folder for eligible configs.
+        # We hardcode the flavor (Debug/Release) instead of using
+        # $(Configuration), because configs like ObjViewDebug/Demo/GameClient
+        # have no matching folder under SFML\lib\.
+        flavor = sfml_flavor_for(cfg, plat)
+        if flavor is not None:
+            sfml_lib_path = f"{SFML_LIB_BASE}\\{flavor}"
+            library_path_value = f"{sfml_lib_path};{base_library_path}"
+        else:
+            library_path_value = base_library_path
+
         ET.SubElement(pg, "LibraryPath").text = library_path_value
         ET.SubElement(pg, "LocalDebuggerWorkingDirectory").text = "$(ProjectDir)"
 
@@ -383,6 +457,25 @@ def generate_vcxproj(files: dict[str, list[str]]):
 
         ET.SubElement(link, "SubSystem").text = subsystem
         ET.SubElement(link, "GenerateDebugInformation").text = "true"
+
+        # ── SFML linkage (per-config) ─────────────────────────────
+        # For x64 configs that map to a SFML flavor, append SFML's .lib
+        # files to AdditionalDependencies and emit a PostBuildEvent that
+        # copies the matching DLLs (and their dependencies such as
+        # OpenAL32.dll, libsndfile-1.dll) next to the built .exe.
+        sfml_flavor = sfml_flavor_for(cfg, plat)
+        if sfml_flavor is not None:
+            libs = sfml_lib_names(sfml_flavor)
+            # %(AdditionalDependencies) preserves any libs inherited from
+            # property sheets / Microsoft defaults (e.g. kernel32.lib).
+            deps_text = ";".join(libs) + ";%(AdditionalDependencies)"
+            ET.SubElement(link, "AdditionalDependencies").text = deps_text
+
+            pbe = ET.SubElement(idg, "PostBuildEvent")
+            ET.SubElement(pbe, "Command").text = sfml_post_build_command(sfml_flavor)
+            ET.SubElement(pbe, "Message").text = (
+                f"Copying SFML {sfml_flavor} DLLs to $(OutDir)"
+            )
 
     # ClCompile items
     ig = ET.SubElement(proj, "ItemGroup")

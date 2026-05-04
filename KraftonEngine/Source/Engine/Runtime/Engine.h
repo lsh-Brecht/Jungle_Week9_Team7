@@ -31,6 +31,10 @@ public:
 
 	virtual void OnWindowResized(uint32 Width, uint32 Height);
 
+	// Script-facing game flow requests. Base engine treats them as no-op.
+	virtual void RequestRestart() {}
+	virtual void RequestExit() {}
+
 	// World context management
 	FWorldContext& CreateWorldContext(EWorldType Type, const FName& Handle, const FString& Name = "");
 	void DestroyWorldContext(const FName& Handle);

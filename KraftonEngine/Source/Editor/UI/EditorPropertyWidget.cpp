@@ -8,6 +8,7 @@
 #include "ImGui/imgui.h"
 #include "Component/ActorComponent.h"
 #include "Component/ControllerInputComponent.h"
+#include "Component/PawnOrientationComponent.h"
 #include "Component/BillboardComponent.h"
 #include "Component/MeshComponent.h"
 #include "Component/Movement/MovementComponent.h"
@@ -508,7 +509,7 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 		PrimaryActor->SetVisible(bVisible);
 	}
 
-	// PlayerController — Pawn Possess / ViewTarget 연결
+	// PlayerController — Pawn Possess / Active Camera 연결
 	if (APlayerController* PC = Cast<APlayerController>(PrimaryActor))
 	{
 		SEPARATOR();
@@ -561,42 +562,88 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 		}
 
 		ImGui::Spacing();
+		ImGui::Text("Camera");
+		ImGui::TextDisabled("Possessing an actor with a CameraComponent selects that camera automatically.");
 
-		// 현재 ViewTarget 표시
-		AActor* VT = PC->GetViewTarget();
-		if (VT)
+		if (UCameraComponent* ActiveCamera = PC->GetActiveCamera())
 		{
-			const FString& N = VT->GetFName().ToString();
-			ImGui::Text("ViewTarget: %s", N.empty() ? VT->GetClass()->GetName() : N.c_str());
-			ImGui::SameLine();
-			if (ImGui::SmallButton("Clear##VT"))
-				PC->SetViewTarget(nullptr);
+			FString OwnerName = ActiveCamera->GetOwner() ? ActiveCamera->GetOwner()->GetFName().ToString() : FString();
+			FString CameraName = ActiveCamera->GetFName().ToString();
+			FString Label = OwnerName.empty() ? FString("Actor") : OwnerName;
+			Label += ".";
+			Label += CameraName.empty() ? ActiveCamera->GetClass()->GetName() : CameraName;
+			ImGui::Text("Player Camera: %s", Label.c_str());
 		}
 		else
 		{
-			ImGui::TextDisabled("ViewTarget: (none)");
+			ImGui::TextDisabled("Player Camera: (none)");
 		}
 
-		// ViewTarget 선택
-		if (ImGui::Button("Set ViewTarget..."))
-			ImGui::OpenPopup("##ViewTargetPicker");
-		if (ImGui::BeginPopup("##ViewTargetPicker"))
+		if (ImGui::Button("Choose Player Camera..."))
+		{
+			ImGui::OpenPopup("##ControllerCameraPicker");
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear Player Camera"))
+		{
+			PC->ClearActiveCamera();
+		}
+
+		if (ImGui::BeginPopup("##ControllerCameraPicker"))
 		{
 			UWorld* World = EditorEngine->GetWorld();
-			for (AActor* A : World->GetActors())
+			bool bAnyCamera = false;
+			if (World)
 			{
-				if (!A) continue;
-				const FString& N = A->GetFName().ToString();
-				const char* Label = N.empty() ? A->GetClass()->GetName() : N.c_str();
-				if (ImGui::MenuItem(Label))
+				for (AActor* CandidateActor : World->GetActors())
 				{
-					PC->SetViewTarget(A);
-					ImGui::CloseCurrentPopup();
+					if (!CandidateActor)
+					{
+						continue;
+					}
+
+					const FString ActorName = CandidateActor->GetFName().ToString();
+					for (UActorComponent* CandidateComponent : CandidateActor->GetComponents())
+					{
+						if (!CandidateComponent || CandidateComponent->IsHiddenInComponentTree())
+						{
+							continue;
+						}
+
+						UCameraComponent* Camera = Cast<UCameraComponent>(CandidateComponent);
+						if (!Camera)
+						{
+							continue;
+						}
+
+						bAnyCamera = true;
+						FString CameraName = Camera->GetFName().ToString();
+						FString Label = ActorName.empty() ? "Actor" : ActorName;
+						Label += ".";
+						Label += CameraName.empty() ? Camera->GetClass()->GetName() : CameraName;
+
+						if (ImGui::MenuItem(Label.c_str()))
+						{
+							PC->SetActiveCamera(Camera);
+							PC->GetCameraManager().SnapToActiveCamera();
+							if (UCameraComponent* ViewCamera = PC->ResolveViewCamera())
+							{
+								World->SetViewCamera(ViewCamera);
+								World->SetActiveCamera(ViewCamera);
+							}
+							ImGui::CloseCurrentPopup();
+						}
+					}
 				}
+			}
+			if (!bAnyCamera)
+			{
+				ImGui::TextDisabled("No CameraComponent in world");
 			}
 			ImGui::EndPopup();
 		}
 	}
+
 	// Pawn — 현재 Controller 표시
 	else if (APawn* Pawn = Cast<APawn>(PrimaryActor))
 	{
@@ -656,18 +703,14 @@ void FEditorPropertyWidget::RenderActorProperties(AActor* PrimaryActor, const TA
 			}
 		}
 
-		if (ImGui::Button("Set Controller ViewTarget To This Pawn"))
+		if (ImGui::Button("Use This Pawn Camera"))
 		{
 			if (UWorld* World = EditorEngine->GetWorld())
 			{
 				if (APlayerController* Controller = World->FindOrCreatePlayerController())
 				{
-					Controller->SetViewTarget(Pawn);
-					if (UCameraComponent* Camera = Pawn->FindPawnCamera())
-					{
-						World->SetActiveCamera(Camera);
-						World->SetViewCamera(Camera);
-					}
+					Controller->Possess(Pawn);
+					Controller->SetActiveCamera(Pawn->FindPawnCamera());
 				}
 			}
 		}
@@ -706,6 +749,7 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 	AddComponentClassGroup(ComponentGroups, "Light", ULightComponentBase::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Movement", UMovementComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Input", UControllerInputComponent::StaticClass());
+	AddComponentClassGroup(ComponentGroups, "Orientation", UPawnOrientationComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Collision", UShapeComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Camera", UCameraComponent::StaticClass());
 	AddComponentClassGroup(ComponentGroups, "Primitive", UPrimitiveComponent::StaticClass());
@@ -897,19 +941,6 @@ void FEditorPropertyWidget::RenderComponentTree(AActor* Actor)
 
 		SelectedComponent = Comp;
 		bActorSelected = false;
-
-		if (UCameraComponent* Camera = Cast<UCameraComponent>(Comp))
-		{
-			if (UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr)
-			{
-				World->SetActiveCamera(Camera);
-				World->SetViewCamera(Camera);
-				if (APlayerController* Controller = World->GetPlayerController(0))
-				{
-					Controller->SetViewTarget(Actor);
-				}
-			}
-		}
 	}
 
 	ImGui::Separator();
@@ -1058,23 +1089,29 @@ void FEditorPropertyWidget::RenderComponentProperties(AActor* Actor, const TArra
 
 	ImGui::Separator();
 
-	// CameraComponent — Active Camera 지정
+	// CameraComponent — player view selection is explicit; follow target is handled by the camera settings below.
 	if (UCameraComponent* Cam = Cast<UCameraComponent>(SelectedComponent))
 	{
 		UWorld* World = EditorEngine->GetWorld();
 		if (World)
 		{
-			if (World->GetActiveCamera() == Cam)
-				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "[Active Camera]");
-			else if (ImGui::Button("Set as Active Camera"))
+			APlayerController* Controller = World->GetPlayerController(0);
+			const bool bIsPlayerCamera = Controller && Controller->GetActiveCamera() == Cam;
+			if (bIsPlayerCamera)
 			{
-				World->SetActiveCamera(Cam);
-				World->SetViewCamera(Cam);
-				if (APlayerController* Controller = World->GetPlayerController(0))
-				{
-					Controller->SetViewTarget(Cam->GetOwner());
-				}
+				ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Player Camera");
 			}
+			else
+			{
+				ImGui::TextDisabled("Not used as the player camera");
+			}
+
+			if (ImGui::Button("Use as Player Camera"))
+			{
+				Cam->SetActiveCamera();
+			}
+
+			ImGui::TextDisabled("Follow Target below changes who this camera follows. It is visible once this camera is the player camera.");
 		}
 		ImGui::Separator();
 	}
@@ -1191,6 +1228,7 @@ void FEditorPropertyWidget::PropagatePropertyChange(const FString& PropName, con
 				case EPropertyType::MaterialSlot:   *static_cast<FMaterialSlot*>(DstProp.ValuePtr) = *static_cast<FMaterialSlot*>(SrcProp->ValuePtr); break;
 				case EPropertyType::Enum:           Size = sizeof(int32); break;
 				case EPropertyType::Vec3Array:      *static_cast<TArray<FVector>*>(DstProp.ValuePtr) = *static_cast<TArray<FVector>*>(SrcProp->ValuePtr); break;
+				case EPropertyType::ActorRef:       Size = sizeof(uint32); break;
 				}
 				if (Size > 0)
 					memcpy(DstProp.ValuePtr, SrcProp->ValuePtr, Size);
@@ -1628,6 +1666,59 @@ bool FEditorPropertyWidget::RenderPropertyWidget(TArray<FPropertyDescriptor>& Pr
 		{
 			Arr->push_back(FVector(0.0f, 0.0f, 0.0f));
 			bChanged = true;
+		}
+		break;
+	}
+	case EPropertyType::ActorRef:
+	{
+		uint32* ActorUUID = static_cast<uint32*>(Prop.ValuePtr);
+		UWorld* World = EditorEngine ? EditorEngine->GetWorld() : nullptr;
+		FString Preview = "None";
+		if (World && ActorUUID && *ActorUUID != 0)
+		{
+			if (AActor* Actor = World->FindActorByUUIDInWorld(*ActorUUID))
+			{
+				Preview = Actor->GetFName().ToString();
+				if (Preview.empty())
+				{
+					Preview = Actor->GetClass()->GetName();
+				}
+			}
+			else
+			{
+				Preview = "Missing Actor";
+			}
+		}
+
+		if (ImGui::BeginCombo(Prop.Name.c_str(), Preview.c_str()))
+		{
+			const bool bSelectedNone = (!ActorUUID || *ActorUUID == 0);
+			if (ImGui::Selectable("None", bSelectedNone))
+			{
+				if (ActorUUID) *ActorUUID = 0;
+				bChanged = true;
+			}
+
+			if (World)
+			{
+				for (AActor* Actor : World->GetActors())
+				{
+					if (!Actor) continue;
+					FString Label = Actor->GetFName().ToString();
+					if (Label.empty()) Label = Actor->GetClass()->GetName();
+					Label += " (";
+					Label += Actor->GetClass()->GetName();
+					Label += ")";
+					const bool bSelected = ActorUUID && *ActorUUID == Actor->GetUUID();
+					if (ImGui::Selectable(Label.c_str(), bSelected))
+					{
+						if (ActorUUID) *ActorUUID = Actor->GetUUID();
+						bChanged = true;
+					}
+					if (bSelected) ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
 		}
 		break;
 	}

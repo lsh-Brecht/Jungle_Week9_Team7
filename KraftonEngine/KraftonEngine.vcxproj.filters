@@ -55,6 +55,9 @@
     <Filter Include="Source\Engine">
       <UniqueIdentifier>{d0b56061-5521-9f21-3d03-1e11f47e99a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Camera">
+      <UniqueIdentifier>{1a0cd112-6dba-ed82-ebfb-199f0bda9443}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Engine\Collision">
       <UniqueIdentifier>{0a1ac0a6-fa86-45a3-c38e-91b60c7ce3cf}</UniqueIdentifier>
     </Filter>
@@ -160,6 +163,9 @@
     <Filter Include="Source\Engine\Serialization">
       <UniqueIdentifier>{b03fb85a-4e75-0b00-08fd-bb38cdc05e3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Engine\Sound">
+      <UniqueIdentifier>{7fe5b1dc-5182-7345-055b-136f48fc3a8b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Engine\Texture">
       <UniqueIdentifier>{a2a36f49-f806-d651-ef8d-21314e78d9ad}</UniqueIdentifier>
     </Filter>
@@ -180,6 +186,24 @@
     </Filter>
     <Filter Include="ThirdParty\ImGui">
       <UniqueIdentifier>{5fdcaaee-156a-a40d-82bd-8b77a5a402df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML">
+      <UniqueIdentifier>{f2f97095-ef5e-9985-1ed0-95b45c9b1b29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML\Audio">
+      <UniqueIdentifier>{dfe64833-f91d-6583-8561-4160f921b835}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML\Graphics">
+      <UniqueIdentifier>{3b8e8d65-315b-04b9-33f7-b50533b0708b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML\Network">
+      <UniqueIdentifier>{773f1718-efe4-20ef-d7a3-0b4410612f19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML\System">
+      <UniqueIdentifier>{8d76ad6f-7f9a-cd20-2e18-e7d330aa60a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\SFML\Window">
+      <UniqueIdentifier>{02c1f3f9-6b3e-787d-53d4-6072b0a9619c}</UniqueIdentifier>
     </Filter>
     <Filter Include="ThirdParty\SimpleJSON">
       <UniqueIdentifier>{b5b63371-405e-e009-4e4e-e3b5a25ee7bd}</UniqueIdentifier>
@@ -380,6 +404,9 @@
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp">
       <Filter>Source\Editor\Viewport</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp">
+      <Filter>Source\Engine\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp">
       <Filter>Source\Engine\Collision</Filter>
     </ClCompile>
@@ -419,9 +446,6 @@
     <ClCompile Include="Source\Engine\Component\CameraComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Component\CameraRigComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Component\Collision\BoxComponent.cpp">
       <Filter>Source\Engine\Component\Collision</Filter>
     </ClCompile>
@@ -433,6 +457,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\Collision\SphereComponent.cpp">
       <Filter>Source\Engine\Component\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\ComponentReferenceUtils.cpp">
+      <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\ControllerInputComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
@@ -490,6 +517,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
@@ -857,6 +887,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaPawnOrientationBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -883,6 +916,9 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp">
       <Filter>Source\Engine\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Sound\SoundManager.cpp">
+      <Filter>Source\Engine\Sound</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp">
       <Filter>Source\Engine\Texture</Filter>
@@ -1076,6 +1112,12 @@
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h">
       <Filter>Source\Editor\Viewport</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Camera\CameraTypes.h">
+      <Filter>Source\Engine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h">
+      <Filter>Source\Engine\Camera</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h">
       <Filter>Source\Engine\Collision</Filter>
     </ClInclude>
@@ -1121,9 +1163,6 @@
     <ClInclude Include="Source\Engine\Component\CameraComponent.h">
       <Filter>Source\Engine\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Component\CameraRigComponent.h">
-      <Filter>Source\Engine\Component</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\Component\Collision\BoxComponent.h">
       <Filter>Source\Engine\Component\Collision</Filter>
     </ClInclude>
@@ -1138,6 +1177,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Collision\SphereComponent.h">
       <Filter>Source\Engine\Component\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\ComponentReferenceUtils.h">
+      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\ControllerInputComponent.h">
       <Filter>Source\Engine\Component</Filter>
@@ -1195,6 +1237,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h">
+      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h">
       <Filter>Source\Engine\Component</Filter>
@@ -1676,6 +1721,9 @@
     <ClInclude Include="Source\Engine\Serialization\WindowsArchive.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Sound\SoundManager.h">
+      <Filter>Source\Engine\Sound</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Texture\Texture2D.h">
       <Filter>Source\Engine\Texture</Filter>
     </ClInclude>
@@ -1757,6 +1805,360 @@
     <ClInclude Include="ThirdParty\ImGui\imstb_truetype.h">
       <Filter>ThirdParty\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\AudioResource.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\Export.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\InputSoundFile.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\Listener.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\Music.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\OutputSoundFile.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\PlaybackDevice.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\Sound.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundBuffer.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundBufferRecorder.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundChannel.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileFactory.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileFactory.inl">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileReader.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundFileWriter.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundRecorder.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundSource.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Audio\SoundStream.hpp">
+      <Filter>ThirdParty\SFML\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Config.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\GpuPreference.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\BlendMode.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\CircleShape.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Color.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Color.inl">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\ConvexShape.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\CoordinateType.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Drawable.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Export.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Font.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glsl.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glsl.inl">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Glyph.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Image.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\PrimitiveType.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Rect.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Rect.inl">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\RectangleShape.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderStates.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderTarget.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderTexture.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\RenderWindow.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Shader.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Shape.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Sprite.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\StencilMode.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Text.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Texture.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transform.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transform.inl">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Transformable.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\Vertex.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\VertexArray.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\VertexBuffer.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Graphics\View.hpp">
+      <Filter>ThirdParty\SFML\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Main.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Dns.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Export.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Ftp.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Http.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\IpAddress.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Packet.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Sftp.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\Socket.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\SocketHandle.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\SocketSelector.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\TcpListener.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\TcpSocket.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Network\UdpSocket.hpp">
+      <Filter>ThirdParty\SFML\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\OpenGL.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Angle.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Angle.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Clock.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Err.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Exception.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Export.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\FileInputStream.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\InputStream.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\MemoryInputStream.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\NativeActivity.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Sleep.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\String.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\String.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\SuspendAwareClock.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Time.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Time.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\TimeoutWithPredicate.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Utf.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Utf.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Vector2.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Vector2.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Vector3.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Vector3.inl">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\System\Version.hpp">
+      <Filter>ThirdParty\SFML\System</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window.hpp">
+      <Filter>ThirdParty\SFML</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Clipboard.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Context.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\ContextSettings.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Cursor.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Event.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Event.inl">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Export.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\GlResource.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Joystick.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Keyboard.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Mouse.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Sensor.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Touch.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\VideoMode.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Vulkan.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\Window.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\WindowBase.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\WindowBase.inl">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\WindowEnums.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\SFML\Window\WindowHandle.hpp">
+      <Filter>ThirdParty\SFML\Window</Filter>
+    </ClInclude>
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
@@ -1772,8 +2174,5 @@
   <ItemGroup>
     <None Include="VcpkgLua.props" />
     <None Include="LuaScripts\Game\RowGenerator.lua" />
-  </ItemGroup>
-  <ItemGroup>
-    <Media Include="Sound\BackgroundMusic.wav" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,7 @@
 #include "Platform/DirectoryWatcher.h"
 #include "Component/Script/LuaScriptComponent.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/World.h"
 #include "Object/Object.h"
 #include "Runtime/Engine.h"
 
@@ -249,6 +250,7 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 	Binding.ScriptPath = NormalizedPath;
 	Binding.Environment = std::move(Env);
 	Binding.BeginPlay = Binding.Environment["BeginPlay"];
+	Binding.OnInput = Binding.Environment["OnInput"];
 	Binding.Tick = Binding.Environment["Tick"];
 	Binding.EndPlay = Binding.Environment["EndPlay"];
 	Binding.OnSpawnFromPool = Binding.Environment["OnSpawnFromPool"];
@@ -285,6 +287,50 @@ void FLuaScriptSubsystem::CallComponentBeginPlay(ULuaScriptComponent* Component)
 		AssignComponentBindingHandles(Binding->Environment, Component);
 		StartCoroutine("BeginPlay", Binding->BeginPlay, Binding->ComponentUUID);
 	}
+}
+
+
+void FLuaScriptSubsystem::CallInput(UWorld* World, float DeltaTime)
+{
+    if (!bInitialized || !World)
+    {
+        return;
+    }
+
+    TArray<AActor*> ActorSnapshot = World->GetActors();
+    for (AActor* Actor : ActorSnapshot)
+    {
+        if (!Actor || !IsAliveObject(Actor) || !World->IsActorInWorld(Actor) || Actor->IsPooledActorInactive())
+        {
+            continue;
+        }
+
+        TArray<UActorComponent*> ComponentSnapshot = Actor->GetComponents();
+        for (UActorComponent* ComponentBase : ComponentSnapshot)
+        {
+            ULuaScriptComponent* Component = Cast<ULuaScriptComponent>(ComponentBase);
+            if (!Component || !IsAliveObject(Component))
+            {
+                continue;
+            }
+
+            FLuaComponentBinding* Binding = FindComponentBinding(Component->GetUUID());
+            if (!Binding || !Binding->OnInput.valid())
+            {
+                continue;
+            }
+
+            AssignComponentBindingHandles(Binding->Environment, Component);
+
+            sol::protected_function OnInput = Binding->OnInput;
+            sol::protected_function_result Result = OnInput(DeltaTime);
+            if (!Result.valid())
+            {
+                sol::error Error = Result;
+                UE_LOG("[Lua] Lua Component OnInput Error (%s): %s", Binding->ScriptPath.c_str(), Error.what());
+            }
+        }
+    }
 }
 
 void FLuaScriptSubsystem::CallComponentTick(ULuaScriptComponent* Component, float DeltaTime)
@@ -377,9 +423,17 @@ void FLuaScriptSubsystem::CancelAllComponentTasks()
 	}
 }
 
+namespace
+{
+	bool IsSingleInstanceComponentCoroutine(const FString& FunctionName)
+	{
+		return FunctionName == "Tick";
+	}
+}
+
 bool FLuaScriptSubsystem::TryBeginCoroutine(const FString& FunctionName, uint32 OwnerUUID)
 {
-	if (FunctionName != "Tick" || OwnerUUID == 0)
+	if (!IsSingleInstanceComponentCoroutine(FunctionName) || OwnerUUID == 0)
 	{
 		return true;
 	}
@@ -401,7 +455,7 @@ bool FLuaScriptSubsystem::TryBeginCoroutine(const FString& FunctionName, uint32 
 
 void FLuaScriptSubsystem::FinishCoroutine(const FString& FunctionName, uint32 OwnerUUID)
 {
-	if (FunctionName != "Tick" || OwnerUUID == 0)
+	if (!IsSingleInstanceComponentCoroutine(FunctionName) || OwnerUUID == 0)
 	{
 		return;
 	}

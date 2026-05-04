@@ -12,7 +12,7 @@
 class FViewport;
 class UCameraComponent;
 class APlayerController;
-struct FInputSystemSnapshot;
+struct FInputFrame;
 
 // UE의 UGameViewportClient 대응 — UObject + FViewportClient 다중상속
 // 게임 런타임 뷰포트를 담당 (PIE / Standalone)
@@ -49,11 +49,10 @@ public:
 	void UnPossess();
 	UCameraComponent* GetPossessedTarget() const;
 	bool HasPossessedTarget() const { return GetPossessedTarget() != nullptr; }
-	bool Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot);
-	bool ProcessPIEInput(const FInputSystemSnapshot& Snapshot, float DeltaTime);
+	bool Tick(float DeltaTime, FInputFrame& InputFrame);
 
 private:
-	bool ApplyInputToCameraOrActor(float DeltaTime, const FInputSystemSnapshot& Snapshot);
+	bool ApplyInputToCameraOrActor(float DeltaTime, FInputFrame& InputFrame);
 	void SetCursorCaptured(bool bCaptured);
 	void ApplyCursorClip();
 

@@ -3,8 +3,10 @@
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/Movement/MovementComponent.h"
-#include "Engine/Input/InputSystem.h"
+#include "Component/PawnOrientationComponent.h"
+#include "Engine/Input/InputFrame.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/AActor.h"
 #include "Math/MathUtils.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
@@ -21,30 +23,21 @@ IMPLEMENT_CLASS(UControllerInputComponent, UActorComponent)
 
 namespace
 {
-	constexpr int32 MovementFrameCount = 2;
-	constexpr int32 LookModeCount = 4;
+	constexpr int32 MovementFrameCount = 3;
 
 	int32 NormalizeMovementFrameValue(int32 Value)
 	{
-		return Value == static_cast<int32>(EControllerMovementFrame::World)
-			? static_cast<int32>(EControllerMovementFrame::World)
-			: static_cast<int32>(EControllerMovementFrame::Camera);
-	}
-
-	int32 NormalizeLookModeValue(int32 Value)
-	{
 		switch (Value)
 		{
-		case static_cast<int32>(EControllerLookMode::CameraOnly):
-			return static_cast<int32>(EControllerLookMode::CameraOnly);
-		case static_cast<int32>(EControllerLookMode::PawnYawPawnPitch):
-			return static_cast<int32>(EControllerLookMode::PawnYawPawnPitch);
-		case static_cast<int32>(EControllerLookMode::PawnYawCameraPitch):
-			return static_cast<int32>(EControllerLookMode::PawnYawCameraPitch);
+		case static_cast<int32>(EControllerMovementFrame::World):
+		case static_cast<int32>(EControllerMovementFrame::ControlRotation):
+		case static_cast<int32>(EControllerMovementFrame::ViewCamera):
+			return Value;
 		default:
-			return static_cast<int32>(EControllerLookMode::Auto);
+			return static_cast<int32>(EControllerMovementFrame::ControlRotation);
 		}
 	}
+
 
 	UMovementComponent* FindControllerDrivenMovementComponent(AActor* Actor)
 	{
@@ -69,19 +62,64 @@ namespace
 		}
 		return BestMovement;
 	}
+
+	void RefreshControlRotationFacing(APlayerController* Controller, float DeltaTime)
+	{
+		if (!Controller)
+		{
+			return;
+		}
+
+		AActor* Actor = Controller->GetPossessedActor();
+		if (!Actor)
+		{
+			return;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			UPawnOrientationComponent* Orientation = Cast<UPawnOrientationComponent>(Component);
+			if (!Orientation)
+			{
+				continue;
+			}
+
+			if (Orientation->GetFacingMode() == EPawnFacingMode::ControlRotationYaw)
+			{
+				Orientation->RefreshFacing(DeltaTime);
+			}
+			return;
+		}
+	}
+
+	void RecordNoControllerMovement(APlayerController* Controller, float DeltaTime)
+	{
+		if (!Controller)
+		{
+			return;
+		}
+
+		UMovementComponent* Movement = FindControllerDrivenMovementComponent(Controller->GetPossessedActor());
+		if (!Movement)
+		{
+			return;
+		}
+
+		FControllerMovementInput EmptyInput;
+		EmptyInput.DeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
+		Movement->RecordControllerMovementInput(EmptyInput);
+	}
 }
 
 void UControllerInputComponent::Serialize(FArchive& Ar)
 {
 	UActorComponent::Serialize(Ar);
 	Ar << MovementFrame;
-	Ar << LookMode;
 	Ar << MoveSpeed;
 	Ar << SprintMultiplier;
 	Ar << LookSensitivity;
 	Ar << MinPitch;
 	Ar << MaxPitch;
-	Ar << PossessedActorUUID;
 
 	if (Ar.IsLoading())
 	{
@@ -93,12 +131,9 @@ void UControllerInputComponent::GetEditableProperties(TArray<FPropertyDescriptor
 {
 	UActorComponent::GetEditableProperties(OutProps);
 
-	static const char* MovementFrameNames[] = { "World", "Camera" };
-	static const char* LookModeNames[] = { "Auto","Camera Only","Pawn Yaw + Pawn Pitch","Pawn Yaw + Camera Pitch" };
+	static const char* MovementFrameNames[] = { "World", "Control Rotation", "View Camera" };
 
-	OutProps.push_back({ "Movement Frame", EPropertyType::Enum, &MovementFrame, 0.0f, 0.0f, 0.1f, MovementFrameNames, MovementFrameCount });
-	OutProps.push_back({ "Look Mode", EPropertyType::Enum, &LookMode, 0.0f, 0.0f, 0.1f, LookModeNames, LookModeCount });
-	OutProps.push_back({ "PossessedActorUUID",EPropertyType::ActorRef,&PossessedActorUUID });
+	OutProps.push_back({ "Movement Basis", EPropertyType::Enum, &MovementFrame, 0.0f, 0.0f, 0.1f, MovementFrameNames, MovementFrameCount });
 	OutProps.push_back({ "Move Speed", EPropertyType::Float, &MoveSpeed, 0.0f, 100000.0f, 0.1f });
 	OutProps.push_back({ "Sprint Multiplier", EPropertyType::Float, &SprintMultiplier, 0.0f, 100.0f, 0.1f });
 	OutProps.push_back({ "Look Sensitivity", EPropertyType::Float, &LookSensitivity, 0.0f, 100.0f, 0.01f });
@@ -109,7 +144,7 @@ void UControllerInputComponent::GetEditableProperties(TArray<FPropertyDescriptor
 void UControllerInputComponent::PostEditProperty(const char* PropertyName)
 {
 	UActorComponent::PostEditProperty(PropertyName);
-	if (std::strcmp(PropertyName, "Movement Frame") == 0 || std::strcmp(PropertyName, "Look Mode") == 0)
+	if (std::strcmp(PropertyName, "Movement Basis") == 0)
 	{
 		NormalizeOptions();
 		return;
@@ -122,155 +157,123 @@ void UControllerInputComponent::PostEditProperty(const char* PropertyName)
 	}
 }
 
-bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
-	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, Snapshot);
-	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, Snapshot);
+	// Look must be applied before movement so W/A/S/D uses the camera/control yaw from
+	// the same frame. Applying movement first made movement and pawn facing lag behind
+	// when the mouse was moved while holding a movement key.
+	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, DeltaTime, InputFrame);
+	if (bLooked)
+	{
+		InputFrame.ConsumeLook("ControllerInputComponent", "Controller applied look input");
+	}
+
+	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, InputFrame);
+	if (bMoved)
+	{
+		InputFrame.ConsumeMovement("ControllerInputComponent", "Controller applied movement input");
+	}
+
 	return bMoved || bLooked;
 }
 
-bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
-	if (Snapshot.bGuiUsingKeyboard || Snapshot.bGuiUsingTextInput)
-	{
-		return false;
-	}
+    if (InputFrame.IsMovementConsumed())
+    {
+        RecordNoControllerMovement(Controller, DeltaTime);
+        return false;
+    }
 
-	FVector MoveInput(0.0f, 0.0f, 0.0f);
-	if (Snapshot.IsDown('W')) MoveInput.X += 1.0f;
-	if (Snapshot.IsDown('S')) MoveInput.X -= 1.0f;
-	if (Snapshot.IsDown('A')) MoveInput.Y -= 1.0f;
-	if (Snapshot.IsDown('D')) MoveInput.Y += 1.0f;
-	if (Snapshot.IsDown('E') || Snapshot.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
-	if (Snapshot.IsDown('Q') || Snapshot.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
+    FVector MoveInput(0.0f, 0.0f, 0.0f);
+    if (InputFrame.IsDown('W')) MoveInput.X += 1.0f;
+    if (InputFrame.IsDown('S')) MoveInput.X -= 1.0f;
+    if (InputFrame.IsDown('A')) MoveInput.Y -= 1.0f;
+    if (InputFrame.IsDown('D')) MoveInput.Y += 1.0f;
+    if (InputFrame.IsDown('E') || InputFrame.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
+    if (InputFrame.IsDown('Q') || InputFrame.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
 
-	if (MoveInput.IsNearlyZero())
-	{
-		return false;
-	}
-	const FVector LocalInput = MoveInput.Normalized();
+    if (MoveInput.IsNearlyZero())
+    {
+        RecordNoControllerMovement(Controller, DeltaTime);
+        return false;
+    }
+    const FVector LocalInput = MoveInput.Normalized();
 
-	UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
-	FVector MoveForward = FVector::ForwardVector;
-	FVector MoveRight = FVector::RightVector;
+    UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
+    FVector MoveForward = FVector::ForwardVector;
+    FVector MoveRight = FVector::RightVector;
 
-	if (GetMovementFrame() == EControllerMovementFrame::Camera && TargetCamera)
-	{
-		MoveForward = TargetCamera->GetForwardVector();
-		MoveRight = TargetCamera->GetRightVector();
-		MoveForward.Z = 0.0f;
-		MoveRight.Z = 0.0f;
-	}
+    if (GetMovementFrame() == EControllerMovementFrame::ControlRotation && Controller)
+    {
+        FRotator BasisRotation = Controller->GetControlRotation();
+        BasisRotation.Pitch = 0.0f;
+        BasisRotation.Roll = 0.0f;
+        MoveForward = BasisRotation.GetForwardVector();
+        MoveRight = BasisRotation.GetRightVector();
+    }
+    else if (GetMovementFrame() == EControllerMovementFrame::ViewCamera && TargetCamera)
+    {
+        UCameraComponent* ActiveCamera = Controller ? Controller->GetActiveCamera() : nullptr;
+        const bool bCameraUsesControlYaw = Controller
+            && ActiveCamera
+            && ActiveCamera->GetViewMode() == ECameraViewMode::ThirdPerson
+            && ActiveCamera->UsesControlRotationYaw();
 
-	MoveForward = !MoveForward.IsNearlyZero() ? MoveForward.Normalized() : FVector::ForwardVector;
-	MoveRight = !MoveRight.IsNearlyZero() ? MoveRight.Normalized() : FVector::RightVector;
+        if (bCameraUsesControlYaw)
+        {
+            FRotator BasisRotation = Controller->GetControlRotation();
+            BasisRotation.Pitch = 0.0f;
+            BasisRotation.Roll = 0.0f;
+            MoveForward = BasisRotation.GetForwardVector();
+            MoveRight = BasisRotation.GetRightVector();
+        }
+        else
+        {
+            MoveForward = TargetCamera->GetForwardVector();
+            MoveRight = TargetCamera->GetRightVector();
+            MoveForward.Z = 0.0f;
+            MoveRight.Z = 0.0f;
+        }
+    }
 
-	const float SafeDeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
-	const float SpeedBoost = Snapshot.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
-	FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
-	WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
-	const FVector WorldDelta = WorldDirection * (MoveSpeed * SpeedBoost * SafeDeltaTime);
+    MoveForward = !MoveForward.IsNearlyZero() ? MoveForward.Normalized() : FVector::ForwardVector;
+    MoveRight = !MoveRight.IsNearlyZero() ? MoveRight.Normalized() : FVector::RightVector;
 
-	if (Controller)
-	{
-		if (AActor* Actor = Controller->GetPossessedActor())
-		{
-			FControllerMovementInput ControllerMoveInput;
-			ControllerMoveInput.LocalInput = LocalInput;
-			ControllerMoveInput.WorldDirection = WorldDirection;
-			ControllerMoveInput.WorldDelta = WorldDelta;
-			ControllerMoveInput.DeltaTime = SafeDeltaTime;
-			ControllerMoveInput.MoveSpeed = MoveSpeed;
-			ControllerMoveInput.SpeedMultiplier = SpeedBoost;
-
-			if (UMovementComponent* Movement = FindControllerDrivenMovementComponent(Actor))
-			{
-				if (Movement->ApplyControllerMovementInput(ControllerMoveInput))
-				{
-					return true;
-				}
-			}
-
-			Actor->AddActorWorldOffset(WorldDelta);
-			return true;
-		}
-	}
-
-	if (TargetCamera)
-	{
-		TargetCamera->SetWorldLocation(TargetCamera->GetWorldLocation() + WorldDelta);
-		return true;
-	}
-	return false;
+    const float SafeDeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
+    const float SpeedBoost = InputFrame.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
+    FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
+    WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
+    return Controller
+        ? Controller->AddMovementInput(WorldDirection, MoveSpeed * SpeedBoost * SafeDeltaTime, SafeDeltaTime)
+        : false;
 }
 
-bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
-	if (Snapshot.bGuiUsingMouse || (Snapshot.MouseDeltaX == 0 && Snapshot.MouseDeltaY == 0))
-	{
-		return false;
-	}
+    const int MouseDeltaX = InputFrame.GetMouseDeltaX();
+    const int MouseDeltaY = InputFrame.GetMouseDeltaY();
+    if (InputFrame.IsLookConsumed() || (MouseDeltaX == 0 && MouseDeltaY == 0))
+    {
+        return false;
+    }
 
-	UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
-	if (!TargetCamera)
-	{
-		return false;
-	}
+    (void)FallbackCamera;
+    (void)DeltaTime;
 
-	FRotator Rotation = Controller ? Controller->GetControlRotation() : TargetCamera->GetRelativeRotation();
-	Rotation.Yaw += static_cast<float>(Snapshot.MouseDeltaX) * LookSensitivity;
-	Rotation.Pitch = Clamp(Rotation.Pitch + static_cast<float>(Snapshot.MouseDeltaY) * LookSensitivity, MinPitch, MaxPitch);
-	Rotation.Roll = 0.0f;
+    if (!Controller)
+    {
+        return false;
+    }
 
-	if (Controller)
-	{
-		Controller->SetControlRotation(Rotation);
-		AActor* PossessedActor = Controller->GetPossessedActor();
-		UCameraComponent* PawnCamera = nullptr;
-		if (PossessedActor)
-		{
-			for (UActorComponent* Comp : PossessedActor->GetComponents())
-			{
-				if (UCameraComponent* CC = Cast<UCameraComponent>(Comp))
-				{
-					PawnCamera = CC;
-					break;
-				}
-			}
-		}
-		const EControllerLookMode Mode = GetLookMode();
-		const bool bUsePawnYawPawnPitch = PossessedActor != nullptr
-			&& (Mode == EControllerLookMode::PawnYawPawnPitch
-				|| (Mode == EControllerLookMode::Auto && PawnCamera == TargetCamera));
-
-		const bool bUsePawnYawCameraPitch = PossessedActor != nullptr && Mode == EControllerLookMode::PawnYawCameraPitch;
-		
-		if (bUsePawnYawCameraPitch)
-		{
-			FRotator ActorRotation = PossessedActor->GetActorRotation();
-			ActorRotation.Pitch = 0.0f;
-			ActorRotation.Yaw = Rotation.Yaw;
-			ActorRotation.Roll = 0.0f;
-			
-			PossessedActor->SetActorRotation(ActorRotation);
-			
-			if (PawnCamera == TargetCamera)
-			{
-				TargetCamera->SetRelativeRotation(FRotator(Rotation.Pitch, 0.0f, 0.0f));
-			}
-			
-			return true;
-		}
-		
-		if (bUsePawnYawCameraPitch)
-		{
-			PossessedActor->SetActorRotation(FRotator(Rotation.Pitch, Rotation.Yaw, 0.0f));
-			return true;
-		}
-	}
-	
-	TargetCamera->SetRelativeRotation(Rotation);
-	return true;
+    Controller->AddYawInput(static_cast<float>(MouseDeltaX) * LookSensitivity);
+    Controller->AddPitchInput(static_cast<float>(MouseDeltaY) * LookSensitivity);
+    FRotator Rotation = Controller->GetControlRotation();
+    Rotation.Pitch = Clamp(Rotation.Pitch, MinPitch, MaxPitch);
+    Rotation.Roll = 0.0f;
+    Controller->SetControlRotation(Rotation);
+    RefreshControlRotationFacing(Controller, DeltaTime);
+    return true;
 }
 
 void UControllerInputComponent::SetMovementFrame(EControllerMovementFrame InFrame)
@@ -278,10 +281,6 @@ void UControllerInputComponent::SetMovementFrame(EControllerMovementFrame InFram
 	MovementFrame = NormalizeMovementFrameValue(static_cast<int32>(InFrame));
 }
 
-void UControllerInputComponent::SetLookMode(EControllerLookMode InMode)
-{
-	LookMode = NormalizeLookModeValue(static_cast<int32>(InMode));
-}
 void UControllerInputComponent::SetMoveSpeed(float InSpeed)
 {
 	MoveSpeed = InSpeed < 0.0f ? 0.0f : InSpeed;
@@ -311,21 +310,9 @@ void UControllerInputComponent::SetMaxPitch(float InMaxPitch)
 
 void UControllerInputComponent::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
 {
-	if (PossessedActorUUID == 0)
-	{
-		return;
-	}
-
-	auto It = ActorUUIDRemap.find(PossessedActorUUID);
-	if (It != ActorUUIDRemap.end())
-	{
-		PossessedActorUUID = It->second;
-	}
-	else
-	{
-		PossessedActorUUID = 0;
-	}
+	(void)ActorUUIDRemap;
 }
+
 
 UCameraComponent* UControllerInputComponent::ResolveTargetCamera(APlayerController* Controller, UCameraComponent* FallbackCamera) const
 {
@@ -342,5 +329,4 @@ UCameraComponent* UControllerInputComponent::ResolveTargetCamera(APlayerControll
 void UControllerInputComponent::NormalizeOptions()
 {
 	MovementFrame = NormalizeMovementFrameValue(MovementFrame);
-	LookMode = NormalizeLookModeValue(LookMode);
 }

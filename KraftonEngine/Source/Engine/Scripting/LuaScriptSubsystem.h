@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_LUAJIT 1
@@ -11,6 +11,7 @@
 
 class AActor;
 class ULuaScriptComponent;
+class UWorld;
 struct FLuaGameObjectHandle;
 
 class FLuaScriptSubsystem : public TSingleton<FLuaScriptSubsystem>
@@ -32,6 +33,7 @@ public:
 	bool BindComponent(ULuaScriptComponent* Component, const FString& ScriptPath);
 	void UnbindComponent(const ULuaScriptComponent* Component);
 	void CallComponentBeginPlay(ULuaScriptComponent* Component);
+	void CallInput(UWorld* World, float DeltaTime);
 	void CallComponentTick(ULuaScriptComponent* Component, float DeltaTime);
 	void CallComponentEndPlay(ULuaScriptComponent* Component);
 	void CallComponentSpawnFromPool(ULuaScriptComponent* Component);
@@ -79,6 +81,7 @@ private:
 		FString ScriptPath;
 		sol::environment Environment;
 		sol::function BeginPlay;
+		sol::function OnInput;
 		sol::function Tick;
 		sol::function EndPlay;
 		sol::function OnSpawnFromPool;

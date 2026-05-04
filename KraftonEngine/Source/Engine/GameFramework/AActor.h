@@ -32,6 +32,7 @@ public:
 
 	void Serialize(FArchive& Ar) override;
 	UObject* Duplicate(UObject* NewOuter = nullptr) const override;
+	virtual void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) { (void)ActorUUIDRemap; }
 
 	// 컴포넌트 생성 + Owner 설정 + 등록 + 렌더 상태 생성
 	template<typename T>

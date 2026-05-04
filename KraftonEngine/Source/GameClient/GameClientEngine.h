@@ -15,7 +15,6 @@ public:
 	UGameClientEngine() = default;
 	~UGameClientEngine() override = default;
 
-	void ConfigureWindow(FWindowsWindow* InWindow) override;
 	void Init(FWindowsWindow* InWindow) override;
 	void Shutdown() override;
 	void Tick(float DeltaTime) override;
@@ -39,8 +38,8 @@ public:
 	bool IsPauseMenuOpen() const { return bPauseMenuOpen; }
 	void SetPauseMenuOpen(bool bOpen);
 	void TogglePauseMenu();
-	void RequestRestart();
-	void RequestExit();
+	void RequestRestart() override;
+	void RequestExit() override;
 
 private:
 	void TickAlways(float DeltaTime);

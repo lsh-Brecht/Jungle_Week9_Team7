@@ -1,4 +1,4 @@
-﻿#include "GameClient/GameCameraManager.h"
+#include "GameClient/GameCameraManager.h"
 
 #include "Component/CameraComponent.h"
 #include "GameFramework/AActor.h"
@@ -23,25 +23,10 @@ void FGameCameraManager::ClearWorldBinding()
 
 bool FGameCameraManager::CreateDebugCamera()
 {
-	if (!World)
-	{
-		return false;
-	}
-
-	AActor* CameraActor = World->SpawnActor<AActor>();
-	if (!CameraActor)
-	{
-		return false;
-	}
-
-	DebugCamera = CameraActor->AddComponent<UCameraComponent>();
-	if (!DebugCamera)
-	{
-		return false;
-	}
-
-	CameraActor->SetRootComponent(DebugCamera);
-	return true;
+	// Debug camera actors are no longer spawned during startup.
+	// The gameplay camera path is PlayerController -> FPlayerCameraManager -> OutputCamera.
+	DebugCamera = nullptr;
+	return false;
 }
 
 bool FGameCameraManager::FindStartupGameplayCamera()
@@ -65,28 +50,8 @@ bool FGameCameraManager::FindStartupGameplayCamera()
 
 bool FGameCameraManager::CreateFallbackGameplayCamera()
 {
-	if (!World)
-	{
-		return false;
-	}
-
-	AActor* CameraActor = World->SpawnActor<AActor>();
-	if (!CameraActor)
-	{
-		return false;
-	}
-
-	UCameraComponent* Camera = CameraActor->AddComponent<UCameraComponent>();
-	if (!Camera)
-	{
-		return false;
-	}
-
-	CameraActor->SetRootComponent(Camera);
-	StartupGameplayCamera = Camera;
-	World->SetActiveCamera(Camera);
-	World->SetViewCamera(Camera);
-	return true;
+	StartupGameplayCamera = nullptr;
+	return false;
 }
 
 void FGameCameraManager::SetDebugFreeCameraEnabled(bool bEnabled)

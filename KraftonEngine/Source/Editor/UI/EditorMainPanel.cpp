@@ -16,6 +16,7 @@
 
 #include "Render/Pipeline/Renderer.h"
 #include "Engine/Input/InputSystem.h"
+#include "Engine/Input/InputFrame.h"
 
 #include "Editor/UI/ImGuiSetting.h"
 #include "Editor/UI/NotificationToast.h"
@@ -797,9 +798,9 @@ void FEditorMainPanel::Update()
 			bWantKeyboard = false;
 		}
 	}
-	InputSystem::Get().GetGuiInputState().bUsingMouse = bWantMouse;
-	InputSystem::Get().GetGuiInputState().bUsingKeyboard = bWantKeyboard;
-	InputSystem::Get().GetGuiInputState().bUsingTextInput = IO.WantTextInput;
+	InputSystem::Get().SetGuiMouseCapture(bWantMouse);
+	InputSystem::Get().SetGuiKeyboardCapture(bWantKeyboard);
+	InputSystem::Get().SetGuiTextInputCapture(IO.WantTextInput);
 
 	// IME는 ImGui가 텍스트 입력을 원할 때만 활성화.
 	if (Window)
@@ -878,22 +879,24 @@ void FEditorMainPanel::HandleGlobalShortcuts()
 		return;
 	}
 
-	InputSystem& Input = InputSystem::Get();
-	if (!Input.GetKey(VK_CONTROL))
+	FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
+	if (!InputFrame.IsDown(VK_CONTROL))
 	{
 		return;
 	}
 
-	const bool bShift = Input.GetKey(VK_SHIFT);
-	if (Input.GetKeyDown('N'))
+	const bool bShift = InputFrame.IsDown(VK_SHIFT);
+	if (InputFrame.WasPressed('N'))
 	{
 		EditorEngine->NewScene();
+		InputFrame.ConsumeKey('N', "EditorMainPanel", "New scene shortcut");
 	}
-	else if (Input.GetKeyDown('O'))
+	else if (InputFrame.WasPressed('O'))
 	{
 		EditorEngine->LoadSceneWithDialog();
+		InputFrame.ConsumeKey('O', "EditorMainPanel", "Open scene shortcut");
 	}
-	else if (Input.GetKeyDown('S'))
+	else if (InputFrame.WasPressed('S'))
 	{
 		if (bShift)
 		{
@@ -903,6 +906,7 @@ void FEditorMainPanel::HandleGlobalShortcuts()
 		{
 			EditorEngine->SaveScene();
 		}
+		InputFrame.ConsumeKey('S', "EditorMainPanel", "Save scene shortcut");
 	}
 }
 

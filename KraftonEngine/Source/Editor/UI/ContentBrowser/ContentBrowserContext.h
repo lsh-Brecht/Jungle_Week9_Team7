@@ -16,4 +16,7 @@ struct ContentBrowserContext final
 	UEditorEngine* EditorEngine;
 
 	bool bIsNeedRefresh = false;
+	bool bIsRenaming = false;
+	bool bRenameFocusNeeded = false;
+	char RenameBuffer[512] = {};
 };

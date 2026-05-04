@@ -1,4 +1,4 @@
-﻿#include "Editor/EditorEngine.h"
+#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -135,6 +135,7 @@ void UEditorEngine::Tick(float DeltaTime)
 	TaskScheduler.Tick(DeltaTime);
 	MainPanel.Update();
 	InputSystem::Get().RefreshSnapshot();
+
 
 	for (FEditorViewportClient* VC : ViewportLayout.GetAllViewportClients())
 	{
@@ -291,7 +292,7 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 	}
 
 	// 5) PIE의 카메라는 에디터 뷰포트 카메라가 아니라 PIE World 안의 CameraComponent를 우선 사용한다.
-	//    에디터 뷰포트 카메라를 ActiveCamera로 넣으면 Pawn/Controller/ViewTarget이 전부 우회되어
+	//    에디터 뷰포트 카메라를 ActiveCamera로 넣으면 Pawn/Controller/ActiveCamera이 전부 우회되어
 	//    카메라를 추가해도 플레이 화면에 아무 반응이 없는 문제가 생긴다.
 	PIEWorld->AutoWirePlayerController();
 	if (UCameraComponent* GameplayCamera = PIEWorld->ResolveGameplayViewCamera())

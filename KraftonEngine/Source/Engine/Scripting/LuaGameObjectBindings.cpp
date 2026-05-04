@@ -1,4 +1,4 @@
-﻿// LuaGameObjectBindings.cpp
+// LuaGameObjectBindings.cpp
 
 #include "LuaBindings.h"
 #include "SolInclude.h"
@@ -20,6 +20,7 @@
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/Script/LuaScriptComponent.h"
+#include "Component/PawnOrientationComponent.h"
 
 #include "Component/Collision/BoxComponent.h"
 #include "Component/Collision/CapsuleComponent.h"
@@ -66,6 +67,26 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		sol::no_constructor,
 
 		LUA_HANDLE_COMMON(FLuaGameObjectHandle),
+
+		"Name",
+		sol::property(
+			[](const FLuaGameObjectHandle& Self)
+			{
+				AActor* Actor = Self.Resolve();
+				return Actor ? Actor->GetFName().ToString() : FString();
+			},
+			[](const FLuaGameObjectHandle& Self, const FString& Name)
+			{
+				AActor* Actor = Self.Resolve();
+				if (!Actor)
+				{
+					UE_LOG("[Lua] Invalid GameObject.Name Access.");
+					return;
+				}
+
+				Actor->SetFName(FName(Name));
+			}
+		),
 
 		"Location",
 		sol::property(
@@ -299,6 +320,23 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveCamera",
 			UCameraComponent
+		),
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"PawnOrientation",
+			FLuaPawnOrientationComponentHandle,
+			UPawnOrientationComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddPawnOrientation",
+			FLuaPawnOrientationComponentHandle,
+			UPawnOrientationComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemovePawnOrientation",
+			UPawnOrientationComponent
 		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(

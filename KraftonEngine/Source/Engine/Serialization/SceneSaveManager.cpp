@@ -17,6 +17,7 @@
 #include "Component/HeightFogComponent.h"
 #include "Component/Light/LightComponentBase.h"
 #include "Component/ControllerInputComponent.h"
+#include "Component/ComponentReferenceUtils.h"
 #include "GameFramework/StaticMeshActor.h"
 #include "Object/Object.h"
 #include "Object/ObjectFactory.h"
@@ -46,6 +47,84 @@ static FVector ReadVec3(json::JSON& Arr)
 		++i;
 	}
 	return out;
+}
+
+static json::JSON WriteRotatorJSON(const FRotator& R)
+{
+	json::JSON arr = json::Array();
+	arr.append(static_cast<double>(R.Pitch));
+	arr.append(static_cast<double>(R.Yaw));
+	arr.append(static_cast<double>(R.Roll));
+	return arr;
+}
+
+static FRotator ReadRotatorJSON(json::JSON& Arr)
+{
+	FRotator R;
+	if (Arr.JSONType() != json::JSON::Class::Array)
+	{
+		return R;
+	}
+	R.Pitch = static_cast<float>(Arr[0].ToFloat());
+	R.Yaw = static_cast<float>(Arr[1].ToFloat());
+	R.Roll = static_cast<float>(Arr[2].ToFloat());
+	return R;
+}
+
+static void SerializePlayerControllerState(json::JSON& ActorJSON, APlayerController* Controller)
+{
+	if (!Controller)
+	{
+		return;
+	}
+
+	json::JSON PC = json::Object();
+	PC["ControlRotation"] = WriteRotatorJSON(Controller->GetControlRotation());
+	if (AActor* Possessed = Controller->GetPossessedActor())
+	{
+		PC["PossessedActorUUID"] = static_cast<int>(Possessed->GetUUID());
+	}
+	if (UCameraComponent* Camera = Controller->GetActiveCamera())
+	{
+		if (AActor* Owner = Camera->GetOwner())
+		{
+			PC["ActiveCameraOwnerUUID"] = static_cast<int>(Owner->GetUUID());
+			PC["ActiveCameraComponentPath"] = ComponentReferenceUtils::MakeComponentPath(Camera);
+		}
+	}
+	ActorJSON["PlayerController"] = PC;
+}
+
+static void RestorePlayerControllerState(UWorld* World, APlayerController* Controller, json::JSON& ActorJSON)
+{
+	if (!World || !Controller || !ActorJSON.hasKey("PlayerController"))
+	{
+		return;
+	}
+
+	json::JSON& PC = ActorJSON["PlayerController"];
+	if (PC.hasKey("ControlRotation"))
+	{
+		Controller->SetControlRotation(ReadRotatorJSON(PC["ControlRotation"]));
+	}
+	if (PC.hasKey("PossessedActorUUID"))
+	{
+		const uint32 UUID = static_cast<uint32>(PC["PossessedActorUUID"].ToInt());
+		if (AActor* Possessed = World->FindActorByUUIDInWorld(UUID))
+		{
+			Controller->Possess(Possessed);
+		}
+	}
+	if (PC.hasKey("ActiveCameraOwnerUUID") && PC.hasKey("ActiveCameraComponentPath"))
+	{
+		const uint32 OwnerUUID = static_cast<uint32>(PC["ActiveCameraOwnerUUID"].ToInt());
+		AActor* Owner = World->FindActorByUUIDInWorld(OwnerUUID);
+		const FString Path = PC["ActiveCameraComponentPath"].ToString();
+		if (UCameraComponent* Camera = Cast<UCameraComponent>(ComponentReferenceUtils::ResolveComponentPath(Owner, Path)))
+		{
+			Controller->SetActiveCamera(Camera);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +414,11 @@ json::JSON FSceneSaveManager::SerializeActor(AActor* Actor)
 		NonScene.append(c);
 	}
 	a[SceneKeys::NonSceneComponents] = NonScene;
+
+	if (APlayerController* Controller = Cast<APlayerController>(Actor))
+	{
+		SerializePlayerControllerState(a, Controller);
+	}
 
 	return a;
 }
@@ -640,6 +724,19 @@ void FSceneSaveManager::LoadSceneFromJSON(const string& filepath, FWorldContext&
 			if (Actor) {
 				World->RemoveActorToOctree(Actor);
 				World->InsertActorToOctree(Actor);
+			}
+		}
+
+		// Restore controller links after every actor/component exists.
+		for (auto& ActorJSON : root[SceneKeys::Actors].ArrayRange()) {
+			if (!ActorJSON.hasKey("ActorUUID"))
+			{
+				continue;
+			}
+			AActor* Actor = World->FindActorByUUIDInWorld(static_cast<uint32>(ActorJSON["ActorUUID"].ToInt()));
+			if (APlayerController* Controller = Cast<APlayerController>(Actor))
+			{
+				RestorePlayerControllerState(World, Controller, ActorJSON);
 			}
 		}
 	}

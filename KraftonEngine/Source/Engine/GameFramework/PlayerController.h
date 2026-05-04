@@ -1,11 +1,16 @@
 #pragma once
+
+#include "Camera/CameraTypes.h"
+#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/AActor.h"
 #include "Math/Rotator.h"
+#include "Math/Vector.h"
 
 class APawn;
+class FArchive;
+class UActorComponent;
 class UCameraComponent;
 class UControllerInputComponent;
-class FArchive;
 
 class APlayerController : public AActor
 {
@@ -16,6 +21,7 @@ public:
 	~APlayerController() override = default;
 
 	void Serialize(FArchive& Ar) override;
+	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
 	void InitDefaultComponents() override;
 	void EndPlay() override;
 
@@ -23,17 +29,34 @@ public:
 	void UnPossess();
 	AActor* GetPossessedActor() const;
 
-	void SetViewTarget(AActor* InViewTarget);
-	AActor* GetViewTarget() const;
 
+	void SetActiveCamera(UCameraComponent* Camera);
+	void SetActiveCameraWithBlend(UCameraComponent* Camera);
+	bool SetActiveCameraFromPossessedPawn();
+	void ClearActiveCamera();
+	UCameraComponent* GetActiveCamera() const;
 	UCameraComponent* ResolveViewCamera() const;
+
+	void ClearCameraReferencesForActor(const AActor* Actor);
+	void ClearCameraReferencesForComponent(const UActorComponent* Component);
+
 	UControllerInputComponent* FindControllerInputComponent() const;
+	FPlayerCameraManager& GetCameraManager() { return CameraManager; }
+	const FPlayerCameraManager& GetCameraManager() const { return CameraManager; }
 
 	FRotator GetControlRotation() const { return ControlRotation; }
-	void SetControlRotation(const FRotator& InRotation) { ControlRotation = InRotation; }
+	void SetControlRotation(const FRotator& InRotation);
+	void AddYawInput(float Value);
+	void AddPitchInput(float Value);
+	bool AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f, float DeltaTime = 0.0f);
+
+private:
+	UCameraComponent* FindCameraOnActor(AActor* Target) const;
+	AActor* ResolveActorUUID(uint32 ActorUUID) const;
 
 private:
 	AActor* PossessedActor = nullptr;
-	AActor* ViewTarget = nullptr;
+	uint32 PossessedActorUUID = 0;
 	FRotator ControlRotation;
+	FPlayerCameraManager CameraManager;
 };
