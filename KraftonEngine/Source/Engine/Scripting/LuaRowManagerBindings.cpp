@@ -152,9 +152,15 @@ void RegisterRowManagerBinding(sol::state& Lua)
         });
 
     Lua.set_function("SpawnStaticObstacle",
-        [](int32 RowIndex, int32 SlotIndex, const FString& PrefabPath)
+        [](int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, sol::optional<float> OffsetX, sol::optional<float> OffsetY, sol::optional<float> YawDegrees)
         {
-            FRowManager::Get().SpawnStaticObstacle(RowIndex, SlotIndex, PrefabPath);
+            FRowManager::Get().SpawnStaticObstacle(
+                RowIndex,
+                SlotIndex,
+                PrefabPath,
+                OffsetX.value_or(0.0f),
+                OffsetY.value_or(0.0f),
+                YawDegrees.value_or(0.0f));
         });
 
     Lua.set_function("SpawnDynamicVehicle",

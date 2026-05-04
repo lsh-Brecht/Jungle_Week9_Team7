@@ -17,8 +17,8 @@ local PREFABS = {
     ROADTILE = "Asset/Prefab/Road.Prefab",
     RAILWAYTILE = "Asset/Prefab/Road.Prefab",
     TRAFFIC_BARRIER_B = "Asset/Prefab/TrafficBarrierB.Prefab",
+    TRAFFIC_BARRIER_A = "Asset/Prefab/TrafficBarrierA.Prefab",
 
-    PUBGBOX = "Asset/Prefab/PUBGBOX.Prefab",
     ROCK = "Asset/Prefab/Rock.Prefab",
     TREE1 = "Asset/Prefab/TreeA.Prefab",
     TREE2 = "Asset/Prefab/TreeB.Prefab",
@@ -61,12 +61,12 @@ local BiomeWeights = {
 
 -- 장애물별 등장 가중치 설정 (합이 꼭 100일 필요는 없어)
 local ObstacleWeights = {
-    { prefab = PREFABS.PUBGBOX, weight = 25 },
-    { prefab = PREFABS.ROCK,    weight = 25 },
-    { prefab = PREFABS.TREE1,   weight = 12 },
-    { prefab = PREFABS.TREE2,   weight = 12 },
-    { prefab = PREFABS.TREE3,   weight = 12 },
-    { prefab = PREFABS.TREE4,   weight = 12 },
+    { prefab = PREFABS.ROCK,              weight = 25 },
+    { prefab = PREFABS.TRAFFIC_BARRIER_A, weight = 15 },
+    { prefab = PREFABS.TREE1,             weight = 15 },
+    { prefab = PREFABS.TREE2,             weight = 15 },
+    { prefab = PREFABS.TREE3,             weight = 15 },
+    { prefab = PREFABS.TREE4,             weight = 15 },
 }
 
 -- 차량 등장 확률 (가중치)
@@ -78,7 +78,7 @@ local VehicleWeights = {
     { type = PREFABS.MINIBUS,   weight = 20 },
     { type = PREFABS.FIRECAR,   weight = 20 },
     { type = PREFABS.POLICECAR, weight = 20 },
-    { type = PREFABS.RacingCar, weight = 20 },
+    { type = PREFABS.RACINGCAR, weight = 20 },
 }
 
 function RowGenerator.ConfigureRows()
@@ -89,11 +89,13 @@ function RowGenerator.ConfigureRows()
         World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
         World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
         World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 100)
+        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_A, 100)
 
-        World.WarmUpPrefabPool(PREFABS.PUBGBOX, 100)
         World.WarmUpPrefabPool(PREFABS.ROCK, 100)
         World.WarmUpPrefabPool(PREFABS.TREE1, 100)
         World.WarmUpPrefabPool(PREFABS.TREE2, 100)
+        World.WarmUpPrefabPool(PREFABS.TREE3, 100)
+        World.WarmUpPrefabPool(PREFABS.TREE4, 100)
         
         World.WarmUpPrefabPool(PREFABS.CARA, 100)
         World.WarmUpPrefabPool(PREFABS.CARB, 100)
@@ -101,7 +103,7 @@ function RowGenerator.ConfigureRows()
         World.WarmUpPrefabPool(PREFABS.MINIBUS, 100)
         World.WarmUpPrefabPool(PREFABS.FIRECAR, 100)
         World.WarmUpPrefabPool(PREFABS.POLICECAR, 100)
-        World.WarmUpPrefabPool(PREFABS.RacingCar, 100)
+        World.WarmUpPrefabPool(PREFABS.RACINGCAR, 100)
 
     end
 end
@@ -123,6 +125,17 @@ local function ChooseWeighted(table)
         end
     end
     return table[1]
+end
+
+local function RandomRange(minValue, maxValue)
+    return minValue + (math.random() * (maxValue - minValue))
+end
+
+local function SpawnGrassObstacle(rowIndex, slot, prefab)
+    local offsetX = RandomRange(-0.2, 0.2)
+    local offsetY = RandomRange(-0.2, 0.2)
+    local yaw = RandomRange(-15.0, 15.0)
+    SpawnStaticObstacle(rowIndex, slot, prefab, offsetX, offsetY, yaw)
 end
 
 -- 진행도(RowIndex)에 따른 장애물 확률 증가
@@ -162,7 +175,7 @@ function RowGenerator.GenerateRow(rowIndex)
                     -- 가중치에 따라 확률적으로 장애물 프리팹을 선택
                     local obstacle = ChooseWeighted(ObstacleWeights)
                     
-                    SpawnStaticObstacle(rowIndex, slot, obstacle.prefab)
+                    SpawnGrassObstacle(rowIndex, slot, obstacle.prefab)
                 end
             end
         end

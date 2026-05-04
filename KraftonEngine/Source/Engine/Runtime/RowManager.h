@@ -60,7 +60,7 @@ public:
     void SetRowSize(int32 SlotCount, float SlotSize, float RowDepth);
     void SetRowBufferCounts(int32 KeepRowsBehind, int32 KeepRowsAhead);
     void SetRowBiome(int32 RowIndex, int32 BiomeType);
-    void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath);
+    void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, float OffsetX = 0.0f, float OffsetY = 0.0f, float YawDegrees = 0.0f);
     AActor* SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX);
 
     void MoveForward(int32 NewCurrentRowIndex);

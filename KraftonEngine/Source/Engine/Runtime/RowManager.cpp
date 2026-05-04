@@ -116,7 +116,7 @@ void FRowManager::SetRowBiome(int32 RowIndex, int32 BiomeType)
     Row.Biome = static_cast<ERowBiome>(BiomeType);
 }
 
-void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath)
+void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, float OffsetX, float OffsetY, float YawDegrees)
 {
     FRowData& Row = PushEmptyRow(RowIndex);
 
@@ -124,12 +124,13 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
     Obstacle.SlotIndex = SlotIndex;
     Obstacle.PrefabPath = PrefabPath;
 
-	const float OffsetY = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
-	const float WorldY = (static_cast<float>(SlotIndex) - OffsetY) * Config.SlotSize;
-	const float WorldX = static_cast<float>(RowIndex) * Config.RowDepth;
+	const float CenterOffsetY = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
+	const float WorldY = (static_cast<float>(SlotIndex) - CenterOffsetY) * Config.SlotSize + OffsetY;
+	const float WorldX = static_cast<float>(RowIndex) * Config.RowDepth + OffsetX;
 
 	const FVector SpawnLocation(WorldX, WorldY, 0.0f);
-    const FRotator SpawnRotation = FRotator();
+    FRotator SpawnRotation = FRotator();
+	SpawnRotation.Yaw = YawDegrees;
 
     UWorld* World = FLuaWorldLibrary::GetActiveWorld();
     if (World)
