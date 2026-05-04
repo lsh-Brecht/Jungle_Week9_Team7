@@ -191,13 +191,6 @@
             "bTickEnable" : true
           }
         }, {
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/Player.lua",
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }, {
           "ClassName" : "UPawnOrientationComponent",
           "Properties" : {
             "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
@@ -206,13 +199,6 @@
             "Min Facing Speed" : 1.000000,
             "Rotation Speed" : 720.000000,
             "Yaw Only" : true,
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }, {
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/Player.lua",
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -1342,11 +1328,11 @@
     "AspectRatio" : 1.846276,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-4.898028, 1.599756, 7.393324],
+    "Location" : [-5.021687, 1.611228, 7.521828],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 26.778360, 7.749015]
+    "Rotation" : [0.000000, 37.728325, -5.450865]
   },
   "Primitives" : {
     "102" : {
