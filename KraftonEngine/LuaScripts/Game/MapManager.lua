@@ -158,8 +158,8 @@ function Tick(deltaTime)
                 )
 
                 if vehicle then
-                    local safeSpeed = math.max(1.0, math.abs(spawner.Speed or 1.0))
-                    local lifeTime = 100.0 / safeSpeed
+                    -- 차량의 수명을 화면 너비 / 속도로 계산해서 배열에 담기
+                    local lifeTime = 100000000.0 / spawner.Speed
                     table.insert(MapManager.ActiveVehicles, {
                         Vehicle = vehicle,
                         Timer = lifeTime
