@@ -3,6 +3,7 @@
   "RootActor" : {
     "ActorUUID" : 158,
     "ClassName" : "AActor",
+    "Tags" : ["Vehicle"],
     "NonSceneComponents" : [],
     "RootComponent" : {
       "Children" : [{

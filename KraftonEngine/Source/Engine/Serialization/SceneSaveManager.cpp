@@ -4,6 +4,7 @@
 #include <fstream>
 #include <chrono>
 #include <unordered_map>
+#include <algorithm>
 
 #include "SimpleJSON/json.hpp"
 #include "GameFramework/World.h"
@@ -47,6 +48,43 @@ static FVector ReadVec3(json::JSON& Arr)
 		++i;
 	}
 	return out;
+}
+
+static json::JSON SerializeActorTags(AActor* Actor)
+{
+	json::JSON TagsJson = json::Array();
+	if (!Actor)
+	{
+		return TagsJson;
+	}
+
+	for (const FString& Tag : Actor->GetTags())
+	{
+		TagsJson.append(Tag);
+	}
+	return TagsJson;
+}
+
+static void DeserializeActorTags(AActor* Actor, json::JSON& ActorJSON)
+{
+	if (!Actor)
+	{
+		return;
+	}
+
+	TArray<FString> Tags;
+	if (ActorJSON.hasKey("Tags"))
+	{
+		for (auto& TagJson : ActorJSON["Tags"].ArrayRange())
+		{
+			FString Tag = TagJson.ToString();
+			if (!Tag.empty() && std::find(Tags.begin(), Tags.end(), Tag) == Tags.end())
+			{
+				Tags.push_back(Tag);
+			}
+		}
+	}
+	Actor->SetTags(Tags);
 }
 
 static json::JSON WriteRotatorJSON(const FRotator& R)
@@ -395,6 +433,7 @@ json::JSON FSceneSaveManager::SerializeActor(AActor* Actor)
 	a[SceneKeys::ClassName] = Actor->GetClass()->GetName();
 	a["ActorUUID"] = static_cast<int>(Actor->GetUUID());
 	a[SceneKeys::Visible] = Actor->IsVisible();
+	a["Tags"] = SerializeActorTags(Actor);
 
 	// RootComponent 트리 직렬화
 	if (Actor->GetRootComponent()) {
@@ -791,6 +830,7 @@ AActor* FSceneSaveManager::DeserializeActor(UWorld* World, json::JSON& ActorJSON
 	if (ActorJSON.hasKey(SceneKeys::Visible)) {
 		Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
 	}
+	DeserializeActorTags(Actor, ActorJSON);
 
 	// RootComponent 트리 복원
 	if (ActorJSON.hasKey(SceneKeys::RootComponent)) {
@@ -844,6 +884,7 @@ bool FSceneSaveManager::ApplyPrefabDataToActor(AActor* Actor, json::JSON& ActorJ
 	{
 		Actor->SetVisible(ActorJSON[SceneKeys::Visible].ToBool());
 	}
+	DeserializeActorTags(Actor, ActorJSON);
 
 	if (ActorJSON.hasKey(SceneKeys::RootComponent))
 	{

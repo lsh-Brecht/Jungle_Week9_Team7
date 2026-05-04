@@ -87,7 +87,7 @@ local CONFIG = {
 
         -- Scene JSON: "View Mode" : 3
         -- 0 = Static, 1 = FirstPerson, 2 = ThirdPerson, 3 = OrthographicFollow, 4 = Custom
-        ViewMode = 2,
+        ViewMode = 3,
 
         FollowOffset = Vec(0.0, 0.0, 0.0),
         ViewOffset = Vec(-5.0, 5.0, 5.0),
@@ -152,6 +152,8 @@ local Player = {
     pawnMovementComponent = nil,
     orientation = nil,
 
+    parryComp = nil,
+
     frame = 0,
 
     yaw = 0.0,
@@ -160,9 +162,12 @@ local Player = {
     lastInputSignature = "",
     printedMove = false,
 
-    -- Dash 에지 판정용
+    -- Dash 에지 판정용 (직전 프레임의 MOUSE2 상태)
     prevMouse2 = false,
 
+    -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
+    prevMouse1 = false
+    
     -- 카메라 전환 직후 마우스 델타 튐 방지용
     cameraSwitchGuardTime = 0.0,
     dropMouseDeltaFrames = 0
@@ -341,14 +346,11 @@ local function BuildInputState()
             else
                 Log("[DIAG] Input.IsGuiUsingMouse() = false ← 마우스 GUI 캡처 해제")
             end
-
             Player.prevGuiMouse = guiMouse
         end
     end
-
     if IsGuiUsingKeyboard() then
         Log("!!! GUI IS CONSUMING KEYBOARD")
-
         return {
             W = false,
             A = false,
@@ -362,10 +364,9 @@ local function BuildInputState()
     end
 
     local mouse2Now = GetKey("MOUSE2")
-
-    local engineEdge = GetKeyDown("MOUSE2")
-    local manualEdge = mouse2Now and (not Player.prevMouse2)
-    local dashEdge = engineEdge or manualEdge
+    local engineEdge2 = GetKeyDown("MOUSE2")
+    local manualEdge2 = mouse2Now and (not Player.prevMouse2)
+    local dashEdge = engineEdge2 or manualEdge2
 
     if dashEdge then
         Log("!!! MOUSE2 EDGE DETECTED !!!")
@@ -373,16 +374,29 @@ local function BuildInputState()
 
     Player.prevMouse2 = mouse2Now
 
+    -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
+    local mouse1Now = GetKey("MOUSE1")
+    local engineEdge1 = GetKeyDown("MOUSE1")
+    local manualEdge1 = mouse1Now and (not Player.prevMouse1)
+    local parryEdge = engineEdge1 or manualEdge1
+
+    if parryEdge then
+        Log("!!! MOUSE1 EDGE DETECTED (PARRY) !!!")
+    end
+
+    Player.prevMouse1 = mouse1Now
+
     local state = {
         W = GetKey("W") or GetKey("w"),
         A = GetKey("A") or GetKey("a"),
         S = GetKey("S") or GetKey("s"),
         D = GetKey("D") or GetKey("d"),
         SHIFT = GetKey("SHIFT") or GetKey("LSHIFT"),
-        Dash = dashEdge
+        Dash = dashEdge,
+        Parry = parryEdge
     }
 
-    state.any = state.W or state.A or state.S or state.D or state.Dash
+    state.any = state.W or state.A or state.S or state.D or state.Dash or state.Parry
 
     state.signature =
         "W=" .. BoolStr(state.W) ..
@@ -494,6 +508,18 @@ local function SetupPawnMovementComponents()
         Log("[PAWN] UPawnOrientationComponent 설정 완료")
     else
         Log("[PAWN_WARN] UPawnOrientationComponent를 얻지 못했습니다.")
+    end
+end
+
+local function SetupCombatComponents()
+    if Player.ownerObject.Parry ~= nil then
+        Player.parryComp = Player.ownerObject.Parry
+    end
+
+    if IsValidHandle(Player.parryComp) then
+        Log("[PAWN] ParryComponent 획득 성공")
+    else
+        Log("[PAWN_WARN] ParryComponent를 얻지 못했습니다. (패링 불가)")
     end
 end
 
@@ -702,6 +728,7 @@ local function Bootstrap()
     end
 
     SetupPawnMovementComponents()
+    SetupCombatComponents()
 
     if not SetupController() then
         return false
@@ -844,6 +871,15 @@ local function UpdateMovement(dt, inputState)
     end
 end
 
+local function UpdateCombat(inputState)
+    if inputState.Parry then
+        if IsValidHandle(Player.parryComp) then
+            Player.parryComp:Parry()
+            Log("[Player.lua] Parry Triggered!")
+        end
+    end
+end
+
 function BeginPlay()
     Bootstrap()
 end
@@ -866,6 +902,7 @@ function OnInput(deltaTime)
 
     UpdateLook(dt)
     UpdateMovement(dt, inputState)
+    UpdateCombat(inputState)
 
     -- 여기서 매 프레임 SetActiveCamera를 다시 호출하지 않습니다.
     -- PlayerController:SetActiveCamera()는 ControlRotation을 카메라 회전으로 덮어쓸 수 있어서

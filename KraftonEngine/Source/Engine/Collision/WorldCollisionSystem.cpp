@@ -1,6 +1,7 @@
-#include "Collision/WorldCollisionSystem.h"
+﻿#include "Collision/WorldCollisionSystem.h"
 #include "GameFramework/World.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/Pawn.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/Collision/ShapeComponent.h"
 #include "Collision/PrimitiveCollision.h"
@@ -155,6 +156,25 @@ void FWorldCollisionSystem::DispatchOverlapEvents(const TSet<FOverlapPairKey>& O
 			const uint64 PairKey = (static_cast<uint64>(UUIDA) << 32) | UUIDB;
 			if (DispatchedActorPairs.insert(PairKey).second)
 			{
+				AActor* VehicleActor = nullptr;
+				AActor* OtherActor = nullptr;
+				//둘 중 하나가 차량이라면...
+				if (ActorA->HasTag("Vehicle"))
+				{
+					VehicleActor = ActorA;
+					OtherActor = ActorB;
+				}
+				else if (ActorB->HasTag("Vehicle"))
+				{
+					VehicleActor = ActorB;
+					OtherActor = ActorA;
+				}
+
+				if (VehicleActor && Cast<APawn>(OtherActor))
+				{
+					FLuaScriptSubsystem::Get().DispatchGameEvent("Defeat", VehicleActor);
+				}
+
 				// Dispatch A -> B
 				for (UActorComponent* Component : ActorA->GetComponents())
 				{

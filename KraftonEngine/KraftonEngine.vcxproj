@@ -379,6 +379,7 @@
     <ClCompile Include="Source\Engine\Component\Movement\PendulumMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp" />
+    <ClCompile Include="Source\Engine\Component\ParryComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
@@ -504,6 +505,7 @@
     <ClCompile Include="Source\Engine\Scripting\LuaInputLibrary.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaParryComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnOrientationBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp" />
@@ -628,6 +630,7 @@
     <ClInclude Include="Source\Engine\Component\Movement\PendulumMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h" />
+    <ClInclude Include="Source\Engine\Component\ParryComponent.h" />
     <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h" />
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
