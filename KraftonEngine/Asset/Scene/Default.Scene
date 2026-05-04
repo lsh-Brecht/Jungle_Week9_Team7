@@ -40,6 +40,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 179,
@@ -101,6 +102,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 105,
@@ -148,6 +150,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 108,
@@ -252,6 +255,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 112,
@@ -292,6 +296,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 115,
@@ -346,6 +351,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 185,
@@ -387,6 +393,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 189,
@@ -429,6 +436,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 194,
@@ -470,6 +478,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 198,
@@ -538,6 +547,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 213,
@@ -606,6 +616,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 228,
@@ -674,6 +685,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 243,
@@ -742,6 +754,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 258,
@@ -846,6 +859,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 285,
@@ -887,6 +901,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 289,
@@ -928,6 +943,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 293,
@@ -985,6 +1001,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 301,
@@ -1058,6 +1075,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 245,
@@ -1149,6 +1167,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 261,
@@ -1174,6 +1193,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 266,
@@ -1199,6 +1219,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 271,
@@ -1224,6 +1245,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 273,
@@ -1249,6 +1271,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 302,
@@ -1290,6 +1313,7 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
       "bVisible" : true
     }, {
       "ActorUUID" : 349,
@@ -1331,6 +1355,37 @@
           "bTickEnable" : true
         }
       },
+      "Tags" : [],
+      "bVisible" : true
+    }, {
+      "ActorUUID" : 400,
+      "ClassName" : "AActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/MapManager.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }],
+      "RootComponent" : {
+        "Children" : [],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Generate Overlap Events" : true,
+          "Location" : [27.188435, 15.748090, -0.500000],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Static Mesh" : "None",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "Tags" : [],
       "bVisible" : true
     }],
   "ClassName" : "UWorld",
@@ -1338,18 +1393,14 @@
   "ContextName" : "Default",
   "Name" : "Default",
   "PerspectiveCamera" : {
-    "AspectRatio" : 1.846276,
+    "AspectRatio" : 2.020602,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
     "Location" : [-5.021687, 1.611228, 7.521828],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-<<<<<<< HEAD
-    "Rotation" : [0.000000, 26.778360, 7.749015]
-=======
-    "Rotation" : [0.000000, 39.828350, -2.000975]
->>>>>>> feature/delegate
+    "Rotation" : [0.000000, 21.599987, 1.499976]
   },
   "Primitives" : {
     "102" : {
