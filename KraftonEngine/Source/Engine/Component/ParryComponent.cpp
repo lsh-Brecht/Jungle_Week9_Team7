@@ -1,9 +1,14 @@
 ﻿#include "ParryComponent.h"
 #include "GameFramework/AActor.h"
+#include "GameFramework/Pawn.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/Collision/BoxComponent.h"
 #include "Component/SceneComponent.h"
+#include "Component/Movement/ProjectileMovementComponent.h"
 #include "Sound/SoundManager.h"
+#include "GameFramework/World.h"
+#include "Math/Vector.h"
+
 IMPLEMENT_CLASS(UParryComponent, UActorComponent)
 
 void UParryComponent::BeginPlay()
@@ -76,4 +81,52 @@ void UParryComponent::Parry()
 	}
 
 	ParryDelegate.BroadCast();
+
+	DeflectNearbyProjectiles();
+}
+
+void UParryComponent::DeflectNearbyProjectiles()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	UWorld* World = Owner->GetWorld();
+	if (!World) return;
+
+	FVector OwnerPos = Owner->GetActorLocation();
+
+	FBoundingBox QueryBounds;
+	QueryBounds.Min = OwnerPos - FVector(ParryRadius, ParryRadius, ParryRadius);
+	QueryBounds.Max = OwnerPos + FVector(ParryRadius, ParryRadius, ParryRadius);
+
+	TArray<UPrimitiveComponent*> Candidates;
+	World->QueryPrimitivesInAABB(QueryBounds, Candidates);
+
+	TSet<AActor*> Processed;
+	for (UPrimitiveComponent* Prim : Candidates)
+	{
+		AActor* OtherActor = Prim->GetOwner();
+		if (!OtherActor || OtherActor == Owner) continue;
+		if (Processed.contains(OtherActor)) continue;
+		if (Cast<APawn>(OtherActor)) continue;
+
+		UProjectileMovementComponent* Projectile = nullptr;
+		for (UActorComponent* Comp : OtherActor->GetComponents())
+		{
+			Projectile = Cast<UProjectileMovementComponent>(Comp);
+			if (Projectile) break;
+		}
+		if (!Projectile) continue;
+
+		Processed.insert(OtherActor);
+
+		FVector ParryNormal = OtherActor->GetActorLocation() - OwnerPos;
+		ParryNormal.Normalize();
+
+		FVector CurrentVelocity = Projectile->GetVelocity();
+		float VDotN = CurrentVelocity.Dot( ParryNormal);
+		FVector Reflected = CurrentVelocity - ParryNormal * (2.0f * VDotN);
+
+		Projectile->SetVelocity(Reflected * ParryLaunchMultiplier);
+	}
 }

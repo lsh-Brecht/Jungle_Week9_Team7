@@ -74,8 +74,8 @@ local CONFIG = {
         Location = Vec(1.347203, -2.598638, -0.500000),
         Rotation = Rot(0.0, 0.0, 0.0),
 
-        AspectRatio = 1.777778,
-        FOVRadians = 1.047198,
+        AspectRatio = 1.2222,
+        FOVRadians = 1.77777,
         NearZ = 0.1,
         FarZ = 1000.0,
         Orthographic = false,
@@ -83,7 +83,7 @@ local CONFIG = {
 
         -- Scene JSON: "View Mode" : 3
         -- 0 = Static, 1 = FirstPerson, 2 = ThirdPerson, 3 = OrthographicFollow, 4 = Custom
-        ViewMode = 3,
+        ViewMode = 2,
 
         FollowOffset = Vec(0.0, 0.0, 0.0),
         ViewOffset = Vec(-5.0, 5.0, 5.0),

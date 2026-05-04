@@ -246,7 +246,7 @@
           "Box Extent" : [0.500000, 0.300000, 0.500000],
           "Cast Shadow" : true,
           "Generate Overlap Events" : true,
-          "Location" : [0.000000, 0.501545, -0.251383],
+          "Location" : [0.000000, 0.501545, 0.300000],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [0.402405, 0.402405, 0.402405],
           "Two Sided Shadow" : false,
@@ -1376,7 +1376,7 @@
           "Cast Shadow" : true,
           "Generate Overlap Events" : true,
           "Location" : [27.188435, 15.748090, -0.500000],
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "None",
           "Two Sided Shadow" : false,
@@ -1393,14 +1393,14 @@
   "ContextName" : "Default",
   "Name" : "Default",
   "PerspectiveCamera" : {
-    "AspectRatio" : 2.020602,
+    "AspectRatio" : 2.031696,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-5.021687, 1.611228, 7.521828],
+    "Location" : [-13.386794, 1.392185, 10.834932],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 21.599987, 1.499976]
+    "Rotation" : [0.000000, 21.599983, 1.499976]
   },
   "Primitives" : {
     "102" : {

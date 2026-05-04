@@ -286,6 +286,12 @@ void UWorld::CollectWorldCollisionBVHDebugAABBs(TArray<FWorldCollisionBVH::FDebu
 	WorldCollisionSystem.CollectDebugAABBs(OutAABBs);
 }
 
+void UWorld::QueryPrimitivesInAABB(const FBoundingBox& Bounds, TArray<UPrimitiveComponent*>& OutCandidates) const
+{
+	WorldCollisionSystem.EnsureBuilt(GetActors());
+	WorldCollisionSystem.QueryAABB(Bounds, OutCandidates);
+}
+
 void UWorld::BeginDeferredPickingBVHUpdate()
 {
 	++DeferredPickingBVHUpdateDepth;

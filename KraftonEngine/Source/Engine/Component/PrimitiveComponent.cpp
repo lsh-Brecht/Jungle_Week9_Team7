@@ -328,5 +328,6 @@ FBoundingBox UPrimitiveComponent::GetWorldAABB() const
 
 void UPrimitiveComponent::OnParry()
 {
-	SetRelativeScale(GetRelativeScale() * 1.5f);
+	SetRelativeScale(GetRelativeScale() * 3.0f);
 }
+ 

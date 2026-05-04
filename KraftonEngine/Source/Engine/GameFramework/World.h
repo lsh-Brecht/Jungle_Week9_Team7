@@ -65,6 +65,7 @@ public:
 	void UpdateWorldCollisionBVH(UPrimitiveComponent* Primitive);
 	void BuildWorldCollisionBVHNow() const;
 	void CollectWorldCollisionBVHDebugAABBs(TArray<FWorldCollisionBVH::FDebugAABB>& OutAABBs) const;
+	void QueryPrimitivesInAABB(const FBoundingBox& Bounds, TArray<UPrimitiveComponent*>& OutCandidates) const;
 	void BeginDeferredPickingBVHUpdate();
 	void EndDeferredPickingBVHUpdate();
 	void WarmupPickingData() const;
