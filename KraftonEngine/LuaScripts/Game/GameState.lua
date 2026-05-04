@@ -1,4 +1,5 @@
 local MODULE_NAME = "Game.GameState"
+local Vec = FVector.new
 
 local State = package.loaded[MODULE_NAME]
 if type(State) ~= "table" then
@@ -57,6 +58,19 @@ local function find_actor(name)
     return World.FindActorByName(name)
 end
 
+local function get_possessed_player_actor()
+    if World == nil or World.GetPlayerController == nil then
+        return nil
+    end
+
+    local controller = World.GetPlayerController(0)
+    if not is_valid(controller) or controller.GetPossessedActor == nil then
+        return nil
+    end
+
+    return controller:GetPossessedActor()
+end
+
 local function get_actor_name(actor)
     if is_valid(actor) and actor.Name ~= nil then
         return actor.Name
@@ -86,7 +100,7 @@ local function get_or_create_actor(name, location)
         return actor
     end
 
-    actor = SpawnActor("AActor", location or FVector(0.0, 0.0, 0.0))
+    actor = SpawnActor("AActor", location or Vec(0.0, 0.0, 0.0))
     if is_valid(actor) then
         actor.Name = name
     end
@@ -161,8 +175,11 @@ function State.RefreshReferences()
     copy_defaults(State.Config, DEFAULT_CONFIG)
 
     State.CachedPlayer = find_actor(State.Config.PlayerName)
-    State.CachedHUDText = get_or_create_actor(State.Config.HUDTextName, FVector(0.0, 0.0, 180.0))
-    State.CachedCreditsText = get_or_create_actor(State.Config.CreditsTextName, FVector(0.0, 0.0, 230.0))
+    if not is_valid(State.CachedPlayer) then
+        State.CachedPlayer = get_possessed_player_actor()
+    end
+    State.CachedHUDText = get_or_create_actor(State.Config.HUDTextName, Vec(0.0, 0.0, 180.0))
+    State.CachedCreditsText = get_or_create_actor(State.Config.CreditsTextName, Vec(0.0, 0.0, 230.0))
 
     if is_valid(State.CachedCreditsText) then
         set_visible(State.CachedCreditsText, false)
@@ -172,6 +189,9 @@ end
 function State.GetPlayer()
     if not is_valid(State.CachedPlayer) then
         State.CachedPlayer = find_actor(State.Config.PlayerName)
+    end
+    if not is_valid(State.CachedPlayer) then
+        State.CachedPlayer = get_possessed_player_actor()
     end
     return State.CachedPlayer
 end
@@ -281,6 +301,31 @@ function State.StartGame()
     set_visible(State.CachedCreditsText, false)
     State.UpdateHUD()
     print("[Game] Start")
+end
+
+function State.ReturnToStartScreen(reason)
+    if State.Mode ~= "Playing" then
+        return
+    end
+
+    State.Mode = "Ready"
+    State.Score = 0
+    State.Elapsed = 0.0
+    State.bCreditsPrinted = false
+
+    local player = State.GetPlayer()
+    if is_valid(player) and State.Config.StartLocation ~= nil then
+        player.Location = State.Config.StartLocation
+    end
+
+    State.SetPlayerMovementEnabled(false)
+    State.SetMenuObjectsVisible(true)
+    set_visible(State.CachedCreditsText, false)
+    State.UpdateHUD()
+
+    if reason ~= nil and reason ~= "" then
+        print("[Game] ReturnToStartScreen: " .. tostring(reason))
+    end
 end
 
 function State.RestartRun()

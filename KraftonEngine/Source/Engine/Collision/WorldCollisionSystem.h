@@ -76,6 +76,7 @@ public:
 
 private:
 	void DispatchOverlapEvents(const TSet<FOverlapPairKey>& NewOverlaps);
+	void DispatchVehicleDefeatEvent(AActor* ActorA, AActor* ActorB);
 
 	UWorld* World = nullptr;
 	FWorldCollisionBVH WorldCollisionBVH;
