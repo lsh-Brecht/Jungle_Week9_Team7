@@ -242,7 +242,7 @@
             "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [0.000000, 0.501545, 0.275351],
+          "Location" : [0.000000, 0.501545, -0.187260],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [0.402405, 0.402405, 0.402405],
           "Static Mesh" : "Data/Chicken/Chicken.obj",
@@ -1300,11 +1300,11 @@
     "AspectRatio" : 1.846276,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [33.508858, -4.025183, 7.345507],
+    "Location" : [-0.969871, -2.254036, -0.209546],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 11.477915, 164.646835]
+    "Rotation" : [0.000000, 3.528100, 47.798309]
   },
   "Primitives" : {
     "102" : {

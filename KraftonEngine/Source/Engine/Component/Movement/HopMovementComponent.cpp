@@ -150,9 +150,28 @@ void UHopMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 		const FVector HorizontalDelta = Velocity * DeltaTime;
 		const FVector VerticalDelta(0.0f, 0.0f, HopDelta);
 
-		if (!HorizontalDelta.IsNearlyZero() && !SafeMoveUpdatedComponent(HorizontalDelta, nullptr))
+		if (!HorizontalDelta.IsNearlyZero())
 		{
-			Velocity = FVector::ZeroVector;
+			FVector SlideForward = GetLastControllerMovementForward();
+			FVector SlideRight = GetLastControllerMovementRight();
+			if (SlideForward.IsNearlyZero(KInputTolerance))
+			{
+				SlideForward = MoveInput;
+			}
+			if (SlideRight.IsNearlyZero(KInputTolerance) && !SlideForward.IsNearlyZero(KInputTolerance))
+			{
+				SlideRight = FVector(-SlideForward.Y, SlideForward.X, 0.0f);
+			}
+
+			FVector AppliedHorizontalDelta;
+			if (SafeMoveUpdatedComponentPreserveInputAxes(HorizontalDelta, SlideForward, SlideRight, &AppliedHorizontalDelta, nullptr))
+			{
+				Velocity = DeltaTime > 0.0f ? FlattenOnWorldUp(AppliedHorizontalDelta) / DeltaTime : FVector::ZeroVector;
+			}
+			else
+			{
+				Velocity = FVector::ZeroVector;
+			}
 		}
 
 		// 임시 유지: 현재 구조에서는 hop bobbing이 UpdatedComponent에 직접 적용된다.

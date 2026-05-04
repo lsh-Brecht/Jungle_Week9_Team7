@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Component/Movement/MovementComponent.h"
 #include "Math/Vector.h"
@@ -19,7 +19,7 @@ public:
 	void AddMovementInput(const FVector& Direction, float Scale = 1.0f);
 	FVector ConsumeMovementInputVector();
 	FVector GetPendingMovementInputVector() const { return PendingMovementInput; }
-	void ApplyPendingMovement();
+	void ApplyPendingMovement(float DeltaTime = 0.0f);
 	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
 private:

@@ -17,7 +17,7 @@ UPawnMovementComponent::UPawnMovementComponent()
 void UPawnMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
 {
 	UMovementComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	ApplyPendingMovement();
+	ApplyPendingMovement(DeltaTime);
 }
 
 void UPawnMovementComponent::Serialize(FArchive& Ar)
@@ -58,11 +58,11 @@ bool UPawnMovementComponent::ApplyControllerMovementInput(const FControllerMovem
 	}
 
 	AddMovementInput(Input.WorldDelta, Input.WorldDelta.Length());
-	ApplyPendingMovement();
+	ApplyPendingMovement(Input.DeltaTime);
 	return true;
 }
 
-void UPawnMovementComponent::ApplyPendingMovement()
+void UPawnMovementComponent::ApplyPendingMovement(float DeltaTime)
 {
 	const FVector Delta = ConsumeMovementInputVector();
 	if (Delta.IsNearlyZero())
@@ -73,5 +73,21 @@ void UPawnMovementComponent::ApplyPendingMovement()
 	{
 		return;
 	}
-	SafeMoveUpdatedComponentPreserveAxes(Delta, nullptr, nullptr);
+
+	FVector AppliedDelta;
+	SafeMoveUpdatedComponentPreserveInputAxes(
+		Delta,
+		GetLastControllerMovementForward(),
+		GetLastControllerMovementRight(),
+		&AppliedDelta,
+		nullptr);
+
+	if (DeltaTime > 0.0f)
+	{
+		MovementVelocity = AppliedDelta / DeltaTime;
+	}
+	else
+	{
+		MovementVelocity = AppliedDelta;
+	}
 }

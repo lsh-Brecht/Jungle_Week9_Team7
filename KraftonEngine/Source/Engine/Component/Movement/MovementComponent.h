@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Component/ActorComponent.h"
 #include "Math/Vector.h"
@@ -11,6 +11,8 @@ struct FControllerMovementInput
 	FVector LocalInput = FVector::ZeroVector;      // X Forward, Y Right, Z Up
 	FVector WorldDirection = FVector::ZeroVector; // Normalized world movement direction
 	FVector WorldDelta = FVector::ZeroVector;     // Immediate movement delta for simple movement components
+	FVector MovementForward = FVector::ForwardVector; // World-space forward basis used when the input was built
+	FVector MovementRight = FVector::RightVector;     // World-space right basis used when the input was built
 	float DeltaTime = 0.0f;
 	float MoveSpeed = 0.0f;
 	float SpeedMultiplier = 1.0f;
@@ -51,6 +53,8 @@ public:
 	const FVector& GetLastControllerWorldDirection() const { return LastControllerWorldDirection; }
 	const FVector& GetLastMovementInput() const { return LastControllerWorldDirection; }
 	const FVector& GetLastControllerWorldDelta() const { return LastControllerWorldDelta; }
+	const FVector& GetLastControllerMovementForward() const { return LastControllerMovementForward; }
+	const FVector& GetLastControllerMovementRight() const { return LastControllerMovementRight; }
 	float GetLastControllerInputTime() const { return LastControllerInputTime; }
 	virtual const FVector& GetVelocity() const { return MovementVelocity; }
 	virtual FVector GetMovementVelocity() const { return GetVelocity(); }
@@ -61,7 +65,11 @@ public:
 
 protected:
 	bool SafeMoveUpdatedComponent(const FVector& Delta, FHitResult* OutHit = nullptr);
+	bool SafeMoveUpdatedComponentClipped(const FVector& Delta, FVector* OutAppliedDelta = nullptr, FHitResult* OutHit = nullptr);
 	bool SafeMoveUpdatedComponentPreserveAxes(const FVector& Delta, FVector* OutAppliedDelta = nullptr, FHitResult* OutHit = nullptr);
+	bool SafeMoveUpdatedComponentPreserveInputAxes(const FVector& Delta, const FVector& InputForward, const FVector& InputRight, FVector* OutAppliedDelta = nullptr, FHitResult* OutHit = nullptr);
+	bool IsUpdatedComponentBlockingOverlapped(FHitResult* OutHit = nullptr) const;
+	bool TryResolveBlockingOverlap(const FVector& DesiredDelta, const FVector& InputForward, const FVector& InputRight, FVector* OutAppliedDelta = nullptr, FHitResult* OutHit = nullptr);
 	void TryAutoRegisterUpdatedComponent();
 	USceneComponent* FindUpdatedComponentByPath(const FString& InPath) const;
 
@@ -73,6 +81,8 @@ protected:
 
 	FVector LastControllerWorldDirection = FVector::ZeroVector;
 	FVector LastControllerWorldDelta = FVector::ZeroVector;
+	FVector LastControllerMovementForward = FVector::ForwardVector;
+	FVector LastControllerMovementRight = FVector::RightVector;
 	float LastControllerInputTime = 0.0f;
 	FVector MovementVelocity = FVector::ZeroVector;
 };

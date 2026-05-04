@@ -9,7 +9,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <sstream>
+#include <algorithm>
 
 // Base movement logic only; concrete movement types should be added instead.
 IMPLEMENT_CLASS(UMovementComponent, UActorComponent)
@@ -18,6 +20,11 @@ HIDE_FROM_COMPONENT_LIST(UMovementComponent)
 namespace
 {
 	constexpr const char* RootComponentPathToken = "Root";
+	constexpr float MovementAxisTolerance = 1.0e-4f;
+	constexpr float MovementClipMinFraction = 1.0e-3f;
+	constexpr int32 MovementClipIterations = 12;
+	constexpr float MovementUnstuckMinDistance = 0.05f;
+	constexpr float MovementUnstuckMaxDistance = 5.0f;
 
 	void GatherSceneComponentsRecursive(USceneComponent* Component, TArray<USceneComponent*>& OutComponents)
 	{
@@ -30,6 +37,115 @@ namespace
 		for (USceneComponent* Child : Component->GetChildren())
 		{
 			GatherSceneComponentsRecursive(Child, OutComponents);
+		}
+	}
+
+	FVector FlattenOnWorldUp(const FVector& Vector)
+	{
+		return FVector(Vector.X, Vector.Y, 0.0f);
+	}
+
+	FVector SafeNormalized(const FVector& Vector)
+	{
+		const float Length = Vector.Length();
+		return Length > MovementAxisTolerance ? Vector / Length : FVector::ZeroVector;
+	}
+
+	FVector SafeHorizontalNormalized(const FVector& Vector)
+	{
+		return SafeNormalized(FlattenOnWorldUp(Vector));
+	}
+
+	bool IsSameDelta(const FVector& A, const FVector& B)
+	{
+		return (A - B).IsNearlyZero(MovementAxisTolerance);
+	}
+
+	void AddUniqueDelta(TArray<FVector>& Deltas, const FVector& Delta)
+	{
+		if (Delta.IsNearlyZero(MovementAxisTolerance))
+		{
+			return;
+		}
+
+		for (const FVector& Existing : Deltas)
+		{
+			if (IsSameDelta(Existing, Delta))
+			{
+				return;
+			}
+		}
+
+		Deltas.push_back(Delta);
+	}
+
+	void AddUniqueAxis(TArray<FVector>& Axes, const FVector& Axis)
+	{
+		const FVector NormalizedAxis = SafeNormalized(Axis);
+		if (NormalizedAxis.IsNearlyZero(MovementAxisTolerance))
+		{
+			return;
+		}
+
+		for (const FVector& Existing : Axes)
+		{
+			if (std::fabs(Existing.Dot(NormalizedAxis)) >= 0.999f)
+			{
+				return;
+			}
+		}
+
+		Axes.push_back(NormalizedAxis);
+	}
+
+	void AddAxisProjectedDelta(TArray<FVector>& Deltas, const FVector& Delta, const FVector& Axis)
+	{
+		const FVector NormalizedAxis = SafeNormalized(Axis);
+		if (NormalizedAxis.IsNearlyZero(MovementAxisTolerance))
+		{
+			return;
+		}
+
+		AddUniqueDelta(Deltas, NormalizedAxis * Delta.Dot(NormalizedAxis));
+	}
+
+	void BuildWorldAxisDeltas(const FVector& Delta, TArray<FVector>& OutDeltas)
+	{
+		AddUniqueDelta(OutDeltas, FVector(Delta.X, 0.0f, 0.0f));
+		AddUniqueDelta(OutDeltas, FVector(0.0f, Delta.Y, 0.0f));
+		AddUniqueDelta(OutDeltas, FVector(0.0f, 0.0f, Delta.Z));
+	}
+
+	void BuildInputAxisDeltas(const FVector& Delta, const FVector& InputForward, const FVector& InputRight, TArray<FVector>& OutDeltas)
+	{
+		const FVector HorizontalDelta = FlattenOnWorldUp(Delta);
+		const FVector VerticalDelta(0.0f, 0.0f, Delta.Z);
+
+		const FVector Forward = SafeHorizontalNormalized(InputForward);
+		const FVector Right = SafeHorizontalNormalized(InputRight);
+
+		TArray<FVector> HorizontalDeltas;
+		if (!Forward.IsNearlyZero(MovementAxisTolerance))
+		{
+			AddAxisProjectedDelta(HorizontalDeltas, HorizontalDelta, Forward);
+		}
+		if (!Right.IsNearlyZero(MovementAxisTolerance))
+		{
+			AddAxisProjectedDelta(HorizontalDeltas, HorizontalDelta, Right);
+		}
+
+		if (!HorizontalDeltas.empty())
+		{
+			std::sort(HorizontalDeltas.begin(), HorizontalDeltas.end(), [](const FVector& A, const FVector& B)
+			{
+				return A.Dot(A) > B.Dot(B);
+			});
+
+			for (const FVector& AxisDelta : HorizontalDeltas)
+			{
+				AddUniqueDelta(OutDeltas, AxisDelta);
+			}
+			AddUniqueDelta(OutDeltas, VerticalDelta);
 		}
 	}
 }
@@ -118,6 +234,8 @@ void UMovementComponent::RecordControllerMovementInput(const FControllerMovement
 {
 	LastControllerWorldDirection = Input.WorldDirection;
 	LastControllerWorldDelta = Input.WorldDelta;
+	LastControllerMovementForward = Input.MovementForward.IsNearlyZero() ? FVector::ForwardVector : Input.MovementForward.Normalized();
+	LastControllerMovementRight = Input.MovementRight.IsNearlyZero() ? FVector::RightVector : Input.MovementRight.Normalized();
 	LastControllerInputTime += Input.DeltaTime;
 	if (Input.DeltaTime > 0.0f)
 	{
@@ -172,7 +290,25 @@ bool UMovementComponent::SafeMoveUpdatedComponent(const FVector& Delta, FHitResu
 	return true;
 }
 
-bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Delta, FVector* OutAppliedDelta, FHitResult* OutHit)
+bool UMovementComponent::IsUpdatedComponentBlockingOverlapped(FHitResult* OutHit) const
+{
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	USceneComponent* Scene = GetUpdatedComponent();
+	AActor* OwnerActor = GetOwner();
+	if (!Scene || !OwnerActor)
+	{
+		return false;
+	}
+
+	UWorld* World = OwnerActor->GetWorld();
+	return World ? World->HasBlockingOverlapForActor(OwnerActor, OutHit) : false;
+}
+
+bool UMovementComponent::SafeMoveUpdatedComponentClipped(const FVector& Delta, FVector* OutAppliedDelta, FHitResult* OutHit)
 {
 	if (OutAppliedDelta)
 	{
@@ -185,6 +321,215 @@ bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Del
 
 	if (Delta.IsNearlyZero())
 	{
+		return true;
+	}
+
+	if (!ResolveUpdatedComponent())
+	{
+		return false;
+	}
+
+	USceneComponent* Scene = GetUpdatedComponent();
+	AActor* OwnerActor = GetOwner();
+	if (!Scene || !OwnerActor)
+	{
+		return false;
+	}
+
+	FHitResult InitialHit;
+	if (IsUpdatedComponentBlockingOverlapped(&InitialHit))
+	{
+		if (OutHit)
+		{
+			*OutHit = InitialHit;
+		}
+		return false;
+	}
+
+	FHitResult FullMoveHit;
+	if (SafeMoveUpdatedComponent(Delta, &FullMoveHit))
+	{
+		if (OutAppliedDelta)
+		{
+			*OutAppliedDelta = Delta;
+		}
+		return true;
+	}
+
+	if (OutHit)
+	{
+		*OutHit = FullMoveHit;
+	}
+
+	UWorld* World = OwnerActor->GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	const FVector OldLocation = Scene->GetWorldLocation();
+	float SafeFraction = 0.0f;
+	float BlockedFraction = 1.0f;
+
+	for (int32 Iteration = 0; Iteration < MovementClipIterations; ++Iteration)
+	{
+		const float TestFraction = (SafeFraction + BlockedFraction) * 0.5f;
+		Scene->SetWorldLocation(OldLocation);
+		Scene->AddWorldOffset(Delta * TestFraction);
+
+		FHitResult TestHit;
+		if (World->HasBlockingOverlapForActor(OwnerActor, &TestHit))
+		{
+			BlockedFraction = TestFraction;
+			if (OutHit && TestHit.bHit)
+			{
+				*OutHit = TestHit;
+			}
+		}
+		else
+		{
+			SafeFraction = TestFraction;
+		}
+	}
+
+	Scene->SetWorldLocation(OldLocation);
+
+	if (SafeFraction <= MovementClipMinFraction)
+	{
+		return false;
+	}
+
+	const FVector AppliedDelta = Delta * SafeFraction;
+	Scene->AddWorldOffset(AppliedDelta);
+	if (World->HasBlockingOverlapForActor(OwnerActor, OutHit))
+	{
+		Scene->SetWorldLocation(OldLocation);
+		if (OutAppliedDelta)
+		{
+			*OutAppliedDelta = FVector::ZeroVector;
+		}
+		return false;
+	}
+
+	if (OutAppliedDelta)
+	{
+		*OutAppliedDelta = AppliedDelta;
+	}
+	return true;
+}
+
+bool UMovementComponent::TryResolveBlockingOverlap(const FVector& DesiredDelta, const FVector& InputForward, const FVector& InputRight, FVector* OutAppliedDelta, FHitResult* OutHit)
+{
+	if (OutAppliedDelta)
+	{
+		*OutAppliedDelta = FVector::ZeroVector;
+	}
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	FHitResult InitialHit;
+	if (!IsUpdatedComponentBlockingOverlapped(&InitialHit))
+	{
+		return false;
+	}
+
+	if (OutHit)
+	{
+		*OutHit = InitialHit;
+	}
+
+	TArray<FVector> ProbeAxes;
+	AddUniqueAxis(ProbeAxes, InitialHit.WorldNormal);
+	AddUniqueAxis(ProbeAxes, SafeNormalized(DesiredDelta) * -1.0f);
+	AddUniqueAxis(ProbeAxes, InputForward);
+	AddUniqueAxis(ProbeAxes, InputForward * -1.0f);
+	AddUniqueAxis(ProbeAxes, InputRight);
+	AddUniqueAxis(ProbeAxes, InputRight * -1.0f);
+	AddUniqueAxis(ProbeAxes, FVector::ForwardVector);
+	AddUniqueAxis(ProbeAxes, FVector::BackwardVector);
+	AddUniqueAxis(ProbeAxes, FVector::RightVector);
+	AddUniqueAxis(ProbeAxes, FVector::LeftVector);
+	AddUniqueAxis(ProbeAxes, FVector::UpVector);
+	AddUniqueAxis(ProbeAxes, FVector::DownVector);
+
+	const float DesiredLength = DesiredDelta.Length();
+	const float BaseDistance = (std::max)(MovementUnstuckMinDistance, (std::min)(MovementUnstuckMaxDistance, DesiredLength > MovementAxisTolerance ? DesiredLength : 1.0f));
+	const float ProbeDistances[] =
+	{
+		MovementUnstuckMinDistance,
+		BaseDistance * 0.25f,
+		BaseDistance * 0.5f,
+		BaseDistance,
+		(std::min)(MovementUnstuckMaxDistance, BaseDistance * 2.0f)
+	};
+
+	for (const FVector& Axis : ProbeAxes)
+	{
+		for (float ProbeDistance : ProbeDistances)
+		{
+			if (ProbeDistance <= 0.0f)
+			{
+				continue;
+			}
+
+			FVector AppliedDelta;
+			FHitResult ProbeHit;
+			if (SafeMoveUpdatedComponent(Axis * ProbeDistance, &ProbeHit))
+			{
+				AppliedDelta = Axis * ProbeDistance;
+				if (!IsUpdatedComponentBlockingOverlapped(nullptr))
+				{
+					if (OutAppliedDelta)
+					{
+						*OutAppliedDelta = AppliedDelta;
+					}
+					return true;
+				}
+			}
+			else if (OutHit && ProbeHit.bHit)
+			{
+				*OutHit = ProbeHit;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Delta, FVector* OutAppliedDelta, FHitResult* OutHit)
+{
+	return SafeMoveUpdatedComponentPreserveInputAxes(Delta, FVector::ZeroVector, FVector::ZeroVector, OutAppliedDelta, OutHit);
+}
+
+bool UMovementComponent::SafeMoveUpdatedComponentPreserveInputAxes(const FVector& Delta, const FVector& InputForward, const FVector& InputRight, FVector* OutAppliedDelta, FHitResult* OutHit)
+{
+	if (OutAppliedDelta)
+	{
+		*OutAppliedDelta = FVector::ZeroVector;
+	}
+	if (OutHit)
+	{
+		*OutHit = FHitResult();
+	}
+
+	if (Delta.IsNearlyZero())
+	{
+		return true;
+	}
+	if (!ResolveUpdatedComponent())
+	{
+		return false;
+	}
+
+	FVector UnstuckDelta;
+	if (TryResolveBlockingOverlap(Delta, InputForward, InputRight, &UnstuckDelta, OutHit))
+	{
+		if (OutAppliedDelta)
+		{
+			*OutAppliedDelta = UnstuckDelta;
+		}
 		return true;
 	}
 
@@ -207,12 +552,12 @@ bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Del
 	FHitResult LastBlockingHit = FullMoveHit;
 	bool bMovedAnyAxis = false;
 
-	const FVector AxisDeltas[3] =
+	TArray<FVector> AxisDeltas;
+	BuildInputAxisDeltas(Delta, InputForward, InputRight, AxisDeltas);
+	if (AxisDeltas.empty())
 	{
-		FVector(Delta.X, 0.0f, 0.0f),
-		FVector(0.0f, Delta.Y, 0.0f),
-		FVector(0.0f, 0.0f, Delta.Z)
-	};
+		BuildWorldAxisDeltas(Delta, AxisDeltas);
+	}
 
 	for (const FVector& AxisDelta : AxisDeltas)
 	{
@@ -222,9 +567,10 @@ bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Del
 		}
 
 		FHitResult AxisHit;
-		if (SafeMoveUpdatedComponent(AxisDelta, &AxisHit))
+		FVector AxisAppliedDelta;
+		if (SafeMoveUpdatedComponentClipped(AxisDelta, &AxisAppliedDelta, &AxisHit))
 		{
-			AppliedDelta += AxisDelta;
+			AppliedDelta += AxisAppliedDelta;
 			bMovedAnyAxis = true;
 		}
 		else
@@ -240,6 +586,25 @@ bool UMovementComponent::SafeMoveUpdatedComponentPreserveAxes(const FVector& Del
 	if (OutHit && LastBlockingHit.bHit)
 	{
 		*OutHit = LastBlockingHit;
+	}
+
+	if (!bMovedAnyAxis)
+	{
+		FVector ClippedDelta;
+		FHitResult ClippedHit;
+		if (SafeMoveUpdatedComponentClipped(Delta, &ClippedDelta, &ClippedHit))
+		{
+			if (OutAppliedDelta)
+			{
+				*OutAppliedDelta = ClippedDelta;
+			}
+			return true;
+		}
+
+		if (OutHit && ClippedHit.bHit)
+		{
+			*OutHit = ClippedHit;
+		}
 	}
 
 	return bMovedAnyAxis;

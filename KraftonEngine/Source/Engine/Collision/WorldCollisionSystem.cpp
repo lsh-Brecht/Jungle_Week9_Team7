@@ -79,10 +79,11 @@ bool FWorldCollisionSystem::HasBlockingOverlapForActor(AActor* MovingActor, FHit
 			{
 				if (OutHit)
 				{
+					const FVector Separation = MovingPrimitive->GetWorldLocation() - Candidate->GetWorldLocation();
 					OutHit->bHit = true;
 					OutHit->HitComponent = Candidate;
 					OutHit->WorldHitLocation = MovingPrimitive->GetWorldLocation();
-					OutHit->WorldNormal = FVector::ZeroVector;
+					OutHit->WorldNormal = Separation.IsNearlyZero() ? FVector::ZeroVector : Separation.Normalized();
 					OutHit->Distance = 0.0f;
 				}
 				return true;
