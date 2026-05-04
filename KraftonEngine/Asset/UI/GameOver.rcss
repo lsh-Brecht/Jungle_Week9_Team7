@@ -1,8 +1,7 @@
 #gameover-panel {
     left: 50%;
     top: 50%;
-    width: 460px;
-    height: 430px;
-    margin-left: -230px;
-    margin-top: -215px;
+    width: 420px;
+    margin-left: -210px;
+    margin-top: -225px;
 }

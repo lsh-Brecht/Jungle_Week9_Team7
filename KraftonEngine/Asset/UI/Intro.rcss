@@ -1,88 +1,37 @@
-@keyframes road-scroll {
-    from { top: -2%; }
-    to   { top: 102%; }
-}
-
-@keyframes title-breathe {
-    from { color: #ffffff; }
-    to   { color: #ffd166; }
-}
-
-@keyframes ball-float {
-    from { margin-top: 0px; }
-    to   { margin-top: -18px; }
-}
-
 #intro-root {
-    background-color: #141a24;
+    background-color: rgba(0, 0, 0, 0);
 }
-
-#deco-layer {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-}
-
-.deco-ball {
-    position: absolute;
-    width: 56px;
-    height: 56px;
-    opacity: 0.25;
-    animation: ball-float 3s ease-in-out 0s infinite alternate;
-}
-
-.deco-ball-1 { left:  8%; top: 15%; animation-delay: 0s;    }
-.deco-ball-2 { right: 9%; top: 55%; animation-delay: -1s;   }
-.deco-ball-3 { left: 75%; top: 10%; animation-delay: -2s;   }
-.deco-ball-4 { left: 15%; top: 72%; animation-delay: -1.5s; }
-
-#road-lines {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-}
-
-.road-line {
-    position: absolute;
-    left: 0px;
-    width: 100%;
-    height: 8px;
-    background-color: rgba(255, 255, 255, 42);
-    animation: road-scroll 4s linear 0s infinite;
-}
-
-.line-a { animation-delay: 0s; }
-.line-b { animation-delay: -1.33s; }
-.line-c { animation-delay: -2.66s; }
 
 #intro-panel {
-    left: 50%;
-    top: 50%;
-    width: 560px;
-    height: 360px;
-    margin-left: -280px;
-    margin-top: -180px;
+    left: 72px;
+    top: 68px;
+    width: 470px;
+    min-height: 420px;
 }
 
 #game-title {
     display: block;
-    margin-top: 16px;
-    margin-bottom: 14px;
-    text-align: center;
+    width: 100%;
+    margin-bottom: 12px;
+    text-align: left;
     font-size: 46px;
     font-weight: bold;
     color: #ffffff;
-    animation: title-breathe 2s ease-in-out 0s infinite alternate;
 }
 
 #game-subtitle {
     display: block;
-    margin-bottom: 32px;
-    text-align: center;
-    font-size: 18px;
-    color: #cbd8e8;
+    width: 100%;
+    margin-bottom: 28px;
+    text-align: left;
+    font-size: 17px;
+    color: #aab6c7;
+}
+
+#intro-main-panel {
+    display: block;
+}
+
+#intro-options-panel {
+    display: none;
 }

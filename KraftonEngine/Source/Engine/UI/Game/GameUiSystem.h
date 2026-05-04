@@ -107,6 +107,7 @@ private:
 	void DispatchScriptEvent(const FString& EventName);
 
 	void SetOptionsVisible(bool bVisible);
+	void SetIntroOptionsVisible(bool bVisible);
 	void RefreshOptionLabels();
 	void SetElementDisplay(Rml::ElementDocument* Document, const char* ElementId, bool bVisible);
 	void SetElementText(Rml::ElementDocument* Document, const char* ElementId, const char* Text);
@@ -141,4 +142,5 @@ private:
 	bool bPauseMenuVisible = false;
 	bool bGameOverVisible = false;
 	bool bShowingOptions = false;
+	bool bShowingIntroOptions = false;
 };

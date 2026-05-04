@@ -3,43 +3,7 @@
 }
 
 #score-card {
-    position: absolute;
-    left: 28px;
+    left: 50%;
     top: 24px;
-    width: 220px;
-    height: 140px;
-    padding: 14px;
-    background-color: rgba(10, 16, 24, 170);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 58);
-    border-radius: 10px;
+    margin-left: -80px;
 }
-
-#score-icon {
-    display: block;
-    width: 32px;
-    height: 32px;
-    margin-bottom: 2px;
-}
-
-.hud-label {
-    display: block;
-    font-size: 16px;
-    color: #9fb0c8;
-}
-
-.hud-score {
-    display: block;
-    margin-top: -2px;
-    font-size: 44px;
-    font-weight: bold;
-    color: #ffd166;
-}
-
-.hud-small-row {
-    display: block;
-    margin-top: 0px;
-    font-size: 16px;
-    color: #d7e2f2;
-}
-

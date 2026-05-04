@@ -5,24 +5,26 @@
 </head>
 <body>
     <div id="intro-root" class="screen-root">
-        <div class="dim-bg"></div>
-        <div id="road-lines">
-            <div class="road-line line-a"></div>
-            <div class="road-line line-b"></div>
-            <div class="road-line line-c"></div>
-        </div>
-        <div id="deco-layer">
-            <img class="deco-ball deco-ball-1" src="../../Editor/Icons/Sphere_64x.png"/>
-            <img class="deco-ball deco-ball-2" src="../../Editor/Icons/Sphere_64x.png"/>
-            <img class="deco-ball deco-ball-3" src="../../Editor/Icons/Sphere_64x.png"/>
-            <img class="deco-ball deco-ball-4" src="../../Editor/Icons/Sphere_64x.png"/>
-        </div>
-        <div id="intro-panel" class="panel">
-            <div id="game-title">ROAD DASH FRIENDS</div>
-            <div id="game-subtitle">도로를 건너고, 코인을 줍고, 최고 점수를 갱신하세요</div>
-            <div id="ui-start" class="button">게임 시작</div>
-            <div id="ui-exit" class="button secondary">종료</div>
-            <div class="hint">WASD / 방향키 이동 · ESC 메뉴</div>
+        <div class="soft-overlay-top"></div>
+        <div class="soft-overlay-bottom"></div>
+
+        <div id="intro-panel" class="glass-panel">
+            <div class="panel-eyebrow">Team 7</div>
+            <div id="game-title">마당을 나온 치킨</div>
+            <div id="game-subtitle">오늘 저녁은 치킨이닭!</div>
+
+            <div id="intro-main-panel">
+                <div id="ui-start" class="menu-button primary">플레이</div>
+                <div id="ui-settings" class="menu-button">설정</div>
+                <div id="ui-exit" class="menu-button danger">종료</div>
+                <div class="hint">ENTER 시작 · ESC 메뉴</div>
+            </div>
+
+            <div id="intro-options-panel">
+                <div class="option-button" id="ui-intro-toggle-fullscreen">전체화면</div>
+                <div class="option-button" id="ui-intro-toggle-fxaa">FXAA: 꺼짐</div>
+                <div id="ui-intro-back" class="menu-button slim">뒤로</div>
+            </div>
         </div>
     </div>
 </body>

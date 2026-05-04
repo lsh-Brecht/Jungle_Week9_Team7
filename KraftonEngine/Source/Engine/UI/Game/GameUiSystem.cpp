@@ -307,6 +307,7 @@ void FGameUiSystem::Shutdown()
 	bPauseMenuVisible = false;
 	bGameOverVisible = false;
 	bShowingOptions = false;
+	bShowingIntroOptions = false;
 }
 
 void FGameUiSystem::SetCallbacks(FGameUiCallbacks InCallbacks)
@@ -403,6 +404,7 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 		bPauseMenuVisible = false;
 		bGameOverVisible = false;
 		bHudVisible = false;
+		bShowingIntroOptions = false;
 	}
 
 #if WITH_RMLUI
@@ -412,6 +414,7 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	}
 	if (bVisible)
 	{
+		SetIntroOptionsVisible(false);
 		if (PauseMenuDocument) PauseMenuDocument->Hide();
 		if (GameOverDocument) GameOverDocument->Hide();
 		if (HudDocument) HudDocument->Hide();
@@ -436,10 +439,11 @@ void FGameUiSystem::SetPauseMenuVisible(bool bVisible)
 	if (!bVisible)
 	{
 		bShowingOptions = false;
+		bShowingIntroOptions = false;
 	}
 
 #if WITH_RMLUI
-	if (!PauseMenuDocument)
+	if (!PauseMenuDocument && !IntroDocument)
 	{
 		return;
 	}
@@ -465,6 +469,7 @@ void FGameUiSystem::SetGameOverVisible(bool bVisible)
 		bPauseMenuVisible = false;
 		bHudVisible = false;
 		bShowingOptions = false;
+		bShowingIntroOptions = false;
 	}
 
 #if WITH_RMLUI
@@ -535,6 +540,7 @@ void FGameUiSystem::ResetRunUi()
 	SetLane(1);
 	SetCombo(1);
 	SetStatusText("READY");
+	SetIntroOptionsVisible(false);
 	SetIntroVisible(false);
 	SetGameOverVisible(false);
 	SetHudVisible(true);
@@ -586,7 +592,11 @@ void FGameUiSystem::BindUiEvents()
 
 	static const char* IntroIds[] = {
 		"ui-start",
-		"ui-exit"
+		"ui-settings",
+		"ui-exit",
+		"ui-intro-back",
+		"ui-intro-toggle-fullscreen",
+		"ui-intro-toggle-fxaa"
 	};
 	static const char* PauseIds[] = {
 		"continue",
@@ -666,6 +676,39 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 		bStartEventQueuedOrDispatched = true;
 		ResetRunUi();
 		QueueScriptEvent("start");
+		return;
+	}
+	if (ElementId == "ui-settings")
+	{
+		SetIntroOptionsVisible(true);
+		return;
+	}
+	if (ElementId == "ui-intro-back")
+	{
+		SetIntroOptionsVisible(false);
+		return;
+	}
+	if (ElementId == "ui-intro-toggle-fullscreen")
+	{
+		if (Callbacks.OnToggleFullscreen)
+		{
+			Callbacks.OnToggleFullscreen();
+		}
+		RefreshOptionLabels();
+		return;
+	}
+	if (ElementId == "ui-intro-toggle-fxaa")
+	{
+		bool bNext = true;
+		if (Callbacks.IsFxaaEnabled)
+		{
+			bNext = !Callbacks.IsFxaaEnabled();
+		}
+		if (Callbacks.OnFxaaChanged)
+		{
+			Callbacks.OnFxaaChanged(bNext);
+		}
+		RefreshOptionLabels();
 		return;
 	}
 	if (ElementId == "ui-exit" || ElementId == "ui-gameover-exit")
@@ -802,19 +845,31 @@ void FGameUiSystem::SetOptionsVisible(bool bVisible)
 	RefreshOptionLabels();
 }
 
+void FGameUiSystem::SetIntroOptionsVisible(bool bVisible)
+{
+	bShowingIntroOptions = bVisible;
+	SetElementDisplay(IntroDocument, "intro-main-panel", !bShowingIntroOptions);
+	SetElementDisplay(IntroDocument, "intro-options-panel", bShowingIntroOptions);
+	RefreshOptionLabels();
+}
+
 void FGameUiSystem::RefreshOptionLabels()
 {
 #if WITH_RMLUI
-	if (!PauseMenuDocument)
+	if (!PauseMenuDocument && !IntroDocument)
 	{
 		return;
 	}
 
 	const bool bFullscreen = Callbacks.IsFullscreen ? Callbacks.IsFullscreen() : false;
-	SetElementText(PauseMenuDocument, "toggle-fullscreen", bFullscreen ? "전체화면 해제" : "전체화면");
+	const char* FullscreenText = bFullscreen ? "전체화면 해제" : "전체화면";
+	SetElementText(PauseMenuDocument, "toggle-fullscreen", FullscreenText);
+	SetElementText(IntroDocument, "ui-intro-toggle-fullscreen", FullscreenText);
 
 	const bool bFxaa = Callbacks.IsFxaaEnabled ? Callbacks.IsFxaaEnabled() : false;
-	SetElementText(PauseMenuDocument, "toggle-fxaa", bFxaa ? "FXAA: 켜짐" : "FXAA: 꺼짐");
+	const char* FxaaText = bFxaa ? "FXAA: 켜짐" : "FXAA: 꺼짐";
+	SetElementText(PauseMenuDocument, "toggle-fxaa", FxaaText);
+	SetElementText(IntroDocument, "ui-intro-toggle-fxaa", FxaaText);
 #endif
 }
 
@@ -1107,7 +1162,11 @@ void FGameUiSystem::UnbindPauseMenuEvents()
 
 	static const char* IntroIds[] = {
 		"ui-start",
-		"ui-exit"
+		"ui-settings",
+		"ui-exit",
+		"ui-intro-back",
+		"ui-intro-toggle-fullscreen",
+		"ui-intro-toggle-fxaa"
 	};
 	static const char* PauseIds[] = {
 		"continue",

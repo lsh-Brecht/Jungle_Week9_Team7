@@ -2,13 +2,8 @@
     left: 50%;
     top: 50%;
     width: 420px;
-    height: 430px;
     margin-left: -210px;
-    margin-top: -215px;
-}
-
-#main-panel {
-    display: block;
+    margin-top: -235px;
 }
 
 #options-panel {
