@@ -116,12 +116,12 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
     Row.StaticObstacles.push_back(Obstacle);
 }
 
-void FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX)
+AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX)
 {
 	FRowData& Row = PushEmptyRow(RowIndex);
 
 	UWorld* World = FLuaWorldLibrary::GetActiveWorld();
-	if (!World) return;
+	if (!World) return nullptr;
 
 	const float OffsetY = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
 	const float ExtentY = OffsetY * Config.SlotSize;
@@ -151,6 +151,8 @@ void FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath,
 			}
 		}
 	}
+
+	return SpawnedActor;
 }
 
 void FRowManager::MoveForward(int32 NewCurrentRowIndex)

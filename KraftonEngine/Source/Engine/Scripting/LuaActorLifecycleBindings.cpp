@@ -113,6 +113,18 @@ void RegisterActorLifecycleBinding(sol::state& Lua)
 	);
 
 	Lua.set_function(
+		"ReleaseActor",
+		[](const FLuaGameObjectHandle& Handle)
+		{
+			AActor* Actor = Handle.Resolve();
+			if (Actor)
+			{
+				FLuaWorldLibrary::ReleaseActorToPool(Actor);
+			}
+		}
+	);
+
+	Lua.set_function(
 		"WarmUpPrefabPool",
 		[](const FString& PrefabPath, int32 Count)
 		{
