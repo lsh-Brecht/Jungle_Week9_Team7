@@ -1,7 +1,7 @@
 {
   "Name" : "TreeA",
   "RootActor" : {
-    "ActorUUID" : 126,
+    "ActorUUID" : 21261,
     "ClassName" : "AActor",
     "NonSceneComponents" : [],
     "RootComponent" : {
@@ -14,7 +14,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.047824, -0.156921, 0.485547],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [0.594817, 0.604542, 1.000000],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -30,7 +30,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [-0.108513, 0.000000, 1.832060],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [2.058692, 2.076035, 1.604878],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -46,9 +46,9 @@
           "Path" : "Asset/Materials/Auto/VoxelTreeA.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [0.000000, 0.000000, 0.000000],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
-        "Scale" : [1.000000, 1.000000, 1.000000],
+        "Location" : [-7.438996, 6.951361, 6.933516],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
+        "Scale" : [0.900000, 0.900000, 0.900000],
         "Static Mesh" : "Data/VoxelTrees/VoxelTreeA.obj",
         "Two Sided Shadow" : false,
         "Visible" : true,
@@ -56,6 +56,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : [],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",

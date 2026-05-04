@@ -1,7 +1,7 @@
 {
   "Name" : "CarA",
   "RootActor" : {
-    "ActorUUID" : 1,
+    "ActorUUID" : 34672,
     "ClassName" : "AActor",
     "NonSceneComponents" : [{
         "ClassName" : "UProjectileMovementComponent",
@@ -29,7 +29,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.000000, 0.504003],
-            "Rotation" : [0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 90.000000, 0.000000],
             "Scale" : [1.946280, 0.914204, 1.000000],
             "Two Sided Shadow" : false,
             "Visible" : true,

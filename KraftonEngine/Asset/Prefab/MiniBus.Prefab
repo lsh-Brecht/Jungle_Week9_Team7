@@ -1,7 +1,7 @@
 {
   "Name" : "MiniBus",
   "RootActor" : {
-    "ActorUUID" : 1,
+    "ActorUUID" : 30705,
     "ClassName" : "AActor",
     "NonSceneComponents" : [{
         "ClassName" : "UProjectileMovementComponent",
@@ -29,7 +29,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [-0.010674, -0.013205, 0.463967],
-            "Rotation" : [0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 90.000000, 0.000000],
             "Scale" : [2.471906, 0.897289, 0.934706],
             "Two Sided Shadow" : false,
             "Visible" : true,
