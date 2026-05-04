@@ -8,15 +8,7 @@
 
 void FGameplayInputRouter::ApplyGuiCapture(FInputFrame& InputFrame)
 {
-    if (InputFrame.IsGuiUsingKeyboard() || InputFrame.IsGuiUsingTextInput())
-    {
-        InputFrame.ConsumeKeyboard();
-    }
-
-    if (InputFrame.IsGuiUsingMouse())
-    {
-        InputFrame.ConsumeMouse();
-    }
+    InputFrame.ApplyGuiCapture("GameplayGuiCapture");
 }
 
 bool FGameplayInputRouter::Route(FInputFrame& InputFrame, const FGameplayInputRouteContext& Context)
@@ -25,12 +17,12 @@ bool FGameplayInputRouter::Route(FInputFrame& InputFrame, const FGameplayInputRo
 
     FLuaInputLibrary::SetCurrentFrame(&InputFrame);
 
+    bool bViewportHandledInput = false;
     if (Context.bAllowScriptInput && Context.World)
     {
         FLuaScriptSubsystem::Get().CallInput(Context.World, Context.DeltaTime);
     }
 
-    bool bViewportHandledInput = false;
     if (Context.bAllowViewportInput && Context.ViewportClient)
     {
         bViewportHandledInput = Context.ViewportClient->Tick(Context.DeltaTime, InputFrame);

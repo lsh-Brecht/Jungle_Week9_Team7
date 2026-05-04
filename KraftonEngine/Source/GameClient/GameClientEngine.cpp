@@ -1,4 +1,4 @@
-#include "GameClient/GameClientEngine.h"
+﻿#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "GameClient/GameClientPackageValidator.h"
@@ -165,9 +165,12 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 	ProcessPendingCommands();
 
 	InputSystem::Get().Tick();
-	if (InputSystem::Get().GetKeyDown(VK_ESCAPE))
+	FInputFrame GlobalInputFrame(InputSystem::Get().MakeSnapshot());
+	const FInputSystemSnapshot& RawInput = GlobalInputFrame.GetRawSnapshotForGlobalShortcuts();
+	if (RawInput.WasPressed(VK_ESCAPE))
 	{
 		TogglePauseMenu();
+		GlobalInputFrame.ConsumeKey(VK_ESCAPE, "GameClientGlobalShortcut", "Toggle pause menu");
 	}
 
 	Overlay.Update(DeltaTime);

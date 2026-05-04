@@ -163,7 +163,17 @@ bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCamer
 	// the same frame. Applying movement first made movement and pawn facing lag behind
 	// when the mouse was moved while holding a movement key.
 	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, DeltaTime, InputFrame);
+	if (bLooked)
+	{
+		InputFrame.ConsumeLook("ControllerInputComponent", "Controller applied look input");
+	}
+
 	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, InputFrame);
+	if (bMoved)
+	{
+		InputFrame.ConsumeMovement("ControllerInputComponent", "Controller applied movement input");
+	}
+
 	return bMoved || bLooked;
 }
 

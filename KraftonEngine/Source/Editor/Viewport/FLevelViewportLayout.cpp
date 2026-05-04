@@ -7,6 +7,7 @@
 #include "Editor/Selection/SelectionManager.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Engine/Input/InputSystem.h"
+#include "Engine/Input/InputFrame.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -1826,11 +1827,12 @@ void FLevelViewportLayout::HandleViewportContextMenuInput(const FPoint& MousePos
 		}
 
 		const bool bReleasedOverSameSlot = ViewportWindows[i]->IsHover(MousePos);
+		FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 		const bool bClickCandidate =
 			bReleasedOverSameSlot &&
 			ContextMenuState.RightClickTravelSq[i] <= RightClickPopupThresholdSq &&
-			!InputSystem::Get().GetRightDragging() &&
-			!InputSystem::Get().GetRightDragEnd();
+			!InputFrame.IsRightDragging() &&
+			!InputFrame.WasRightDragEnded();
 		const ImGuiIO& IO = ImGui::GetIO();
 		const bool bNoModifiers = !IO.KeyCtrl && !IO.KeyShift && !IO.KeyAlt && !IO.KeySuper;
 

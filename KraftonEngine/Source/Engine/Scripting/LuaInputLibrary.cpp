@@ -134,7 +134,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
         {
             return false;
         }
-        GCurrentFrame->ConsumeKey(VK);
+        GCurrentFrame->ConsumeKey(VK, "Lua", "Input.ConsumeKey");
         return true;
     });
 
@@ -148,7 +148,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeKeyboard();
+            GCurrentFrame->ConsumeKeyboard("Lua", "Input.ConsumeKeyboard");
         }
     });
 
@@ -156,7 +156,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeMouse();
+            GCurrentFrame->ConsumeMouse("Lua", "Input.ConsumeMouse");
         }
     });
 
@@ -164,7 +164,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeMouseDelta();
+            GCurrentFrame->ConsumeMouseDelta("Lua", "Input.ConsumeMouseDelta");
         }
     });
 
@@ -172,7 +172,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeScroll();
+            GCurrentFrame->ConsumeScroll("Lua", "Input.ConsumeScroll");
         }
     });
 
@@ -180,7 +180,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeMovement();
+            GCurrentFrame->ConsumeMovement("Lua", "Input.ConsumeMovement");
         }
     });
 
@@ -188,7 +188,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeLook();
+            GCurrentFrame->ConsumeLook("Lua", "Input.ConsumeLook");
         }
     });
 
@@ -196,7 +196,7 @@ void FLuaInputLibrary::RegisterInputBinding(sol::state& Lua)
     {
         if (GCurrentFrame)
         {
-            GCurrentFrame->ConsumeAll();
+            GCurrentFrame->ConsumeAll("Lua", "Input.ConsumeAll");
         }
     });
 

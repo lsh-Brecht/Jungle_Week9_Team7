@@ -20,6 +20,7 @@ class FWindowsWindow;
 class FSelectionManager;
 class FViewport;
 class FOverlayStatSystem;
+struct FInputFrame;
 
 class FEditorViewportClient : public FViewportClient
 {
@@ -85,10 +86,10 @@ public:
 	void SetPointLightFaceIndex(int32 Index) { PointLightFaceIndex = (Index < 0) ? 0 : (Index > 5) ? 5 : Index; }
 
 private:
-	void TickEditorShortcuts();
-	void TickInput(float DeltaTime);
-	void TickInteraction(float DeltaTime);
-	void HandleDragStart(const FRay& Ray); //픽킹 시작
+	void TickEditorShortcuts(FInputFrame& InputFrame);
+	void TickInput(float DeltaTime, FInputFrame& InputFrame);
+	void TickInteraction(float DeltaTime, FInputFrame& InputFrame);
+	void HandleDragStart(const FRay& Ray, FInputFrame& InputFrame); //픽킹 시작
 	void SyncCameraSmoothingTarget();
 	void ApplySmoothedCameraLocation(float DeltaTime);
 
