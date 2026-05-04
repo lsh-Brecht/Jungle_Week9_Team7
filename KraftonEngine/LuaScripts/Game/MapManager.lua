@@ -12,7 +12,8 @@ local MapManager = {
     CurrentPlayerRow = 0,    -- 플레이어가 현재 밟고 있는 칸의 인덱스
     HighestGeneratedRow = -1,-- 지금까지 생성된 가장 먼 칸의 인덱스
 
-    ActiveSpawners = {}      -- 관리할 스패너 배열
+    ActiveSpawners = {},     -- 관리할 스패너 배열
+    ActiveVehicles = {}      -- 수명을 관리할 생성된 차량 배열
 }
 
 _G.AddDynamicSpawner = function(rowIndex, prefab, speed, interval, dirY)
@@ -120,8 +121,29 @@ function Tick(deltaTime)
         if spawner.Timer <= 0 then
             spawner.Timer = spawner.Interval
             if SpawnDynamicVehicle then
-                SpawnDynamicVehicle(spawner.RowIndex, spawner.Prefab, spawner.Speed, spawner.DirY)
+                local vehicle = SpawnDynamicVehicle(spawner.RowIndex, spawner.Prefab, spawner.Speed, spawner.DirY)
+                if vehicle then
+                    -- 차량의 수명을 화면 너비 / 속도로 계산해서 배열에 담기
+                    -- (예: 맵의 표시 너비를 넉넉하게 60.0으로 가정)
+                    local lifeTime = 60.0 / spawner.Speed
+                    table.insert(MapManager.ActiveVehicles, {
+                        Vehicle = vehicle,
+                        Timer = lifeTime
+                    })
+                end
             end
+        end
+    end
+
+    -- 7. 화면 밖을 넘어선(수명이 다한) 차량 제거 처리 (오브젝트 풀 반환)
+    for i = #MapManager.ActiveVehicles, 1, -1 do
+        local vInfo = MapManager.ActiveVehicles[i]
+        vInfo.Timer = vInfo.Timer - deltaTime
+        if vInfo.Timer <= 0 then
+            if ReleaseActor then
+                ReleaseActor(vInfo.Vehicle)
+            end
+            table.remove(MapManager.ActiveVehicles, i)
         end
     end
 end
