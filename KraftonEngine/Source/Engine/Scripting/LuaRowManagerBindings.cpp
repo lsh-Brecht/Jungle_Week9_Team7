@@ -34,4 +34,10 @@ void RegisterRowManagerBinding(sol::state& Lua)
         {
             FRowManager::Get().SetDynamicSpawner(RowIndex, PrefabPath, Speed, Interval, DirectionX);
         });
+
+	Lua.set_function("MoveForward",
+		[](int32 NewCurrentRowIndex)
+		{
+			FRowManager::Get().MoveForward(NewCurrentRowIndex);
+		});
 }

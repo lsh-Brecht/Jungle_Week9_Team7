@@ -40,48 +40,51 @@ void FRowManager::Tick(float DeltaTime)
 
 	for (FRowData& Row : ActiveRows)
 	{
-		if (Row.Spawner.bIsActive)
+		for (FSpawnerData& Spawner : Row.Spawners)
 		{
-			// 1. 타이머 감소
-			Row.Spawner.SpawnTimer -= DeltaTime;
-
-			if (Row.Spawner.SpawnTimer <= 0.0f)
+			if (Spawner.bIsActive)
 			{
-				// 2. 타이머 초기화
-				Row.Spawner.SpawnTimer = Row.Spawner.SpawnInterval;
+				// 1. 타이머 감소
+				Spawner.SpawnTimer -= DeltaTime;
 
-				// 3. 스폰 위치 계산 (화면 밖에서 등장하도록 설정)
-				const float OffsetX = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
-				// 가장자리 슬롯의 X 좌표
-				const float ExtentX = OffsetX * Config.SlotSize;
-
-				// DirectionX가 1(오른쪽)이면 왼쪽 끝 화면 밖에서, -1(왼쪽)이면 오른쪽 끝 화면 밖에서 스폰
-				const float SpawnX = (Row.Spawner.DirectionX > 0) ? -ExtentX - Config.SlotSize : ExtentX + Config.SlotSize;
-				const float WorldZ = static_cast<float>(Row.RowIndex) * Config.RowDepth;
-
-				const FVector SpawnLocation(SpawnX, 0.0f, WorldZ);
-
-				// 4. 이동 방향에 맞춰서 차량이 앞을 보도록 회전 (엔진의 기본 Forward 방향에 따라 Yaw 값은 조정이 필요할 수 있어)
-				FRotator SpawnRotation = FRotator();
-				if (Row.Spawner.DirectionX < 0)
+				if (Spawner.SpawnTimer <= 0.0f)
 				{
-					// 왼쪽으로 달리는 경우 180도 회전
-					// SpawnRotation.Yaw = 180.0f; 
-				}
+					// 2. 타이머 초기화
+					Spawner.SpawnTimer = Spawner.SpawnInterval;
 
-				// 5. 오브젝트 풀에서 액터 스폰 (fire-and-forget)
-				AActor* SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, Row.Spawner.PrefabPath, SpawnLocation, SpawnRotation);
+					// 3. 스폰 위치 계산 (화면 밖에서 등장하도록 설정)
+					const float OffsetX = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
+					// 가장자리 슬롯의 X 좌표
+					const float ExtentX = OffsetX * Config.SlotSize;
 
-				if (SpawnedActor)
-				{
-					// 6. ProjectileMovementComponent를 찾아서 속도 및 방향 설정
-					for (UActorComponent* Comp : SpawnedActor->GetComponents())
+					// DirectionX가 1(오른쪽)이면 왼쪽 끝 화면 밖에서, -1(왼쪽)이면 오른쪽 끝 화면 밖에서 스폰
+					const float SpawnX = (Spawner.DirectionX > 0) ? -ExtentX - Config.SlotSize : ExtentX + Config.SlotSize;
+					const float WorldZ = static_cast<float>(Row.RowIndex) * Config.RowDepth;
+
+					const FVector SpawnLocation(SpawnX, 0.0f, WorldZ);
+
+					// 4. 이동 방향에 맞춰서 차량이 앞을 보도록 회전 (엔진의 기본 Forward 방향에 따라 Yaw 값은 조정이 필요할 수 있어)
+					FRotator SpawnRotation = FRotator();
+					if (Spawner.DirectionX < 0)
 					{
-						if (UProjectileMovementComponent* ProjComp = Cast<UProjectileMovementComponent>(Comp))
+						// 왼쪽으로 달리는 경우 180도 회전
+						// SpawnRotation.Yaw = 180.0f; 
+					}
+
+					// 5. 오브젝트 풀에서 액터 스폰 (fire-and-forget)
+					AActor* SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, Spawner.PrefabPath, SpawnLocation, SpawnRotation);
+
+					if (SpawnedActor)
+					{
+						// 6. ProjectileMovementComponent를 찾아서 속도 및 방향 설정
+						for (UActorComponent* Comp : SpawnedActor->GetComponents())
 						{
-							// 직접 접근 대신 SetVelocity() 함수를 사용하도록 수정
-							ProjComp->SetVelocity(FVector(static_cast<float>(Row.Spawner.DirectionX), 0.0f, 0.0f) * Row.Spawner.Speed);
-							break;
+							if (UProjectileMovementComponent* ProjComp = Cast<UProjectileMovementComponent>(Comp))
+							{
+								// 직접 접근 대신 SetVelocity() 함수를 사용하도록 수정
+								ProjComp->SetVelocity(FVector(static_cast<float>(Spawner.DirectionX), 0.0f, 0.0f) * Spawner.Speed);
+								break;
+							}
 						}
 					}
 				}
@@ -167,12 +170,16 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
 void FRowManager::SetDynamicSpawner(int32 RowIndex, const FString& PrefabPath, float Speed, float Interval, int32 DirectionX)
 {
     FRowData& Row = PushEmptyRow(RowIndex);
-    Row.Spawner.bIsActive = true;
-    Row.Spawner.PrefabPath = PrefabPath;
-    Row.Spawner.Speed = Speed;
-    Row.Spawner.SpawnInterval = Interval;
-    Row.Spawner.SpawnTimer = Interval;
-    Row.Spawner.DirectionX = DirectionX;
+
+	FSpawnerData NewSpawner;
+	NewSpawner.bIsActive = true;
+	NewSpawner.PrefabPath = PrefabPath;
+	NewSpawner.Speed = Speed;
+	NewSpawner.SpawnInterval = Interval;
+	NewSpawner.SpawnTimer = Interval;
+	NewSpawner.DirectionX = DirectionX;
+
+	Row.Spawners.push_back(NewSpawner);
 }
 
 void FRowManager::MoveForward(int32 NewCurrentRowIndex)

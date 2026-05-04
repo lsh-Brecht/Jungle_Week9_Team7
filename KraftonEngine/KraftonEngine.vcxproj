@@ -1054,7 +1054,9 @@ $(ProjectDir)ThirdParty\SFML\lib\$(Configuration);%(AdditionalLibraryDirectories
     <ResourceCompile Include="KraftonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="LuaScripts\Game\RowGenerator.lua" />
+    <None Include="LuaScripts\Game\RowGenerator.lua">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="VcpkgLua.props" />
   </ItemGroup>
   <ItemGroup>

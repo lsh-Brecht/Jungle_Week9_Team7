@@ -46,7 +46,7 @@ struct FRowData
     int32 RowIndex = 0;
     ERowBiome Biome = ERowBiome::Grass;
     TArray<FStaticObstacleData> StaticObstacles;
-    FSpawnerData Spawner;
+	TArray<FSpawnerData> Spawners;
 
     void ClearActors();
 };
