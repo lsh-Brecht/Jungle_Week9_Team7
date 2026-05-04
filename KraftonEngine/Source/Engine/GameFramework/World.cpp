@@ -119,6 +119,19 @@ UWorld* UWorld::DuplicateAs(EWorldType InWorldType) const
 void UWorld::DestroyActor(AActor* Actor)
 {
 	if (!Actor || !PersistentLevel) return;
+	TickManager.RemoveTickFunction(&Actor->PrimaryActorTick);
+	Actor->PrimaryActorTick.UnRegisterTickFunction();
+	
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		if (!Component)
+		{
+			continue;
+		}
+
+		TickManager.RemoveTickFunction(&Component->PrimaryComponentTick);
+		Component->PrimaryComponentTick.UnRegisterTickFunction();
+	}
 
 	// 다른 시스템이 이 Actor/Pawn/Camera를 가리키고 있으면 파괴 전에 먼저 끊는다.
 	CleanupActorReferences(Actor);

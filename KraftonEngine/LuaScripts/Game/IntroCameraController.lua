@@ -447,8 +447,12 @@ function StartGame()
     pc:SetActiveCameraWithBlend(gameCam)
 
     -- 실제 게임 상태 시작.
-    -- UI.ResetRun / HUD 표시 / 플레이어 이동 활성화는 GameState.StartGame 안에서 처리합니다.
-    State.StartGame()
+    -- Intro -> Start도 새 런이므로 맵/스포너/플레이 상태를 모두 초기화합니다.
+    if State.StartFreshRun ~= nil then
+        State.StartFreshRun("IntroStart")
+    else
+        State.StartGame("IntroStart")
+    end
 
     print("[IntroCam] StartGame: perspective bridge -> game camera blend requested")
 end
@@ -487,7 +491,10 @@ local function handle_ui_event(eventName)
     end
 
     if eventName == "main_menu" then
-        State.BeginPlay()
+        if State.ResetToIntro ~= nil then
+            State.ResetToIntro()
+        end
+
         reset_to_intro()
         return
     end

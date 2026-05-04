@@ -8,6 +8,10 @@ function OnOverlap(otherActor)
     if State.CanStartFromWorldButton ~= nil
         and State.CanStartFromWorldButton()
         and State.IsPlayer(otherActor) then
-        State.StartGame("WorldStartButton")
+        if State.StartFreshRun ~= nil then
+            State.StartFreshRun("WorldStartButton")
+        else
+            State.StartGame("WorldStartButton")
+        end
     end
 end

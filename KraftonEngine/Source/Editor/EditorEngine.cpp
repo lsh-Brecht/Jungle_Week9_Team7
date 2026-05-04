@@ -22,6 +22,7 @@
 #include "Materials/MaterialManager.h"
 #include "Engine/Platform/Paths.h"
 #include "Runtime/RowManager.h"
+#include "Runtime/ObjectPoolSystem.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
@@ -257,9 +258,6 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
 
-	FRowManager::Get().Shutdown();
-	FRowManager::Get().Initialize();
-
 	// 1) 현재 에디터 월드를 복제해 PIE 월드 생성 (UE의 CreatePIEWorldByDuplication 대응).
 	UWorld* EditorWorld = GetWorld();
 	if (!EditorWorld)
@@ -301,6 +299,9 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 
 	// 4) ActiveWorldHandle을 PIE로 전환 — 이후 GetWorld()는 PIE 월드를 반환.
 	SetActiveWorld(FName("PIE"));
+
+	TaskScheduler.Clear();
+	FRowManager::Get().Initialize();
 
 	// GPU Occlusion readback은 ProxyId 기반이라 월드가 갈리면 stale.
 	// 이전 프레임 결과를 무효화해야 wrong-proxy hit 방지.
@@ -365,10 +366,23 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		PIEViewportClient->OnBeginPIE(InitialTargetCamera, InitialViewport);
 
 		FGameUiCallbacks UiCallbacks;
+
 		UiCallbacks.OnContinue = [this]()
 		{
 			RequestEndPlayMap();
 		};
+
+		UiCallbacks.OnRestart = [this]()
+		{
+			FRequestPlaySessionParams Params;
+			RequestPlaySession(Params);
+		};
+
+		UiCallbacks.OnExit = [this]()
+		{
+			RequestEndPlayMap();
+		};
+
 		FGameUiSystem& GameUi = PIEViewportClient->GetGameUiSystem();
 
 		if (!GameUi.Initialize(Window, Renderer, PIEViewportClient))
@@ -398,8 +412,25 @@ void UEditorEngine::EndPlayMap()
 	{
 		return;
 	}
-	FRowManager::Get().Shutdown(true);
+
+	UWorld* PIEWorld = nullptr;
+	if (FWorldContext* PIEContext = GetWorldContextFromHandle(FName("PIE")))
+	{
+		PIEWorld = PIEContext->World;
+	}
+
 	TaskScheduler.Clear();
+
+	// PIE 런타임 Row 액터는 실제 삭제합니다.
+	FRowManager::Get().Shutdown(true);
+
+	// 풀에 들어가 있던 PIE 액터 참조는 이 월드 기준으로만 끊습니다.
+	// FObjectPoolSystem::Shutdown()은 전체 풀을 지우므로 PIE에서는 ClearWorld가 더 안전합니다.
+	if (PIEWorld)
+	{
+		FObjectPoolSystem::Get().ClearWorld(PIEWorld);
+	}
+
 	// 활성 월드를 PIE 시작 전 핸들로 복원.
 	const FName PrevHandle = PlayInEditorSessionInfo->PreviousActiveWorldHandle;
 	SetActiveWorld(PrevHandle);

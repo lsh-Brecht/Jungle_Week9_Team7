@@ -41,8 +41,12 @@ namespace
 			return false;
 		}
 
-		// 혹시 태그 방식도 같이 쓸 경우
-		if (Actor->HasTag("__RuntimeSpawned"))
+		// 런타임 맵/차량 액터는 씬에 다시 저장하지 않음
+		if (Actor->HasTag("__RuntimeSpawned") ||
+			Actor->HasTag("__RuntimeMap") ||
+			Actor->HasTag("__RowManaged") ||
+			Actor->HasTag("__RuntimeVehicle") ||
+			Actor->HasTag("Vehicle"))
 		{
 			return false;
 		}

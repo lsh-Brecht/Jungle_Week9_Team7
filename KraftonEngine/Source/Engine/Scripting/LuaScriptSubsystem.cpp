@@ -210,7 +210,34 @@ bool FLuaScriptSubsystem::DispatchUiEvent(const FString& EventName)
 		return true;
 	};
 
-	// Backward-compatible path for UI.SetEventHandler(function(eventName) ... end).
+	// Component scripts run in their own sol::environment, so a script-level
+	// function OnUIEvent(eventName) is not stored on Lua.globals(). Dispatch to
+	// those environments first. This prevents UI.SetEventHandler users such as
+	// UIExample.lua from stealing the single global UI handler slot.
+	bool bHandledByComponent = false;
+	for (auto& Pair : ComponentBindings)
+	{
+		FLuaComponentBinding& Binding = Pair.second;
+		if (Binding.bDisabledByError || !Binding.Environment.valid())
+		{
+			continue;
+		}
+
+		const FString FunctionName = Binding.ScriptPath + "::OnUIEvent";
+		sol::object OnUiEventObject = Binding.Environment["OnUIEvent"];
+		if (InvokeLuaFunction(OnUiEventObject, FunctionName.c_str()))
+		{
+			bHandledByComponent = true;
+		}
+	}
+
+	if (bHandledByComponent)
+	{
+		return true;
+	}
+
+	// Backward-compatible fallback for UI.SetEventHandler(function(eventName) ... end).
+	// This is intentionally fallback-only. Only one script can occupy this slot.
 	sol::object UiObject = Lua["UI"];
 	if (UiObject.get_type() == sol::type::table)
 	{
@@ -222,7 +249,7 @@ bool FLuaScriptSubsystem::DispatchUiEvent(const FString& EventName)
 		}
 	}
 
-	// New hot-reload-safe convention: define function OnUIEvent(eventName).
+	// Standalone/global script fallback.
 	sol::object OnUiEventObject = Lua["OnUIEvent"];
 	return InvokeLuaFunction(OnUiEventObject, "OnUIEvent");
 }
