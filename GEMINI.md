@@ -13,6 +13,7 @@
 
 ## Building and Running
 
+<<<<<<< HEAD
 The project relies on a set of batch scripts located at the repository root to streamline setup and builds.
 
 ### 1. Setup Dependencies
@@ -106,3 +107,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+=======
+The project is built using Visual Studio (MSBuild). 
+>>>>>>> feature/delegate

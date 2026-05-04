@@ -160,7 +160,7 @@
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
             "Dash Duration" : 0.150000,
-            "Dash Speed" : 50.000000,
+            "Dash Speed" : 85.000000,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 6.000000,
             "Hop Height" : 0.150000,
@@ -1345,7 +1345,11 @@
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
+<<<<<<< HEAD
     "Rotation" : [0.000000, 26.778360, 7.749015]
+=======
+    "Rotation" : [0.000000, 39.828350, -2.000975]
+>>>>>>> feature/delegate
   },
   "Primitives" : {
     "102" : {
