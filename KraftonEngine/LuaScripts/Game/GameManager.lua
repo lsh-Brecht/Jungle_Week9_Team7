@@ -8,6 +8,7 @@ local Config = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
+    StartLocation = FVector.new(-0.0, 0.501545, -0.251383),
     AutoStart = true,
     Creators = {
         "KraftonEngine Team 7",

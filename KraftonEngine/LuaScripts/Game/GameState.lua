@@ -33,6 +33,7 @@ State.BestScore = State.BestScore or 0
 State.StartScoreRow = State.StartScoreRow or 0
 State.Elapsed = State.Elapsed or 0.0
 State.bInitialized = State.bInitialized or false
+State.bUIReady = State.bUIReady or false
 State.bBestScoreLoaded = State.bBestScoreLoaded or false
 State.bCreditsPrinted = State.bCreditsPrinted or false
 State.CachedPlayer = State.CachedPlayer or nil
@@ -434,6 +435,7 @@ function State.UpdateHUD()
 end
 
 function State.BeginPlay()
+    State.bUIReady = false
     State.Configure(State.Config)
     State.RefreshReferences()
 
@@ -466,6 +468,8 @@ function State.BeginPlay()
         if UI.ShowIntro ~= nil then
             UI.ShowIntro(true)
         end
+
+        State.bUIReady = true
     end
 
     push_score_to_ui()
@@ -559,6 +563,9 @@ function State.ReturnToStartScreen(reason)
 end
 
 function State.RestartRun()
+    if MapManager_Reset ~= nil then
+        MapManager_Reset()
+    end
     State.StartGame()
 end
 
@@ -651,6 +658,18 @@ end
 function State.Tick(deltaTime)
     if not State.bInitialized then
         State.BeginPlay()
+        return
+    end
+
+    if not State.bUIReady and UI ~= nil then
+        if UI.ShowHUD ~= nil then
+            UI.ShowHUD(State.Mode == "Playing")
+        end
+        if UI.ShowIntro ~= nil then
+            UI.ShowIntro(State.Mode ~= "Playing")
+        end
+        push_score_to_ui()
+        State.bUIReady = true
     end
 
     if State.Mode == "Ready" then
