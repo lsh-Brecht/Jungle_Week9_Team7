@@ -134,7 +134,7 @@ void FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath,
 	FRotator SpawnRotation = FRotator();
 	if (DirectionX < 0)
 	{
-		// SpawnRotation.Yaw = 180.0f; 
+		SpawnRotation.Yaw = 180.0f; 
 	}
 
 	AActor* SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, PrefabPath, SpawnLocation, SpawnRotation);
