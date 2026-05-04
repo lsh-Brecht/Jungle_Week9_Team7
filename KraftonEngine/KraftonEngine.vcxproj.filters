@@ -530,6 +530,9 @@
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp">
       <Filter>Source\Engine\Component\Movement</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Component\ParryComponent.cpp">
+      <Filter>Source\Engine\Component</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
@@ -923,6 +926,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaRowManagerBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaSaveGameBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -1273,6 +1279,9 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h">
       <Filter>Source\Engine\Component\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Component\ParryComponent.h">
+      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h">
       <Filter>Source\Engine\Component</Filter>

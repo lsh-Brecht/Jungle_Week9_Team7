@@ -53,6 +53,21 @@ function BeginPlay()
     end
 
     print("[MapManager] 초기 맵 생성 완료. 총" .. tostring(MapManager.PreloadRows + 1) .. "칸")
+
+    MapManager_Reset = function()
+        MapManager.CurrentPlayerRow = 0
+        MapManager.HighestGeneratedRow = -1
+
+        ResetMap()
+
+        RowGenerator.ConfigureRows()
+        for i = 0, MapManager.PreloadRows do
+            RowGenerator.GenerateRow(i)
+            MapManager.HighestGeneratedRow = i
+        end
+
+        print("[MapManager] 맵 리셋 완료")
+    end
 end
 
 function Tick(deltaTime)

@@ -40,4 +40,10 @@ void RegisterRowManagerBinding(sol::state& Lua)
 		{
 			FRowManager::Get().MoveForward(NewCurrentRowIndex);
 		});
+
+	Lua.set_function("ResetMap",
+		[]()
+		{
+			FRowManager::Get().Shutdown();
+		});
 }
