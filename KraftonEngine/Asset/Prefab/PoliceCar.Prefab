@@ -1,10 +1,24 @@
 {
   "Name" : "PoliceCar",
   "RootActor" : {
-    "ActorUUID" : 289,
+    "ActorUUID" : 1,
     "ClassName" : "AActor",
-    "Tags" : ["Vehicle"],
-    "NonSceneComponents" : [],
+    "NonSceneComponents" : [{
+        "ClassName" : "UProjectileMovementComponent",
+        "Properties" : {
+          "Auto Register Updated" : true,
+          "Controller Input Priority" : 0,
+          "Initial Speed" : 0.000000,
+          "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+          "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
+          "Max Speed" : 100.000000,
+          "Receive Controller Input" : false,
+          "Updated Component" : "",
+          "Velocity" : [0.000000, 0.000000, 0.000000],
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }],
     "RootComponent" : {
       "Children" : [{
           "Children" : [],
@@ -15,7 +29,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.000000, 0.414430],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [1.692289, 3.252820, 0.816252],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -136,8 +150,8 @@
           "Path" : "Asset/Materials/Auto/Police_car_black_remaining.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [11.255510, 3.405301, -0.500000],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
+        "Location" : [0.000000, 0.000000, 0.000000],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [1.000000, 1.000000, 1.000000],
         "Static Mesh" : "Data/VoxelCars/PoliceCar.obj",
         "Two Sided Shadow" : false,
@@ -146,6 +160,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : ["Vehicle"],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",

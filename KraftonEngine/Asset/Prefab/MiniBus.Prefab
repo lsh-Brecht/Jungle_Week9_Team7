@@ -1,7 +1,7 @@
 {
   "Name" : "MiniBus",
   "RootActor" : {
-    "ActorUUID" : 302,
+    "ActorUUID" : 1,
     "ClassName" : "AActor",
     "NonSceneComponents" : [{
         "ClassName" : "UProjectileMovementComponent",
@@ -19,8 +19,6 @@
           "bTickEnable" : true
         }
       }],
-    "Tags" : ["Vehicle"],
-    "NonSceneComponents" : [],
     "RootComponent" : {
       "Children" : [{
           "Children" : [],
@@ -57,6 +55,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : ["Vehicle"],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",
