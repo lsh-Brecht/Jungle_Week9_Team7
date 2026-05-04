@@ -20,10 +20,16 @@ function BeginPlay()
          print("[MapManager] RowGenerator 초기 설정 성공")
     end
 
-    -- 2. 플레이어 폰 찾기 (UE 방식)
-    if World ~= nil and World.GetPlayerPawn ~= nil then
-        MapManager.playerPawn = World.GetPlayerPawn(0)
-        print("[MapManager] Pawn 연결 성공")
+    -- 2. 플레이어 폰 찾기
+    if World ~= nil and World.GetPlayerController ~= nil then
+        local controller = World.GetPlayerController(0)
+        if controller then
+            local pawn = controller:GetPossessedPawn()
+            if pawn then
+                MapManager.playerPawn = pawn
+                print("[MapManager] Pawn 연결 성공")
+            end
+        end
     end
 
     -- 3. 게임 시작 시 초기 맵 미리 깔아두기
@@ -39,8 +45,11 @@ end
 function Tick(deltaTime)
     -- 플레이어 폰이 아직 할당되지 않았다면 다시 찾기 (안전 장치)
     if MapManager.playerPawn == nil then
-        if World ~= nil and World.GetPlayerPawn ~= nil then
-            MapManager.playerPawn = World.GetPlayerPawn(0)
+        if World ~= nil and World.GetPlayerController ~= nil then
+            local controller = World.GetPlayerController(0)
+            if controller then
+                MapManager.playerPawn = controller:GetPossessedPawn()
+            end
         end
         return
     end
