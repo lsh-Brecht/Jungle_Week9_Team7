@@ -118,14 +118,12 @@ function RowGenerator.GenerateRow(rowIndex)
     SetRowBiome(rowIndex, biomeType)
     -- print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
 
-    for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
-        if biomeType == BIOME.GRASS then
-            SpawnStaticObstacle(rowIndex, slot, PREFABS.GRASSTILE)
-        elseif biomeType == BIOME.ROAD then
-            SpawnStaticObstacle(rowIndex, slot, PREFABS.ROADTILE)
-        elseif biomeType == BIOME.RAILWAY then
-            SpawnStaticObstacle(rowIndex, slot, PREFABS.RAILWAYTILE)
-        end
+    if biomeType == BIOME.GRASS then
+        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
+    elseif biomeType == BIOME.ROAD then
+        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.ROADTILE)
+    elseif biomeType == BIOME.RAILWAY then
+        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.RAILWAYTILE)
     end
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
