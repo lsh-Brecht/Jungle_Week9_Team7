@@ -57,16 +57,44 @@ void UParryComponent::BeginPlay()
 void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction& ThisTickFunction)
 {
-	if (!bIsParrying) return;
-
-	CurrentParryTime += DeltaTime;
-	if (CurrentParryTime >= ParryDuration)
+	if (bIsParrying)
 	{
-		if (ScaleTarget)
-			ScaleTarget->SetRelativeScale(OriginalScale);
-		bIsParrying = false;
-		CurrentParryTime = 0.f;
+		CurrentParryTime += DeltaTime;
+		if (CurrentParryTime >= ParryDuration)
+		{
+			if (ScaleTarget)
+				ScaleTarget->SetRelativeScale(OriginalScale);
+			bIsParrying = false;
+			CurrentParryTime = 0.f;
+		}
 	}
+
+	if (SpinningProjectiles.empty()) return;
+
+	// Y축(Pitch) 기준 초당 회전량: 3바퀴(1080°) / SpinDuration
+	constexpr float TotalDegrees = 3.0f * 360.0f;
+	const float DeltaDeg = (TotalDegrees / SpinDuration) * DeltaTime;
+
+	TArray<FSpinningProjectile> Remaining;
+	for (FSpinningProjectile& Spinning : SpinningProjectiles)
+	{
+		Spinning.ElapsedTime += DeltaTime;
+
+		if (USceneComponent* Root = Spinning.Actor->GetRootComponent())
+			Root->AddLocalRotation(FRotator(DeltaDeg, 0.0f, 0.0f));
+
+		if (Spinning.ElapsedTime < SpinDuration)
+		{
+			Remaining.push_back(Spinning);
+		}
+		else
+		{
+			Spinning.Actor->SetVisible(false);
+			Spinning.Actor->SetActorTickEnabled(false);
+			Spinning.Actor->SetActorEnableCollision(false);
+		}
+	}
+	SpinningProjectiles = std::move(Remaining);
 }
 
 void UParryComponent::Parry()
@@ -118,17 +146,11 @@ void UParryComponent::DeflectNearbyProjectiles()
 		}
 		if (!Projectile) continue;
 		if (Projectile->IsParried()) continue;
-
+		Projectile->Deactivate();
 		Processed.insert(OtherActor);
 
-		FVector ParryNormal = OtherActor->GetActorLocation() - OwnerPos;
-		ParryNormal.Normalize();
-
-		FVector CurrentVelocity = Projectile->GetVelocity();
-		float VDotN = CurrentVelocity.Dot(ParryNormal);
-		FVector Reflected = CurrentVelocity - ParryNormal * (2.0f * VDotN);
-
-		Projectile->SetVelocity(Reflected * ParryLaunchMultiplier);
+		Projectile->StopSimulating();
 		Projectile->SetParried(true);
+		SpinningProjectiles.push_back({ OtherActor, Projectile, 0.0f });
 	}
 }
