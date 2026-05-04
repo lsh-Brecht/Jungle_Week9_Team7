@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "Component/Movement/MovementComponent.h"
+#include "Runtime/Delegate.h"
 #include "Math/Vector.h"
 
 class FArchive;
@@ -16,6 +17,7 @@ class UHopMovementComponent : public UMovementComponent
 {
 public:
 	DECLARE_CLASS(UHopMovementComponent, UMovementComponent)
+	DECLARE_DELEGATE(DashDelegate)
 
 	UHopMovementComponent();
 	~UHopMovementComponent() override = default;
@@ -88,6 +90,9 @@ public:
 
 	FVector GetPreviewVelocity() const;
 
+	void Dash();
+	bool IsDashing() const { return DashTimeRemaining > 0.0f; }
+
 protected:
 	FVector BuildWorldInputFromLocal(const FVector& InLocalInput) const;
 	FVector ConsumeFrameMovementInput();
@@ -120,4 +125,11 @@ protected:
 	float HopElapsedTime = 0.0f;
 	float AppliedHopOffset = 0.0f;
 	bool bSimulating = true;
+
+	// Dash 설정. 에디터에서 튜닝.
+	float DashSpeed = 150.0f;
+	float DashDuration = 0.15f;
+
+	// Dash 런타임 상태. 0보다 크면 Dash 중.
+	float DashTimeRemaining = 0.0f;
 };

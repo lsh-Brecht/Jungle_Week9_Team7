@@ -1,10 +1,12 @@
-#include "Engine/Input/InputSystem.h"
+﻿#include "Engine/Input/InputSystem.h"
 #include <cmath>
+#include "Core/Log.h"
 
 void InputSystem::Tick()
 {
     // 윈도우 포커스가 없으면 모든 입력 상태 해제
-    bWindowFocused = !OwnerHWnd || GetForegroundWindow() == OwnerHWnd;
+    HWND Foreground = GetForegroundWindow();
+    bWindowFocused = !OwnerHWnd || (Foreground == OwnerHWnd) || IsChild(OwnerHWnd, Foreground);
     if (!bWindowFocused)
     {
         ResetAllKeyStates();
@@ -210,6 +212,22 @@ void InputSystem::UpdateCurrentSnapshot()
     Snapshot.bGuiUsingKeyboard = GuiState.bUsingKeyboard;
     Snapshot.bGuiUsingTextInput = GuiState.bUsingTextInput;
     Snapshot.bWindowFocused = bWindowFocused;
+
+    // 임시 진단: 우클릭 상태가 Snapshot까지 도달하는지 확인
+    static bool sLastRBtn = false;
+    const bool bRBtnNow = Snapshot.KeyDown[VK_RBUTTON];
+    if (bRBtnNow != sLastRBtn)
+    {
+        UE_LOG("[DIAG-IS] RBUTTON KeyDown=%d, GuiMouse=%d, Focused=%d, RawMouse=%d, OwnerHWnd=%p, FG=%p",
+            bRBtnNow ? 1 : 0,
+            Snapshot.bGuiUsingMouse ? 1 : 0,
+            Snapshot.bWindowFocused ? 1 : 0,
+            Snapshot.bUsingRawMouse ? 1 : 0,
+            OwnerHWnd,
+            GetForegroundWindow());
+        sLastRBtn = bRBtnNow;
+    }
+
     CurrentSnapshot = Snapshot;
 }
 

@@ -1,4 +1,4 @@
-#include "Editor/EditorEngine.h"
+﻿#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -378,7 +378,7 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 	//    UWorld::BeginPlay가 bHasBegunPlay를 먼저 세팅하므로 BeginPlay 도중
 	//    SpawnActor로 만든 신규 액터도 자동으로 BeginPlay된다.
 	PIEWorld->BeginPlay();
-	SoundManager.PlayBGM();
+	FSoundManager::Get().PlayBGM();
 }
 
 void UEditorEngine::EndPlayMap()
@@ -453,7 +453,7 @@ void UEditorEngine::EndPlayMap()
 	PlayInEditorSessionInfo.reset();
 	PIEControlMode = EPIEControlMode::Possessed;
 	InputSystem::Get().ResetCaptureStateForPIEEnd();
-	SoundManager.StopBGM();
+	FSoundManager::Get().StopBGM();
 }
 
 bool UEditorEngine::TogglePIEControlMode()

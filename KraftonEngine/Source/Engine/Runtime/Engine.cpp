@@ -80,7 +80,7 @@ void UEngine::Init(FWindowsWindow* InWindow)
 	FLogManager::Get().Initialize();
 	FDirectoryWatcher::Get().Initialize();
 	FLuaScriptSubsystem::Get().Initialize();
-	SoundManager.initialize();
+	FSoundManager::Get().initialize();
 }
 
 void UEngine::Shutdown()

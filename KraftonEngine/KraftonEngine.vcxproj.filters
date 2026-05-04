@@ -866,6 +866,9 @@
     <ClCompile Include="Source\Engine\Runtime\ObjectPoolSystem.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Runtime\RowManager.cpp">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp">
       <Filter>Source\Engine\Runtime</Filter>
     </ClCompile>
@@ -912,6 +915,9 @@
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaRowManagerBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp">
@@ -1029,12 +1035,6 @@
       <Filter>ThirdParty\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
-      <Filter>Source\Engine\Serialization</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Runtime\RowManager.cpp" />
-    <ClCompile Include="Source\Engine\Scripting\LuaRowManagerBindings.cpp" />
-    <ClCompile Include="Source\Engine\Sound\SoundManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1712,6 +1712,9 @@
     <ClInclude Include="Source\Engine\Runtime\PooledObjectInterface.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Engine\Runtime\RowManager.h">
+      <Filter>Source\Engine\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h">
       <Filter>Source\Engine\Runtime</Filter>
     </ClInclude>
@@ -2225,17 +2228,11 @@
     <ClInclude Include="ThirdParty\SimpleJSON\json.hpp">
       <Filter>ThirdParty\SimpleJSON</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
-      <Filter>Source\Engine\Serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Runtime\RowManager.h" />
-    <ClInclude Include="Source\Engine\Sound\SoundManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VcpkgLua.props" />
-    <None Include="LuaScripts\Game\RowGenerator.lua" />
   </ItemGroup>
 </Project>

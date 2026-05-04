@@ -1,4 +1,4 @@
-#include "Runtime/ObjectPoolSystem.h"
+﻿#include "Runtime/ObjectPoolSystem.h"
 
 #include "Component/ActorComponent.h"
 #include "GameFramework/World.h"
@@ -127,10 +127,6 @@ AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key,
 			return nullptr;
 		}
 	}
-	else if (bReusedActor && Key.IsPrefab())
-	{
-		ResetActorFromPrefab(Actor, Key);
-	}
 
 	ActorPoolKeys[Actor] = Key;
 	ActivateActor(Actor, Location, Rotation);
@@ -139,12 +135,23 @@ AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key,
 
 bool FObjectPoolSystem::ReleaseActor(AActor* Actor)
 {
-	if (!Actor || Actor->IsPooledActorInactive())
+	if (!Actor)
 	{
 		return false;
 	}
 
-	FPoolKey Key = ResolveActorKey(Actor);
+	auto It = ActorPoolKeys.find(Actor);
+	if (It == ActorPoolKeys.end())
+	{
+		return false; // 이미 소멸되었거나 풀에서 관리하지 않는 객체
+	}
+
+	if (Actor->IsPooledActorInactive())
+	{
+		return false;
+	}
+
+	FPoolKey Key = It->second; // ResolveActorKey() 호출 대신 찾은 Key를 바로 사용
 	if (!IsValidPoolKey(Key))
 	{
 		return false;
@@ -153,12 +160,6 @@ bool FObjectPoolSystem::ReleaseActor(AActor* Actor)
 	FPooledClassBucket& Bucket = GetOrCreateBucket(Key);
 	ActorPoolKeys[Actor] = Key;
 	DispatchReturnCallbacks(Actor);
-
-	if (static_cast<int32>(Bucket.InactiveActors.size()) >= Bucket.MaxPoolSize)
-	{
-		DestroyActor(Actor);
-		return true;
-	}
 
 	DeactivateActor(Actor);
 	Bucket.InactiveActors.push_back(Actor);

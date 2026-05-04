@@ -6,6 +6,20 @@
 #include "../Core/CoreTypes.h"
 
 
+#define DECLARE_DELEGATE(Name , ...) \
+	TDelegate<__VA_ARGS__> Name;
+
+/*
+Singleton 등록 예시
+	DashDelegate.Add([]()
+		{
+			FSoundManager::Get().PlayEffect(SoundEffect::Dash);
+		}
+	);
+
+*/
+
+
 // AddDynamic에 넘길 수 있는 T의 조건: GetUUID()가 uint32로 변환 가능한 값을 반환해야 함
 // RemoveAllByInstance가 instance UUID를 키로 핸들러를 추적하기 위해 필요
 template<class T>

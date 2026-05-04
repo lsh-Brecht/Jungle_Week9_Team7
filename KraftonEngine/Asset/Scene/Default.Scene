@@ -159,6 +159,8 @@
             "Auto Register Updated" : true,
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
+            "Dash Duration" : 0.150000,
+            "Dash Speed" : 50.000000,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 6.000000,
             "Hop Height" : 0.150000,
@@ -188,14 +190,28 @@
             "bTickEnable" : true
           }
         }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
           "ClassName" : "UPawnOrientationComponent",
           "Properties" : {
             "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
-            "Facing Mode" : 2,
+            "Facing Mode" : 1,
             "Min Facing Input Size" : 0.010000,
             "Min Facing Speed" : 1.000000,
             "Rotation Speed" : 720.000000,
             "Yaw Only" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -226,7 +242,7 @@
             "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [0.000000, 0.000000, -0.166396],
+          "Location" : [0.000000, 0.501545, 0.275351],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [0.402405, 0.402405, 0.402405],
           "Static Mesh" : "Data/Chicken/Chicken.obj",
