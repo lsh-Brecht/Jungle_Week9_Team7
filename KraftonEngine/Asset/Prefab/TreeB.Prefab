@@ -1,7 +1,7 @@
 {
   "Name" : "TreeB",
   "RootActor" : {
-    "ActorUUID" : 130,
+    "ActorUUID" : 21267,
     "ClassName" : "AActor",
     "NonSceneComponents" : [],
     "RootComponent" : {
@@ -14,7 +14,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.076862, 0.340300],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [0.761122, 0.744484, 0.677335],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -30,7 +30,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.081730, 1.415659],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [2.203831, 2.217384, 1.285832],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -46,7 +46,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [0.000000, 0.062151, 2.589615],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [0.760952, 0.760777, 0.830838],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -62,9 +62,9 @@
           "Path" : "Asset/Materials/Auto/VoxelTreeB.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [0.000000, 0.000000, 0.000000],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
-        "Scale" : [1.000000, 1.000000, 1.000000],
+        "Location" : [-8.278685, 1.548151, 6.180996],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
+        "Scale" : [0.750000, 0.750000, 0.750000],
         "Static Mesh" : "Data/VoxelTrees/VoxelTreeB.obj",
         "Two Sided Shadow" : false,
         "Visible" : true,
@@ -72,6 +72,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : [],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",

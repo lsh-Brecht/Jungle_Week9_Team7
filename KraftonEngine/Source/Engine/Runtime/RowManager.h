@@ -37,7 +37,7 @@ struct FRowData
 	TArray<FStaticObstacleData> StaticObstacles;
 	TArray<AActor*> DynamicActors;
 
-	void ClearActors();
+	void ClearActors(bool bDestroyActors = false);
 };
 
 class FRowManager : public TSingleton<FRowManager>
@@ -52,7 +52,7 @@ private:
 
 public:
     void Initialize();
-    void Shutdown();
+    void Shutdown(bool bDestroyActors = false);
 
     FRowData* GetRowData(int32 RowIndex);
     FRowData& PushEmptyRow(int32 RowIndex);
@@ -61,7 +61,7 @@ public:
     void SetRowBufferCounts(int32 KeepRowsBehind, int32 KeepRowsAhead);
     void SetRowBiome(int32 RowIndex, int32 BiomeType);
     void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath);
-    void SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX);
+    AActor* SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX);
 
     void MoveForward(int32 NewCurrentRowIndex);
     void PopOldRows(int32 ThresholdRowIndex);

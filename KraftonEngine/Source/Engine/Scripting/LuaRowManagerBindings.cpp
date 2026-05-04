@@ -2,6 +2,7 @@
 #include "SolInclude.h"
 
 #include "Runtime/RowManager.h"
+#include "Scripting/LuaHandles.h"
 
 void RegisterRowManagerBinding(sol::state& Lua)
 {
@@ -30,14 +31,28 @@ void RegisterRowManagerBinding(sol::state& Lua)
         });
 
     Lua.set_function("SpawnDynamicVehicle",
-        [](int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX)
+        [](int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX, sol::this_state State) -> sol::object
         {
-            FRowManager::Get().SpawnDynamicVehicle(RowIndex, PrefabPath, Speed, DirectionX);
+            AActor* Spawned = FRowManager::Get().SpawnDynamicVehicle(RowIndex, PrefabPath, Speed, DirectionX);
+            if (!Spawned)
+            {
+                return sol::nil;
+            }
+
+            FLuaGameObjectHandle Handle;
+            Handle.UUID = Spawned->GetUUID();
+            return sol::make_object(sol::state_view(State), Handle);
         });
 
 	Lua.set_function("MoveForward",
 		[](int32 NewCurrentRowIndex)
 		{
 			FRowManager::Get().MoveForward(NewCurrentRowIndex);
+		});
+
+	Lua.set_function("ResetMap",
+		[]()
+		{
+			FRowManager::Get().Shutdown();
 		});
 }

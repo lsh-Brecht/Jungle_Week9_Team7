@@ -106,6 +106,15 @@ private:
 	void FlushQueuedScriptEvents();
 	void DispatchScriptEvent(const FString& EventName);
 
+	void BeginStartTransition();
+	void UpdateStartTransition(float DeltaTime);
+	void CompleteStartTransition();
+	void ApplyStartTransitionVisual(float TopHeightPx, float BottomHeightPx, int32 Alpha);
+	void ApplyIntroIdleBoxVisual();
+	float EaseInOutCubic(float T) const;
+	float LerpFloat(float A, float B, float T) const;
+	void SetElementProperty(Rml::ElementDocument* Document, const char* ElementId, const char* PropertyName, const char* Value);
+
 	void SetOptionsVisible(bool bVisible);
 	void SetIntroOptionsVisible(bool bVisible);
 	void RefreshOptionLabels();
@@ -124,6 +133,9 @@ private:
 	TArray<FString> PendingScriptEvents;
 	bool bFlushingScriptEvents = false;
 	bool bStartEventQueuedOrDispatched = false;
+	bool bStartTransitionActive = false;
+	bool bStartTransitionResetDispatched = false;
+	float StartTransitionTime = 0.0f;
 
 	std::unique_ptr<FRmlD3D11RenderInterface> RenderInterface;
 	std::unique_ptr<FRmlWin32SystemInterface> SystemInterface;

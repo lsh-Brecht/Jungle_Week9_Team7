@@ -1,7 +1,7 @@
 {
   "Name" : "RacingCar",
   "RootActor" : {
-    "ActorUUID" : 258,
+    "ActorUUID" : 312,
     "ClassName" : "AActor",
     "NonSceneComponents" : [{
         "ClassName" : "UProjectileMovementComponent",
@@ -108,7 +108,7 @@
           "Path" : "Asset/Materials/Auto/gt3Vehicle_Exterior_mm_cab1.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [0.000000, 0.000000, 0.000000],
+        "Location" : [9.936308, 0.000000, 0.000000],
         "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [1.200000, 1.200000, 1.200000],
         "Static Mesh" : "Data/VoxelCars/RacingCar.obj",
@@ -118,6 +118,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : ["Vehicle"],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",

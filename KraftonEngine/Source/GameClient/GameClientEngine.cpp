@@ -11,6 +11,7 @@
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Runtime/RowManager.h"
 #include "GameFramework/PlayerController.h"
+#include "Runtime/ObjectPoolSystem.h"
 #include "GameFramework/World.h"
 
 IMPLEMENT_CLASS(UGameClientEngine, UEngine)
@@ -211,10 +212,20 @@ bool UGameClientEngine::RestartGame()
 	CameraManager.ClearWorldBinding();
 	GameViewport.ReleaseWorldBinding();
 
+	TaskScheduler.Clear();
+
+	// 재시작에서는 풀 반환이 아니라 월드에서 실제 삭제
+	FRowManager::Get().Shutdown(true);
+
+	// 풀에 남은 비활성 액터까지 제거
+	FObjectPoolSystem::Get().Shutdown();
+
 	if (!Session.Restart())
 	{
 		return false;
 	}
+
+	FRowManager::Get().Initialize();
 
 	InitCameraManager();
 	GameViewport.BindPlayerController(CameraManager.GetPlayerController());

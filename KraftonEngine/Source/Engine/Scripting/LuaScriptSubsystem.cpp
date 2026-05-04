@@ -1,4 +1,4 @@
-﻿#include "LuaScriptSubsystem.h"
+#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -56,6 +56,23 @@ namespace
 		return Extension == L".lua";
 	}
 
+	AActor* ResolveComponentOwner(const ULuaScriptComponent* Component)
+	{
+		if (!Component)
+		{
+			return nullptr;
+		}
+
+		if (AActor* Owner = Component->GetOwner())
+		{
+			return Owner;
+		}
+
+		// Some deserialization/editor paths can create a component with the Actor as Outer
+		// before the Owner pointer is restored. Lua still needs a stable owner handle.
+		return Component->GetTypedOuter<AActor>();
+	}
+
 	void AssignGameObjectHandle(sol::environment& Environment, const char* Name, const AActor* Actor)
 	{
 		if (!Actor)
@@ -86,7 +103,7 @@ namespace
 	{
 		AssignScriptComponentHandle(Environment, "self", Component);
 
-		const AActor* Owner = Component ? Component->GetOwner() : nullptr;
+		const AActor* Owner = ResolveComponentOwner(Component);
 		AssignGameObjectHandle(Environment, "owner", Owner);
 		AssignGameObjectHandle(Environment, "obj", Owner);
 		if (Owner)
@@ -317,7 +334,8 @@ bool FLuaScriptSubsystem::BindComponent(ULuaScriptComponent* Component, const FS
 
 	FLuaComponentBinding Binding;
 	Binding.ComponentUUID = Component->GetUUID();
-	Binding.OwnerActorUUID = Component->GetOwner() ? Component->GetOwner()->GetUUID() : 0;
+	AActor* BindingOwner = ResolveComponentOwner(Component);
+	Binding.OwnerActorUUID = BindingOwner ? BindingOwner->GetUUID() : 0;
 	Binding.ScriptPath = NormalizedPath;
 	Binding.Environment = std::move(Env);
 	Binding.BeginPlay = Binding.Environment["BeginPlay"];
@@ -1093,7 +1111,7 @@ bool FLuaScriptSubsystem::ReloadScriptsAtomically(const TSet<FString>& ReloadTar
 		{
 			if (BindComponent(Component, ScriptPath))
 			{
-				AActor* Owner = Component->GetOwner();
+				AActor* Owner = ResolveComponentOwner(Component);
 				if (Owner && Owner->HasActorBegunPlay())
 				{
 					CallComponentHotReload(Component);

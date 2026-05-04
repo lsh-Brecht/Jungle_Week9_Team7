@@ -12,10 +12,12 @@ function OnOverlap(otherActor)
         return
     end
 
-    if State.IsPlayer(otherActor) then
+    if State.IsPlaying ~= nil
+        and State.IsPlaying()
+        and State.IsPlayer(otherActor) then
         bUsed = true
         State.AddScore(1)
-
+    
         if obj ~= nil then
             obj.Visible = false
         end

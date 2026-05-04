@@ -24,8 +24,8 @@ private:
 	bool bIsParrying = false;
 	float ParryDuration = 0.3f;
 	float CurrentParryTime = 0.0f;
-	float ParryRadius = 300.0f;
-	float ParryLaunchMultiplier = 1.5f;
+	float ParryRadius = 10.0f;
+	float ParryLaunchMultiplier = 10.0f;
 	FVector OriginalScale = { 1.0f , 1.0f , 1.0f };
 	USceneComponent* ScaleTarget = nullptr;
 };

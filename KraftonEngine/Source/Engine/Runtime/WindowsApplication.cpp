@@ -31,6 +31,12 @@ LRESULT CALLBACK FWindowsApplication::StaticWndProc(HWND hWnd, unsigned int Msg,
 
 LRESULT FWindowsApplication::WndProc(HWND hWnd, unsigned int Msg, WPARAM wParam, LPARAM lParam)
 {
+	if (Msg == WM_SYSKEYDOWN && wParam == VK_RETURN)
+	{
+		Window.ToggleFullscreen();
+		return 0;
+	}
+
 	if (GEngine && GEngine->HandleWindowMessage(hWnd, Msg, wParam, lParam))
 	{
 		return true;

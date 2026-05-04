@@ -117,6 +117,7 @@ void UParryComponent::DeflectNearbyProjectiles()
 			if (Projectile) break;
 		}
 		if (!Projectile) continue;
+		if (Projectile->IsParried()) continue;
 
 		Processed.insert(OtherActor);
 
@@ -124,9 +125,10 @@ void UParryComponent::DeflectNearbyProjectiles()
 		ParryNormal.Normalize();
 
 		FVector CurrentVelocity = Projectile->GetVelocity();
-		float VDotN = CurrentVelocity.Dot( ParryNormal);
+		float VDotN = CurrentVelocity.Dot(ParryNormal);
 		FVector Reflected = CurrentVelocity - ParryNormal * (2.0f * VDotN);
 
 		Projectile->SetVelocity(Reflected * ParryLaunchMultiplier);
+		Projectile->SetParried(true);
 	}
 }

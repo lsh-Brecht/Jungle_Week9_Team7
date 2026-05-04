@@ -5,7 +5,9 @@ function BeginPlay()
 end
 
 function OnOverlap(otherActor)
-    if State.IsPlayer(otherActor) then
-        State.StartGame()
+    if State.CanStartFromWorldButton ~= nil
+        and State.CanStartFromWorldButton()
+        and State.IsPlayer(otherActor) then
+        State.StartGame("WorldStartButton")
     end
 end

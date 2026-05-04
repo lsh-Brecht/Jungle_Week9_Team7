@@ -29,6 +29,10 @@ local CONFIG = {
         MinPitch = -89.0,
         MaxPitch = 89.0,
 
+        -- 카메라 전환 순간 마우스 델타가 크게 튀는 것 방지
+        MaxMouseDeltaPerFrame = 80.0,
+        CameraSwitchLookGuardTime = 0.08,
+
         -- Scene JSON: "Movement Basis" : 1
         -- 0 = World, 1 = ControlRotation, 2 = ViewCamera
         MovementBasis = 1
@@ -40,8 +44,8 @@ local CONFIG = {
         HopCoefficient = 1.0,
         Acceleration = 2048.0,
         BrakingDeceleration = 4096.0,
-        HopHeight = 0.300000,
-        HopFrequency = 4.0,
+        HopHeight = 0.150000,
+        HopFrequency = 6.0,
         HopOnlyWhenMoving = true,
         ResetHopWhenIdle = true,
         Simulating = true,
@@ -61,17 +65,17 @@ local CONFIG = {
         -- 3 = MovementVelocityDirection
         -- 4 = MovementDirectionWithControlFallback
         -- 5 = CustomWorldDirection
-    
+
         -- 추천: 실제 이동 속도 방향을 바라봅니다.
-        FacingMode = 4,
-    
+        FacingMode = 1,
+
         RotationSpeed = 720.0,
         YawOnly = true,
         CustomFacingDirection = Vec(1.0, 0.0, 0.0)
     },
 
     Camera = {
-        Location = Vec(1.347203, -2.598638, -0.500000),
+        Location = Vec(0.0, 0.0, 0.0),
         Rotation = Rot(0.0, 0.0, 0.0),
 
         AspectRatio = 1.2222,
@@ -79,22 +83,22 @@ local CONFIG = {
         NearZ = 0.1,
         FarZ = 1000.0,
         Orthographic = false,
-        OrthoWidth = 20.0,
+        OrthoWidth = 10.0,
 
-        -- Scene JSON: "View Mode" : 3
+        -- Scene JSON: "View Mode" : 2
         -- 0 = Static, 1 = FirstPerson, 2 = ThirdPerson, 3 = OrthographicFollow, 4 = Custom
         ViewMode = 2,
 
         FollowOffset = Vec(0.0, 0.0, 0.0),
         ViewOffset = Vec(-5.0, 5.0, 5.0),
 
-        EyeHeight = 1.6,
-        BackDistance = 5.0,
-        Height = 2.0,
+        EyeHeight = 0.5,
+        BackDistance = 2.0,
+        Height = 1.0,
         SideOffset = 0.0,
 
         FirstPersonUseControlRotation = true,
-        FollowSubjectAuto = false,
+        FollowSubjectAuto = true,
         UseControlRotationYaw = true,
         UseTargetForward = true,
 
@@ -110,6 +114,7 @@ local CONFIG = {
         EnableSmoothing = true,
         LocationLagSpeed = 12.0,
         RotationLagSpeed = 12.0,
+
         FOVLagSpeed = 10.0,
         OrthoWidthLagSpeed = 10.0,
 
@@ -118,6 +123,7 @@ local CONFIG = {
         ProjectionSwitchMode = 1,
         BlendLocation = true,
         BlendRotation = true,
+
         BlendFOV = true,
         BlendOrthoWidth = true,
         BlendNearFar = false
@@ -155,7 +161,11 @@ local Player = {
     prevMouse2 = false,
 
     -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
-    prevMouse1 = false
+    prevMouse1 = false,
+    
+    -- 카메라 전환 직후 마우스 델타 튐 방지용
+    cameraSwitchGuardTime = 0.0,
+    dropMouseDeltaFrames = 0
 }
 
 local function Log(msg)
@@ -275,12 +285,11 @@ local function GetKey(name)
     if not ok then
         return false
     end
+
     return result == true
 end
 
 local function GetKeyDown(name)
-    -- "이번 프레임에 새로 눌림"(에지). 엔진이 GetKeyDown을 노출하지 않거나
-    -- 알 수 없는 키 이름에 에러를 던질 경우 false로 떨어지도록 pcall로 감쌉니다.
     if Input == nil or Input.GetKeyDown == nil then
         return false
     end
@@ -289,6 +298,7 @@ local function GetKeyDown(name)
     if not ok then
         return false
     end
+
     return result == true
 end
 
@@ -322,10 +332,9 @@ local function IsGuiUsingMouse()
 end
 
 local function BuildInputState()
-
-if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
+    if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
         local guiMouse = Input.IsGuiUsingMouse()
-        -- 상태가 바뀐 순간에만 로그 (매 프레임 도배 방지)
+
         if guiMouse ~= Player.prevGuiMouse then
             if guiMouse then
                 Log("[DIAG] Input.IsGuiUsingMouse() = true  ← 마우스가 GUI에 잡혀있음")
@@ -348,8 +357,7 @@ if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
             signature = "GUI_KEYBOARD_CAPTURED"
         }
     end
- 
-    -- Dash 에지 판정용 (직전 프레임의 MOUSE2 상태)
+
     local mouse2Now = GetKey("MOUSE2")
     local engineEdge2 = GetKeyDown("MOUSE2")
     local manualEdge2 = mouse2Now and (not Player.prevMouse2)
@@ -428,7 +436,6 @@ local function SetupPawn()
 end
 
 local function SetupPawnMovementComponents()
-    -- UHopMovementComponent
     if Player.ownerObject.GetOrAddHopMovement ~= nil then
         Player.hopMovement = Player.ownerObject:GetOrAddHopMovement()
     end
@@ -466,7 +473,6 @@ local function SetupPawnMovementComponents()
         SafeSetProperty(hopGeneric, "Controller Input Priority", CONFIG.HopMovement.ControllerInputPriority)
     end
 
-    -- UPawnMovementComponent
     if Player.ownerObject.GetOrAddComponent ~= nil then
         Player.pawnMovementComponent = Player.ownerObject:GetOrAddComponent("pawnmovement")
     end
@@ -484,7 +490,6 @@ local function SetupPawnMovementComponents()
         Log("[PAWN_WARN] UPawnMovementComponent를 얻지 못했습니다.")
     end
 
-    -- UPawnOrientationComponent
     if Player.ownerObject.GetOrAddPawnOrientation ~= nil then
         Player.orientation = Player.ownerObject:GetOrAddPawnOrientation()
     end
@@ -563,10 +568,10 @@ local function SetupController()
         Log("[CONTROLLER_WARN] UControllerInputComponent를 얻지 못했습니다.")
     end
 
-    Player.yaw = 0.0
-    Player.pitch = 0.0
+    Player.yaw = RotYaw(CONFIG.Controller.ControlRotation)
+    Player.pitch = RotPitch(CONFIG.Controller.ControlRotation)
 
-    Player.controller:SetControlRotation(CONFIG.Controller.ControlRotation)
+    Player.controller:SetControlRotation(Rot(Player.pitch, Player.yaw, 0.0))
     Player.pawn.Rotation = Rot(0.0, Player.yaw, 0.0)
 
     Log("[CONTROLLER] Possess(owner Pawn) 완료")
@@ -592,10 +597,8 @@ local function ConfigureCameraProperties(camera)
     camera.Height = CONFIG.Camera.Height
     camera.SideOffset = CONFIG.Camera.SideOffset
 
-    -- Follow Target = owner Pawn
     camera:SetTargetActor(Player.ownerObject)
 
-    -- CameraComponent의 상세 설정은 SetProperty로 씬 JSON 이름 그대로 맞춥니다.
     SafeSetProperty(camera, "FOV", CONFIG.Camera.FOVRadians)
     SafeSetProperty(camera, "Aspect Ratio", CONFIG.Camera.AspectRatio)
     SafeSetProperty(camera, "Near Z", CONFIG.Camera.NearZ)
@@ -646,12 +649,10 @@ local function SetupCamera()
     Player.camera = nil
     Player.cameraActor = nil
 
-    -- 이미 씬/월드에 ActiveCamera가 있으면 그것을 설정값대로 재구성합니다.
     if World ~= nil and World.GetActiveCamera ~= nil then
         Player.camera = World.GetActiveCamera()
     end
 
-    -- 없으면 씬 설정과 동일하게 별도 CameraActor를 생성합니다.
     if not IsValidHandle(Player.camera) then
         if World == nil or World.SpawnCamera == nil then
             print("[Player.lua][BOOT_FAIL] World.SpawnCamera가 없습니다.")
@@ -684,8 +685,8 @@ local function SetupCamera()
     ConfigureCameraProperties(Player.camera)
 
     -- ActiveCamera 연결.
-    -- 주의: SetActiveCamera는 ControlRotation을 카메라 월드 회전으로 맞추므로,
-    -- 호출 직후 다시 ControlRotation을 씬 설정값으로 복원합니다.
+    -- SetActiveCamera는 ControlRotation을 카메라 월드 회전으로 덮어쓸 수 있으므로
+    -- 호출 직후 현재 yaw/pitch 기준으로 다시 복원합니다.
     Player.controller:SetActiveCamera(Player.camera)
 
     if Player.camera.SetAsActiveCamera ~= nil then
@@ -696,7 +697,13 @@ local function SetupCamera()
         World.SetActiveCamera(Player.camera)
     end
 
-    Player.controller:SetControlRotation(CONFIG.Controller.ControlRotation)
+    -- 카메라 전환 직후 발생하는 큰 마우스 델타를 버리기 위한 가드
+    Player.cameraSwitchGuardTime = CONFIG.ControllerInput.CameraSwitchLookGuardTime
+    Player.dropMouseDeltaFrames = 2
+
+    -- 기존처럼 CONFIG.Controller.ControlRotation으로 0도 복원하지 않고
+    -- 현재 Player.yaw / Player.pitch를 유지합니다.
+    Player.controller:SetControlRotation(Rot(Player.pitch, Player.yaw, 0.0))
     Player.pawn.Rotation = Rot(0.0, Player.yaw, 0.0)
 
     Log("[CAMERA] CameraActor/CameraComponent 설정 완료: Follow Target = owner Pawn, ActiveCamera 연결")
@@ -742,6 +749,21 @@ local function UpdateLook(dt)
         return
     end
 
+    -- 카메라 전환 직후 몇 프레임은 마우스 델타를 읽어서 버립니다.
+    -- 읽지 않고 return만 하면 엔진에 따라 델타가 다음 프레임에 누적될 수 있습니다.
+    if Player.dropMouseDeltaFrames ~= nil and Player.dropMouseDeltaFrames > 0 then
+        GetMouseDelta()
+        Player.dropMouseDeltaFrames = Player.dropMouseDeltaFrames - 1
+        return
+    end
+
+    -- 카메라 전환 직후 짧은 시간 동안 마우스 입력을 버립니다.
+    if Player.cameraSwitchGuardTime ~= nil and Player.cameraSwitchGuardTime > 0.0 then
+        GetMouseDelta()
+        Player.cameraSwitchGuardTime = Player.cameraSwitchGuardTime - dt
+        return
+    end
+
     local mouse = GetMouseDelta()
     local dx = Field(mouse, "X", "x", 0.0)
     local dy = Field(mouse, "Y", "y", 0.0)
@@ -749,6 +771,11 @@ local function UpdateLook(dt)
     if dx == 0.0 and dy == 0.0 then
         return
     end
+
+    -- 한 프레임에 너무 큰 마우스 델타가 들어오면 화면이 뚝 끊겨 보일 수 있으므로 제한합니다.
+    local maxDelta = CONFIG.ControllerInput.MaxMouseDeltaPerFrame or 80.0
+    dx = Clamp(dx, -maxDelta, maxDelta)
+    dy = Clamp(dy, -maxDelta, maxDelta)
 
     local sensitivity = CONFIG.ControllerInput.LookSensitivity
 
@@ -800,8 +827,7 @@ local function UpdateMovement(dt, inputState)
         if IsValidHandle(Player.hopMovement) then
             Player.hopMovement:Dash()
             Log("[Player.lua] Dash Triggered!")
-
-         end
+        end
     end
 
     if not hasMove then
@@ -809,6 +835,7 @@ local function UpdateMovement(dt, inputState)
             Player.hopMovement.HopCoefficient = CONFIG.HopMovement.HopCoefficient
             Player.hopMovement:ClearMovementInput()
         end
+
         return
     end
 
@@ -817,8 +844,6 @@ local function UpdateMovement(dt, inputState)
         sprintScale = CONFIG.ControllerInput.SprintMultiplier
     end
 
-    -- 설정 구조상 실제 이동은 HopMovementComponent가 담당하게 합니다.
-    -- Lua는 키 입력만 받아서 이동 방향을 HopMovementComponent에 넣습니다.
     if IsValidHandle(Player.hopMovement) then
         Player.hopMovement.InitialSpeed = CONFIG.HopMovement.InitialSpeed
         Player.hopMovement.HopCoefficient = CONFIG.HopMovement.HopCoefficient * sprintScale
@@ -832,7 +857,6 @@ local function UpdateMovement(dt, inputState)
         return
     end
 
-    -- HopMovementComponent가 없을 때만 fallback.
     local speed = CONFIG.ControllerInput.MoveSpeed * sprintScale
     Player.pawn.Location = Player.pawn.Location + worldDir * speed * dt
 

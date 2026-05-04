@@ -5,7 +5,9 @@ function BeginPlay()
 end
 
 function OnOverlap(otherActor)
-    if State.IsPlayer(otherActor) then
+    if State.IsGameOver ~= nil
+        and State.IsGameOver()
+        and State.IsPlayer(otherActor) then
         State.RestartRun()
     end
 end

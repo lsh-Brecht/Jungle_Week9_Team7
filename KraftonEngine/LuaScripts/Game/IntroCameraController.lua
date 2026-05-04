@@ -1,5 +1,7 @@
 -- IntroCameraController.lua
 
+local State = require("Game.GameState")
+
 -- UI callback / LuaJIT native crash 방어용.
 -- JIT가 없는 빌드에서는 조용히 무시됩니다.
 if jit ~= nil and jit.off ~= nil then
@@ -88,6 +90,12 @@ local function clear_ui_handler()
         safe_call("UI.ClearEventHandler", function()
             UI.ClearEventHandler()
         end)
+    end
+end
+
+local function hide_game_over_ui()
+    if UI ~= nil and UI.HideGameOver ~= nil then
+        UI.HideGameOver()
     end
 end
 
@@ -257,6 +265,24 @@ local function setup_intro_camera()
     return cam
 end
 
+local function cache_game_camera()
+    if not is_valid(pc) then
+        return
+    end
+
+    local active = pc:GetActiveCamera()
+
+    if is_valid(active) and active ~= introCam then
+        gameCam = active
+        return
+    end
+
+    active = World.GetActiveCamera()
+    if is_valid(active) and active ~= introCam then
+        gameCam = active
+    end
+end
+
 local function init_intro_camera()
     print("[IntroCam] BeginPlay called")
 
@@ -298,9 +324,71 @@ local function init_intro_camera()
 
     -- 인트로 진입은 즉시 인트로 카메라로 고정합니다.
     pc:SetActiveCamera(introCam)
-    World.SetActiveCamera(introCam)
+
+    if World ~= nil and World.SetActiveCamera ~= nil then
+        World.SetActiveCamera(introCam)
+    end
+
+    hide_game_over_ui()
+
+    if UI ~= nil then
+        if UI.ShowHUD ~= nil then
+            UI.ShowHUD(false)
+        end
+
+        if UI.ShowIntro ~= nil then
+            UI.ShowIntro(true)
+        end
+    end
 
     print("[IntroCam] Intro camera activated")
+end
+
+local function reset_to_intro()
+    sweepX = 0.0
+    direction = 1.0
+    bIntroActive = true
+    bStarted = false
+    pendingStart = false
+
+    if not is_valid(pc) then
+        pc = World.GetPlayerController(0)
+        if not is_valid(pc) then
+            pc = World.GetOrCreatePlayerController()
+        end
+    end
+
+    if not is_valid(introCam) then
+        introCam = setup_intro_camera()
+    end
+
+    hide_game_over_ui()
+
+    if UI ~= nil then
+        if UI.ShowHUD ~= nil then
+            UI.ShowHUD(false)
+        end
+
+        if UI.ShowIntro ~= nil then
+            UI.ShowIntro(true)
+        end
+    end
+
+    if is_valid(introCam) then
+        configure_intro_camera(introCam)
+
+        if is_valid(pc) then
+            pc:SetActiveCamera(introCam)
+        end
+
+        if World ~= nil and World.SetActiveCamera ~= nil then
+            World.SetActiveCamera(introCam)
+        end
+    end
+
+    if is_valid(gameCam) then
+        configure_game_camera_transition(gameCam)
+    end
 end
 
 -- =========================================================
@@ -330,9 +418,15 @@ function StartGame()
     end
 
     if not is_valid(gameCam) then
+        cache_game_camera()
+    end
+
+    if not is_valid(gameCam) then
         print("[IntroCam] StartGame failed: gameCam invalid")
         return
     end
+
+    hide_game_over_ui()
 
     -- 중요:
     -- ortho -> perspective를 PlayerCameraManager 블렌드에 맡기지 않습니다.
@@ -352,6 +446,10 @@ function StartGame()
     configure_game_camera_transition(gameCam)
     pc:SetActiveCameraWithBlend(gameCam)
 
+    -- 실제 게임 상태 시작.
+    -- UI.ResetRun / HUD 표시 / 플레이어 이동 활성화는 GameState.StartGame 안에서 처리합니다.
+    State.StartGame()
+
     print("[IntroCam] StartGame: perspective bridge -> game camera blend requested")
 end
 
@@ -359,18 +457,51 @@ end
 -- UI
 -- =========================================================
 
+local function request_start()
+    if bStarted or pendingStart then
+        print("[IntroCam] duplicate start ignored")
+        return
+    end
+
+    -- RmlUi click callback 안에서는 카메라/월드 상태를 바로 바꾸지 않습니다.
+    -- 다음 Tick에서 StartGame을 실행합니다.
+    pendingStart = true
+end
+
 local function handle_ui_event(eventName)
     print("[IntroCam] UI event = " .. tostring(eventName))
 
     if eventName == "start" then
-        if bStarted or pendingStart then
-            print("[IntroCam] duplicate start ignored")
-            return
-        end
+        request_start()
+        return
+    end
 
-        -- RmlUi click callback 안에서는 카메라/월드 상태를 바로 바꾸지 않습니다.
-        -- 다음 Tick에서 StartGame을 실행합니다.
-        pendingStart = true
+    if eventName == "restart" then
+        bStarted = false
+        pendingStart = false
+        bIntroActive = false
+
+        hide_game_over_ui()
+        State.RestartRun()
+        return
+    end
+
+    if eventName == "main_menu" then
+        State.BeginPlay()
+        reset_to_intro()
+        return
+    end
+
+    if eventName == "continue" then
+        if State.UpdateHUD ~= nil then
+            State.UpdateHUD()
+        end
+        return
+    end
+
+    if eventName == "exit" then
+        -- Standalone 종료는 C++ 콜백이 처리합니다.
+        return
     end
 end
 
@@ -415,6 +546,14 @@ function BeginPlay()
 end
 
 function Tick(dt)
+    if bIntroActive and not bStarted and not pendingStart then
+        if Input ~= nil and Input.GetKeyDown ~= nil then
+            if Input.GetKeyDown("ENTER") or Input.GetKeyDown("SPACE") then
+                request_start()
+            end
+        end
+    end
+
     if pendingStart then
         pendingStart = false
         StartGame()

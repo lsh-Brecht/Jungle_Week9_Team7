@@ -26,6 +26,31 @@
 #include "Object/FName.h"
 #include "Profiling/PlatformTime.h"
 
+namespace
+{
+	bool ShouldSerializeActorToScene(AActor* Actor)
+	{
+		if (!Actor)
+		{
+			return false;
+		}
+
+		// 오브젝트 풀 액터는 저장하지 않음
+		if (Actor->IsPooledActor())
+		{
+			return false;
+		}
+
+		// 혹시 태그 방식도 같이 쓸 경우
+		if (Actor->HasTag("__RuntimeSpawned"))
+		{
+			return false;
+		}
+
+		return true;
+	}
+}
+
 // ---- JSON vector helpers ---------------------------------------------------
 
 static void WriteVec3(json::JSON& Obj, const char* Key, const FVector& V)
@@ -350,7 +375,14 @@ json::JSON FSceneSaveManager::SerializeWorld(UWorld* World, const FWorldContext&
 	std::unordered_map<AActor*, string> ActorPrimitiveKey;
 
 	for (AActor* Actor : World->GetActors()) {
-		if (!Actor || !Actor->IsA<AStaticMeshActor>()) continue;
+		if (!ShouldSerializeActorToScene(Actor))
+		{
+			continue;
+		}
+		if (!Actor->IsA<AStaticMeshActor>())
+		{
+			continue;
+		}
 
 		for (UActorComponent* Comp : Actor->GetComponents()) {
 			if (!Comp) continue;
@@ -407,7 +439,10 @@ json::JSON FSceneSaveManager::SerializeWorld(UWorld* World, const FWorldContext&
 	// ---- Actors: serialize and attach PrimitiveKey when present ----
 	JSON Actors = json::Array();
 	for (AActor* Actor : World->GetActors()) {
-		if (!Actor) continue;
+		if (!ShouldSerializeActorToScene(Actor))
+		{
+			continue;
+		}
 		JSON a = SerializeActor(Actor);
 		auto it = ActorPrimitiveKey.find(Actor);
 		if (it != ActorPrimitiveKey.end()) {

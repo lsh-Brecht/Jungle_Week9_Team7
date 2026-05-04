@@ -73,12 +73,7 @@ void UProjectileMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		return;
 	}
 
-	const FVector CurrentLocation = UpdatedSceneComponent->GetWorldLocation();
-	FHitResult HitResult;
-	if (!SafeMoveUpdatedComponent(MoveDelta, &HitResult))
-	{
-		HandleBlockingHit(UpdatedSceneComponent, CurrentLocation, MoveDelta, HitResult);
-	}
+	UpdatedSceneComponent->AddWorldOffset(MoveDelta);
 }
 
 void UProjectileMovementComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
