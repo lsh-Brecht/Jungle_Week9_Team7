@@ -12,6 +12,6 @@
   "RenderPass" : "Opaque",
   "ShaderPath" : "Shaders/Geometry/UberLit.hlsl",
   "Textures" : {
-    "DiffuseTexture" : "../../../../Desktop/grass-obj-usdz-test/source/Mineways2Skfb_obj/Mineways2Skfb-RGBA.png"
+    "DiffuseTexture" : "Data/Floor/Mineways2Skfb-RGBA.png"
   }
 }

@@ -160,7 +160,7 @@
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
             "Dash Duration" : 0.150000,
-            "Dash Speed" : 50.000000,
+            "Dash Speed" : 85.000000,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 6.000000,
             "Hop Height" : 0.150000,
