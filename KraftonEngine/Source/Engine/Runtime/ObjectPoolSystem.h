@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/CoreTypes.h"
 #include "Core/Singleton.h"
@@ -12,7 +12,7 @@ class UWorld;
 struct FPooledClassBucket
 {
 	TArray<AActor*> InactiveActors;
-	int32 MaxPoolSize = 100;
+	int32 MaxPoolSize = 1000;
 };
 
 struct FPoolKey
