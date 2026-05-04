@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Core/CoreTypes.h"
 
@@ -9,14 +9,11 @@ class UCameraComponent;
 class UGameClientEngine;
 class UGameViewportClient;
 class APlayerController;
-struct FInputSystemSnapshot;
-
 class FGameClientViewport
 {
 public:
 	bool Initialize(UGameClientEngine* InEngine, FWindowsWindow* Window, FRenderer& Renderer);
 	void Shutdown();
-	void Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot);
 	void OnWindowResized(uint32 Width, uint32 Height);
 	void BindDebugCamera(UCameraComponent* DebugCamera);
 	void BindPlayerController(APlayerController* PlayerController);

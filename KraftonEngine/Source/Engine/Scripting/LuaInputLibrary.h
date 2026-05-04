@@ -1,12 +1,13 @@
 #pragma once
 
-struct FInputSystemSnapshot;
+struct FInputFrame;
 
 namespace sol { class state; }
 
 class FLuaInputLibrary
 {
 public:
-	static void RegisterInputBinding(sol::state& Lua);
-	static void SetFrameSnapshot(const FInputSystemSnapshot& Snapshot);
+    static void RegisterInputBinding(sol::state& Lua);
+    static void SetCurrentFrame(FInputFrame* InputFrame);
+    static void ClearCurrentFrame();
 };

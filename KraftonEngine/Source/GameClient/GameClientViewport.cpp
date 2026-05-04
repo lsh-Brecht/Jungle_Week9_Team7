@@ -1,8 +1,7 @@
-﻿#include "GameClient/GameClientViewport.h"
+#include "GameClient/GameClientViewport.h"
 
 #include "GameClient/GameClientEngine.h"
 #include "Component/CameraComponent.h"
-#include "Engine/Input/InputSystem.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "Object/ObjectFactory.h"
 #include "Render/Pipeline/Renderer.h"
@@ -72,16 +71,6 @@ void FGameClientViewport::BindPlayerController(APlayerController* PlayerControll
 	{
 		ViewportClient->SetPlayerController(PlayerController);
 	}
-}
-
-void FGameClientViewport::Tick(float DeltaTime, const FInputSystemSnapshot& Snapshot)
-{
-	if (!bInputEnabled || !ViewportClient)
-	{
-		return;
-	}
-
-	ViewportClient->Tick(DeltaTime, Snapshot);
 }
 
 void FGameClientViewport::ReleaseWorldBinding()

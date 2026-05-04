@@ -1,8 +1,10 @@
-﻿#include "Editor/Viewport/EditorViewportClient.h"
+#include "Editor/Viewport/EditorViewportClient.h"
 
 #include "Editor/UI/EditorConsoleWidget.h"
 #include "Editor/Subsystem/OverlayStatSystem.h"
 #include "Editor/Settings/EditorSettings.h"
+#include "Engine/Input/GameplayInputRouter.h"
+#include "Engine/Input/InputFrame.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Profiling/PlatformTime.h"
 #include "Engine/Runtime/WindowsWindow.h"
@@ -146,42 +148,52 @@ void FEditorViewportClient::Tick(float DeltaTime)
 	if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
 	{
 		if (EditorEngine->IsPlayingInEditor())
-		{
-			InputSystem& Input = InputSystem::Get();
-			const FInputSystemSnapshot InputSnapshot = Input.MakeSnapshot();
-			if (InputSnapshot.WasPressed(VK_ESCAPE))
-			{
-				EditorEngine->RequestEndPlayMap();
-				return;
-			}
-			if (InputSnapshot.WasPressed(VK_F8))
-			{
-				EditorEngine->TogglePIEControlMode();
-			}
+        {
+            InputSystem& Input = InputSystem::Get();
+            FInputFrame InputFrame(Input.MakeSnapshot());
+            const FInputSystemSnapshot& InputSnapshot = InputFrame.GetSnapshot();
 
-			if (EditorEngine->IsPIEPossessedMode())
-			{
-				if (UGameViewportClient* GameViewportClient = EditorEngine->GetGameViewportClient())
-				{
-					UWorld* World = EditorEngine->GetWorld();
-					APlayerController* Controller = World ? World->FindOrCreatePlayerController() : nullptr;
-					if (World)
-					{
-						World->AutoWirePlayerController(Controller);
-					}
-					UCameraComponent* GameplayCamera = World ? World->ResolveGameplayViewCamera(Controller) : nullptr;
-					GameViewportClient->SetPlayerController(Controller);
-					GameViewportClient->SetDrivingCamera(GameplayCamera ? GameplayCamera : Camera);
-					GameViewportClient->SetViewport(Viewport);
-					GameViewportClient->ProcessPIEInput(InputSnapshot, DeltaTime);
-					if (World)
-					{
-						World->SetViewCamera(World->ResolveGameplayViewCamera(Controller));
-					}
-				}
-				return;
-			}
-		}
+            if (InputSnapshot.WasPressed(VK_ESCAPE))
+            {
+                EditorEngine->RequestEndPlayMap();
+                return;
+            }
+
+            if (InputSnapshot.WasPressed(VK_F8))
+            {
+                EditorEngine->TogglePIEControlMode();
+                InputFrame.ConsumeKey(VK_F8);
+            }
+
+            if (EditorEngine->IsPIEPossessedMode())
+            {
+                if (UGameViewportClient* GameViewportClient = EditorEngine->GetGameViewportClient())
+                {
+                    UWorld* World = EditorEngine->GetWorld();
+                    APlayerController* Controller = World ? World->FindOrCreatePlayerController() : nullptr;
+                    if (World)
+                    {
+                        World->AutoWirePlayerController(Controller);
+                    }
+                    UCameraComponent* GameplayCamera = World ? World->ResolveGameplayViewCamera(Controller) : nullptr;
+                    GameViewportClient->SetPlayerController(Controller);
+                    GameViewportClient->SetDrivingCamera(GameplayCamera ? GameplayCamera : Camera);
+                    GameViewportClient->SetViewport(Viewport);
+
+                    FGameplayInputRouteContext InputContext;
+                    InputContext.World = World;
+                    InputContext.ViewportClient = GameViewportClient;
+                    InputContext.DeltaTime = DeltaTime;
+                    FGameplayInputRouter::Route(InputFrame, InputContext);
+
+                    if (World)
+                    {
+                        World->SetViewCamera(World->ResolveGameplayViewCamera(Controller));
+                    }
+                }
+                return;
+            }
+        }
 	}
 
 	SyncCameraSmoothingTarget();
