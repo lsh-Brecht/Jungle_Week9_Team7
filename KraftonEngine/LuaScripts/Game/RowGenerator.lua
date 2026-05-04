@@ -16,6 +16,7 @@ local PREFABS = {
     GRASSTILE = "Asset/Prefab/Grass.Prefab",
     ROADTILE = "Asset/Prefab/Road.Prefab",
     RAILWAYTILE = "Asset/Prefab/Road.Prefab",
+    TRAFFIC_BARRIER_B = "Asset/Prefab/TrafficBarrierB.Prefab",
 
     PUBGBOX = "Asset/Prefab/PUBGBOX.Prefab",
     ROCK = "Asset/Prefab/Rock.Prefab",
@@ -87,6 +88,7 @@ function RowGenerator.ConfigureRows()
     if World and World.WarmUpPrefabPool then
         World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
         World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
+        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 100)
 
         World.WarmUpPrefabPool(PREFABS.PUBGBOX, 100)
         World.WarmUpPrefabPool(PREFABS.ROCK, 100)
@@ -138,6 +140,8 @@ function RowGenerator.GenerateRow(rowIndex)
 
     if biomeType == BIOME.GRASS then
         SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
+        SpawnStaticObstacle(rowIndex, -1, PREFABS.TRAFFIC_BARRIER_B)
+        SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.SlotCount, PREFABS.TRAFFIC_BARRIER_B)
     elseif biomeType == BIOME.ROAD then
         SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.ROADTILE)
     elseif biomeType == BIOME.RAILWAY then
