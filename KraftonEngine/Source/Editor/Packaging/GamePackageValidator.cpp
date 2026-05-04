@@ -119,6 +119,13 @@ FGamePackageValidationResult FGamePackageValidator::Validate(
 	RequireFile(PackageRoot, "GamePackage.json", Result);
 	RequireFile(PackageRoot, "d3dcompiler_47.dll", Result);
 	RequireFile(PackageRoot, "lua51.dll", Result);
+	RequireFile(PackageRoot, "sfml-audio-3.dll", Result);
+	RequireFile(PackageRoot, "sfml-system-3.dll", Result);
+	RequireFile(PackageRoot, "sfml-window-3.dll", Result);
+	RequireFile(PackageRoot, "OpenAL32.dll", Result);
+	RequireFile(PackageRoot, "libvorbis.dll", Result);
+	RequireFile(PackageRoot, "libogg-0.dll", Result);
+	RequireFile(PackageRoot, "libsndfile-1.dll", Result);
 
 	RequireFile(PackageRoot, "Settings/Game.ini", Result);
 	RequireFile(PackageRoot, "Settings/Resource.ini", Result);
