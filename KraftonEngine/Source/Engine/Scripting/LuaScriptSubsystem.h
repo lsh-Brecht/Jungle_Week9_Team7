@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_LUAJIT 1
@@ -53,7 +53,7 @@ private:
 	bool ExecuteFileInternal(const FString& Path, bool bTrackAsEntry);
 	bool ExecuteEntryScript(sol::state_view LuaView, const FString& NormalizedPath, TMap<FString, TSet<FString>>& OutScriptIncludes, TMap<FString, FString>& OutModulePaths);
 	bool ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath);
-	bool ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment);
+	bool ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment, sol::object* OutResult = nullptr);
 	bool CompileFile(sol::state_view LuaView, const FString& NormalizedPath);
 	bool ReloadScriptsAtomically(const TSet<FString>& ReloadTargets);
 

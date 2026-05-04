@@ -1,4 +1,4 @@
-#include "LuaScriptSubsystem.h"
+﻿#include "LuaScriptSubsystem.h"
 
 #include "LuaBindings.h"
 #include "LuaHandles.h"
@@ -801,10 +801,10 @@ bool FLuaScriptSubsystem::ExecuteEntryScript(sol::state_view LuaView, const FStr
 
 bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath)
 {
-	return ExecuteScriptFile(LuaView, NormalizedPath, nullptr);
+	return ExecuteScriptFile(LuaView, NormalizedPath, nullptr, nullptr);
 }
 
-bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment)
+bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FString& NormalizedPath, sol::environment* Environment, sol::object* OutResult)
 {
 	const FString AbsolutePath = MakeAbsoluteScriptPath(NormalizedPath);
 	if (AbsolutePath.empty())
@@ -819,6 +819,7 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 		UE_LOG("[Lua] Lua File Execution Error (%s): Cannot open file", NormalizedPath.c_str());
 		return false;
 	}
+
 	const std::string Content((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
 
 	sol::load_result LoadResult = LuaView.load_buffer(Content.data(), Content.size(), "@" + AbsolutePath);
@@ -842,6 +843,18 @@ bool FLuaScriptSubsystem::ExecuteScriptFile(sol::state_view LuaView, const FStri
 		sol::error Error = Result;
 		UE_LOG("[Lua] Lua File Execution Error (%s): %s", NormalizedPath.c_str(), Error.what());
 		return false;
+	}
+
+	if (OutResult)
+	{
+		if (Result.return_count() > 0)
+		{
+			*OutResult = Result[0].get<sol::object>();
+		}
+		else
+		{
+			*OutResult = sol::make_object(LuaView, true);
+		}
 	}
 
 	return true;
@@ -1138,18 +1151,13 @@ sol::object FLuaScriptSubsystem::RequireModule(const FString& ModuleName, sol::t
 	TMap<FString, FString>& ActiveModulePaths = GetActiveModulePaths();
 	ActiveModulePaths[ModuleName] = NormalizedPath;
 
-	if (!CompileFile(LuaView, NormalizedPath) || !ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr))
+	sol::object Result;
+	// 실행 성공 여부를 bool로 체크하고, 결과값은 Result에 담아옵니다.
+	if (!ExecuteScriptFile(LuaView, NormalizedPath, Environment.valid() ? &Environment : nullptr, &Result))
 	{
 		return sol::nil;
 	}
 
-	sol::object LoadedModule = Loaded[ModuleName];
-	if (LoadedModule.valid() && LoadedModule.get_type() != sol::type::nil)
-	{
-		return LoadedModule;
-	}
-
-	sol::object Result = sol::make_object(LuaView, true);
 	Loaded[ModuleName] = Result;
 	return Result;
 }

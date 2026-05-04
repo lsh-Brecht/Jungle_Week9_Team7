@@ -40,5 +40,6 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterWorldExtendedBinding(Lua);
 	RegisterInputBinding(Lua);
 	RegisterDelegateBinding(Lua);
+	RegisterRowManagerBinding(Lua);
 	RegisterUiBinding(Lua);
 }
