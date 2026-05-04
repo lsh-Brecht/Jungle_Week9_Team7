@@ -141,6 +141,8 @@ local Player = {
     pawnMovementComponent = nil,
     orientation = nil,
 
+    parryComp = nil,
+
     frame = 0,
 
     yaw = 0.0,
@@ -150,7 +152,10 @@ local Player = {
     printedMove = false,
 
     -- Dash 에지 판정용 (직전 프레임의 MOUSE2 상태)
-    prevMouse2 = false
+    prevMouse2 = false,
+
+    -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
+    prevMouse1 = false
 }
 
 local function Log(msg)
@@ -344,23 +349,29 @@ if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
         }
     end
  
-    -- MOUSE2 현재 상태 (레벨). 가드된 헬퍼만 사용.
+    -- Dash 에지 판정용 (직전 프레임의 MOUSE2 상태)
     local mouse2Now = GetKey("MOUSE2")
-
-    -- Dash 에지 판정:
-    --   1순위: 엔진의 GetKeyDown이 실제로 동작하면 그것을 사용
-    --   2순위(폴백): Lua 자체에서 이전 프레임 상태와 비교해 상승 에지를 검출
-    -- 한 번 호출 = 한 번 대시 보장을 Lua 측에서 책임집니다.
-    local engineEdge = GetKeyDown("MOUSE2")
-    local manualEdge = mouse2Now and (not Player.prevMouse2)
-    local dashEdge = engineEdge or manualEdge
+    local engineEdge2 = GetKeyDown("MOUSE2")
+    local manualEdge2 = mouse2Now and (not Player.prevMouse2)
+    local dashEdge = engineEdge2 or manualEdge2
 
     if dashEdge then
         Log("!!! MOUSE2 EDGE DETECTED !!!")
     end
 
-    -- 다음 프레임 비교용으로 저장
     Player.prevMouse2 = mouse2Now
+
+    -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
+    local mouse1Now = GetKey("MOUSE1")
+    local engineEdge1 = GetKeyDown("MOUSE1")
+    local manualEdge1 = mouse1Now and (not Player.prevMouse1)
+    local parryEdge = engineEdge1 or manualEdge1
+
+    if parryEdge then
+        Log("!!! MOUSE1 EDGE DETECTED (PARRY) !!!")
+    end
+
+    Player.prevMouse1 = mouse1Now
 
     local state = {
         W = GetKey("W") or GetKey("w"),
@@ -368,10 +379,11 @@ if Input ~= nil and Input.IsGuiUsingMouse ~= nil then
         S = GetKey("S") or GetKey("s"),
         D = GetKey("D") or GetKey("d"),
         SHIFT = GetKey("SHIFT") or GetKey("LSHIFT"),
-        Dash = dashEdge
+        Dash = dashEdge,
+        Parry = parryEdge
     }
 
-    state.any = state.W or state.A or state.S or state.D or state.Dash
+    state.any = state.W or state.A or state.S or state.D or state.Dash or state.Parry
 
     state.signature =
         "W=" .. BoolStr(state.W) ..
@@ -486,6 +498,18 @@ local function SetupPawnMovementComponents()
         Log("[PAWN] UPawnOrientationComponent 설정 완료")
     else
         Log("[PAWN_WARN] UPawnOrientationComponent를 얻지 못했습니다.")
+    end
+end
+
+local function SetupCombatComponents()
+    if Player.ownerObject.Parry ~= nil then
+        Player.parryComp = Player.ownerObject.Parry
+    end
+
+    if IsValidHandle(Player.parryComp) then
+        Log("[PAWN] ParryComponent 획득 성공")
+    else
+        Log("[PAWN_WARN] ParryComponent를 얻지 못했습니다. (패링 불가)")
     end
 end
 
@@ -692,6 +716,7 @@ local function Bootstrap()
     end
 
     SetupPawnMovementComponents()
+    SetupCombatComponents()
 
     if not SetupController() then
         return false
@@ -817,6 +842,15 @@ local function UpdateMovement(dt, inputState)
     end
 end
 
+local function UpdateCombat(inputState)
+    if inputState.Parry then
+        if IsValidHandle(Player.parryComp) then
+            Player.parryComp:Parry()
+            Log("[Player.lua] Parry Triggered!")
+        end
+    end
+end
+
 function BeginPlay()
     Bootstrap()
 end
@@ -839,6 +873,7 @@ function OnInput(deltaTime)
 
     UpdateLook(dt)
     UpdateMovement(dt, inputState)
+    UpdateCombat(inputState)
 
     -- 여기서 매 프레임 SetActiveCamera를 다시 호출하지 않습니다.
     -- PlayerController:SetActiveCamera()는 ControlRotation을 카메라 회전으로 덮어쓸 수 있어서

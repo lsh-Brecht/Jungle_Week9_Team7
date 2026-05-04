@@ -14,7 +14,7 @@
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
@@ -199,6 +199,19 @@
             "Min Facing Speed" : 1.000000,
             "Rotation Speed" : 720.000000,
             "Yaw Only" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UParryComponent",
+          "Properties" : {
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -1332,7 +1345,7 @@
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 37.728325, -5.450865]
+    "Rotation" : [0.000000, 26.778360, 7.749015]
   },
   "Primitives" : {
     "102" : {

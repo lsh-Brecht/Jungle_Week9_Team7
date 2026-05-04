@@ -70,6 +70,12 @@ void UBoxComponent::Serialize(FArchive& Ar)
 	Ar << BoxExtent;
 }
 
+void UBoxComponent::OnParry()
+{
+	UPrimitiveComponent::OnParry();
+	SetGenerateOverlapEvents(true);
+}
+
 void UBoxComponent::DrawDebugShape(FScene& Scene, const FColor& Color) const
 {
 	const FMatrix& WorldMatrix = GetWorldMatrix();

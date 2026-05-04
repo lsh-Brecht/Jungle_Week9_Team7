@@ -32,6 +32,7 @@
 #include "Component/Movement/InterpToMovementComponent.h"
 #include "Component/Movement/RotatingMovementComponent.h"
 #include "Component/Movement/HopMovementComponent.h"
+#include "Component/ParryComponent.h"
 
 #ifndef LUA_ENABLE_DEBUG_UUID_LOOKUP
 #define LUA_ENABLE_DEBUG_UUID_LOOKUP 0
@@ -373,6 +374,18 @@ void RegisterGameObjectBinding(sol::state& Lua)
 			"HopMovement",
 			FLuaHopMovementComponentHandle,
 			UHopMovementComponent
+		),
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"Parry",
+			FLuaParryComponentHandle,
+			UParryComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddParry",
+			FLuaParryComponentHandle,
+			UParryComponent
 		),
 
 		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
