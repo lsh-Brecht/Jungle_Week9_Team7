@@ -4,12 +4,13 @@
 #include "GameClient/GameClientPackageValidator.h"
 #include "Core/Notification.h"
 #include "Engine/Platform/Paths.h"
+#include "Engine/Input/GameplayInputRouter.h"
+#include "Engine/Input/InputFrame.h"
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/World.h"
-#include "Scripting/LuaInputLibrary.h"
 
 IMPLEMENT_CLASS(UGameClientEngine, UEngine)
 
@@ -175,15 +176,19 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 
 void UGameClientEngine::TickInGame(float DeltaTime)
 {
-	const FInputSystemSnapshot Snapshot = InputSystem::Get().MakeSnapshot();
-	FLuaInputLibrary::SetFrameSnapshot(Snapshot);
+    FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
-	GameViewport.Tick(DeltaTime, Snapshot);
+    FGameplayInputRouteContext InputContext;
+    InputContext.World = GetWorld();
+    InputContext.ViewportClient = GameViewport.GetViewportClient();
+    InputContext.DeltaTime = DeltaTime;
 
-	TaskScheduler.Tick(DeltaTime);
-	WorldTick(DeltaTime);
+    FGameplayInputRouter::Route(InputFrame, InputContext);
 
-	CameraManager.SyncWorldViewCamera();
+    TaskScheduler.Tick(DeltaTime);
+    WorldTick(DeltaTime);
+
+    CameraManager.SyncWorldViewCamera();
 }
 
 void UGameClientEngine::ProcessPendingCommands()

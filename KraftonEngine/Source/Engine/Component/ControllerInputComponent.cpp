@@ -4,7 +4,7 @@
 #include "Component/CameraComponent.h"
 #include "Component/Movement/MovementComponent.h"
 #include "Component/PawnOrientationComponent.h"
-#include "Engine/Input/InputSystem.h"
+#include "Engine/Input/InputFrame.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/AActor.h"
 #include "Math/MathUtils.h"
@@ -157,110 +157,113 @@ void UControllerInputComponent::PostEditProperty(const char* PropertyName)
 	}
 }
 
-bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
 	// Look must be applied before movement so W/A/S/D uses the camera/control yaw from
 	// the same frame. Applying movement first made movement and pawn facing lag behind
 	// when the mouse was moved while holding a movement key.
-	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, DeltaTime, Snapshot);
-	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, Snapshot);
+	const bool bLooked = ApplyLookInput(Controller, FallbackCamera, DeltaTime, InputFrame);
+	const bool bMoved = ApplyMovementInput(Controller, FallbackCamera, DeltaTime, InputFrame);
 	return bMoved || bLooked;
 }
 
-bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
-	if (Snapshot.bGuiUsingKeyboard || Snapshot.bGuiUsingTextInput)
-	{
-		RecordNoControllerMovement(Controller, DeltaTime);
-		return false;
-	}
+    if (InputFrame.IsMovementConsumed())
+    {
+        RecordNoControllerMovement(Controller, DeltaTime);
+        return false;
+    }
 
-	FVector MoveInput(0.0f, 0.0f, 0.0f);
-	if (Snapshot.IsDown('W')) MoveInput.X += 1.0f;
-	if (Snapshot.IsDown('S')) MoveInput.X -= 1.0f;
-	if (Snapshot.IsDown('A')) MoveInput.Y -= 1.0f;
-	if (Snapshot.IsDown('D')) MoveInput.Y += 1.0f;
-	if (Snapshot.IsDown('E') || Snapshot.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
-	if (Snapshot.IsDown('Q') || Snapshot.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
+    FVector MoveInput(0.0f, 0.0f, 0.0f);
+    if (InputFrame.IsDown('W')) MoveInput.X += 1.0f;
+    if (InputFrame.IsDown('S')) MoveInput.X -= 1.0f;
+    if (InputFrame.IsDown('A')) MoveInput.Y -= 1.0f;
+    if (InputFrame.IsDown('D')) MoveInput.Y += 1.0f;
+    if (InputFrame.IsDown('E') || InputFrame.IsDown(VK_SPACE)) MoveInput.Z += 1.0f;
+    if (InputFrame.IsDown('Q') || InputFrame.IsDown(VK_CONTROL)) MoveInput.Z -= 1.0f;
 
-	if (MoveInput.IsNearlyZero())
-	{
-		RecordNoControllerMovement(Controller, DeltaTime);
-		return false;
-	}
-	const FVector LocalInput = MoveInput.Normalized();
+    if (MoveInput.IsNearlyZero())
+    {
+        RecordNoControllerMovement(Controller, DeltaTime);
+        return false;
+    }
+    const FVector LocalInput = MoveInput.Normalized();
 
-	UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
-	FVector MoveForward = FVector::ForwardVector;
-	FVector MoveRight = FVector::RightVector;
+    UCameraComponent* TargetCamera = ResolveTargetCamera(Controller, FallbackCamera);
+    FVector MoveForward = FVector::ForwardVector;
+    FVector MoveRight = FVector::RightVector;
 
-	if (GetMovementFrame() == EControllerMovementFrame::ControlRotation && Controller)
-	{
-		FRotator BasisRotation = Controller->GetControlRotation();
-		BasisRotation.Pitch = 0.0f;
-		BasisRotation.Roll = 0.0f;
-		MoveForward = BasisRotation.GetForwardVector();
-		MoveRight = BasisRotation.GetRightVector();
-	}
-	else if (GetMovementFrame() == EControllerMovementFrame::ViewCamera && TargetCamera)
-	{
-		UCameraComponent* ActiveCamera = Controller ? Controller->GetActiveCamera() : nullptr;
-		const bool bCameraUsesControlYaw = Controller
-			&& ActiveCamera
-			&& ActiveCamera->GetViewMode() == ECameraViewMode::ThirdPerson
-			&& ActiveCamera->UsesControlRotationYaw();
+    if (GetMovementFrame() == EControllerMovementFrame::ControlRotation && Controller)
+    {
+        FRotator BasisRotation = Controller->GetControlRotation();
+        BasisRotation.Pitch = 0.0f;
+        BasisRotation.Roll = 0.0f;
+        MoveForward = BasisRotation.GetForwardVector();
+        MoveRight = BasisRotation.GetRightVector();
+    }
+    else if (GetMovementFrame() == EControllerMovementFrame::ViewCamera && TargetCamera)
+    {
+        UCameraComponent* ActiveCamera = Controller ? Controller->GetActiveCamera() : nullptr;
+        const bool bCameraUsesControlYaw = Controller
+            && ActiveCamera
+            && ActiveCamera->GetViewMode() == ECameraViewMode::ThirdPerson
+            && ActiveCamera->UsesControlRotationYaw();
 
-		if (bCameraUsesControlYaw)
-		{
-			FRotator BasisRotation = Controller->GetControlRotation();
-			BasisRotation.Pitch = 0.0f;
-			BasisRotation.Roll = 0.0f;
-			MoveForward = BasisRotation.GetForwardVector();
-			MoveRight = BasisRotation.GetRightVector();
-		}
-		else
-		{
-			MoveForward = TargetCamera->GetForwardVector();
-			MoveRight = TargetCamera->GetRightVector();
-			MoveForward.Z = 0.0f;
-			MoveRight.Z = 0.0f;
-		}
-	}
+        if (bCameraUsesControlYaw)
+        {
+            FRotator BasisRotation = Controller->GetControlRotation();
+            BasisRotation.Pitch = 0.0f;
+            BasisRotation.Roll = 0.0f;
+            MoveForward = BasisRotation.GetForwardVector();
+            MoveRight = BasisRotation.GetRightVector();
+        }
+        else
+        {
+            MoveForward = TargetCamera->GetForwardVector();
+            MoveRight = TargetCamera->GetRightVector();
+            MoveForward.Z = 0.0f;
+            MoveRight.Z = 0.0f;
+        }
+    }
 
-	MoveForward = !MoveForward.IsNearlyZero() ? MoveForward.Normalized() : FVector::ForwardVector;
-	MoveRight = !MoveRight.IsNearlyZero() ? MoveRight.Normalized() : FVector::RightVector;
+    MoveForward = !MoveForward.IsNearlyZero() ? MoveForward.Normalized() : FVector::ForwardVector;
+    MoveRight = !MoveRight.IsNearlyZero() ? MoveRight.Normalized() : FVector::RightVector;
 
-	const float SafeDeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
-	const float SpeedBoost = Snapshot.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
-	FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
-	WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
-	return Controller
-		? Controller->AddMovementInput(WorldDirection, MoveSpeed * SpeedBoost * SafeDeltaTime, SafeDeltaTime)
-		: false;
+    const float SafeDeltaTime = (DeltaTime > 0.0f) ? DeltaTime : (1.0f / 60.0f);
+    const float SpeedBoost = InputFrame.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
+    FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
+    WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
+    return Controller
+        ? Controller->AddMovementInput(WorldDirection, MoveSpeed * SpeedBoost * SafeDeltaTime, SafeDeltaTime)
+        : false;
 }
 
-bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, const FInputSystemSnapshot& Snapshot)
+bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)
 {
-	if (Snapshot.bGuiUsingMouse || (Snapshot.MouseDeltaX == 0 && Snapshot.MouseDeltaY == 0))
-	{
-		return false;
-	}
+    const int MouseDeltaX = InputFrame.GetMouseDeltaX();
+    const int MouseDeltaY = InputFrame.GetMouseDeltaY();
+    if (InputFrame.IsLookConsumed() || (MouseDeltaX == 0 && MouseDeltaY == 0))
+    {
+        return false;
+    }
 
-	(void)FallbackCamera;
-	if (!Controller)
-	{
-		return false;
-	}
+    (void)FallbackCamera;
+    (void)DeltaTime;
 
-	Controller->AddYawInput(static_cast<float>(Snapshot.MouseDeltaX) * LookSensitivity);
-	Controller->AddPitchInput(static_cast<float>(Snapshot.MouseDeltaY) * LookSensitivity);
+    if (!Controller)
+    {
+        return false;
+    }
 
-	FRotator Rotation = Controller->GetControlRotation();
-	Rotation.Pitch = Clamp(Rotation.Pitch, MinPitch, MaxPitch);
-	Rotation.Roll = 0.0f;
-	Controller->SetControlRotation(Rotation);
-	RefreshControlRotationFacing(Controller, DeltaTime);
-	return true;
+    Controller->AddYawInput(static_cast<float>(MouseDeltaX) * LookSensitivity);
+    Controller->AddPitchInput(static_cast<float>(MouseDeltaY) * LookSensitivity);
+    FRotator Rotation = Controller->GetControlRotation();
+    Rotation.Pitch = Clamp(Rotation.Pitch, MinPitch, MaxPitch);
+    Rotation.Roll = 0.0f;
+    Controller->SetControlRotation(Rotation);
+    RefreshControlRotationFacing(Controller, DeltaTime);
+    return true;
 }
 
 void UControllerInputComponent::SetMovementFrame(EControllerMovementFrame InFrame)
