@@ -1,4 +1,4 @@
-#include "Editor/Viewport/EditorViewportClient.h"
+﻿#include "Editor/Viewport/EditorViewportClient.h"
 
 #include "Editor/UI/EditorConsoleWidget.h"
 #include "Editor/Subsystem/OverlayStatSystem.h"
@@ -153,21 +153,28 @@ void FEditorViewportClient::Tick(float DeltaTime)
 	if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
 	{
 		if (EditorEngine->IsPlayingInEditor())
-        {
-            const FInputSystemSnapshot& RawInput = InputFrame.GetRawSnapshotForGlobalShortcuts();
+		{
+			const FInputSystemSnapshot& RawInput = InputFrame.GetRawSnapshotForGlobalShortcuts();
 
-            if (RawInput.WasPressed(VK_ESCAPE))
-            {
-                EditorEngine->RequestEndPlayMap();
-                InputFrame.ConsumeKey(VK_ESCAPE, "EditorGlobalShortcut", "Exit PIE");
-                return;
-            }
+			static bool bF8ToggleLock = false;
+			if (!RawInput.KeyDown[VK_F8])
+			{
+				bF8ToggleLock = false;
+			}
 
-            if (RawInput.WasPressed(VK_F8))
-            {
-                EditorEngine->TogglePIEControlMode();
-                InputFrame.ConsumeKey(VK_F8, "EditorGlobalShortcut", "Toggle PIE possess mode");
-            }
+			if (RawInput.WasPressed(VK_ESCAPE))
+			{
+				EditorEngine->RequestEndPlayMap();
+				InputFrame.ConsumeKey(VK_ESCAPE, "EditorGlobalShortcut", "Exit PIE");
+				return;
+			}
+
+			if (RawInput.WasPressed(VK_F8) && !bF8ToggleLock)
+			{
+				bF8ToggleLock = true;
+				EditorEngine->TogglePIEControlMode();
+				InputFrame.ConsumeKey(VK_F8, "EditorGlobalShortcut", "Toggle PIE possess mode");
+			}
 
             if (EditorEngine->IsPIEPossessedMode())
             {

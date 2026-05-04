@@ -244,9 +244,23 @@ bool UControllerInputComponent::ApplyMovementInput(APlayerController* Controller
     const float SpeedBoost = InputFrame.IsDown(VK_SHIFT) ? SprintMultiplier : 1.0f;
     FVector WorldDirection = MoveForward * LocalInput.X + MoveRight * LocalInput.Y + FVector::UpVector * LocalInput.Z;
     WorldDirection = !WorldDirection.IsNearlyZero() ? WorldDirection.Normalized() : FVector::ZeroVector;
-    return Controller
-        ? Controller->AddMovementInput(WorldDirection, MoveSpeed * SpeedBoost * SafeDeltaTime, SafeDeltaTime)
-        : false;
+
+    if (!Controller || WorldDirection.IsNearlyZero())
+    {
+        RecordNoControllerMovement(Controller, DeltaTime);
+        return false;
+    }
+
+    FControllerMovementInput MovementInput;
+    MovementInput.LocalInput = LocalInput;
+    MovementInput.WorldDirection = WorldDirection;
+    MovementInput.WorldDelta = WorldDirection * MoveSpeed * SpeedBoost * SafeDeltaTime;
+    MovementInput.MovementForward = MoveForward;
+    MovementInput.MovementRight = MoveRight;
+    MovementInput.DeltaTime = SafeDeltaTime;
+    MovementInput.MoveSpeed = MoveSpeed;
+    MovementInput.SpeedMultiplier = SpeedBoost;
+    return Controller->ApplyControllerMovementInput(MovementInput);
 }
 
 bool UControllerInputComponent::ApplyLookInput(APlayerController* Controller, UCameraComponent* FallbackCamera, float DeltaTime, FInputFrame& InputFrame)

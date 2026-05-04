@@ -351,8 +351,20 @@ bool APlayerController::AddMovementInput(const FVector& WorldDirection, float Sc
 	Input.WorldDirection = WorldDirection.Normalized();
 	Input.LocalInput = Input.WorldDirection;
 	Input.WorldDelta = Input.WorldDirection * Scale;
+	Input.MovementForward = Input.WorldDirection;
+	Input.MovementRight = FVector(-Input.WorldDirection.Y, Input.WorldDirection.X, 0.0f);
 	Input.SpeedMultiplier = Scale;
 	Input.DeltaTime = DeltaTime;
+	return ApplyControllerMovementInput(Input);
+}
+
+bool APlayerController::ApplyControllerMovementInput(const FControllerMovementInput& Input)
+{
+	AActor* Actor = GetPossessedActor();
+	if (!Actor || Input.WorldDirection.IsNearlyZero() || Input.WorldDelta.IsNearlyZero())
+	{
+		return false;
+	}
 
 	if (UMovementComponent* Movement = FindControllerDrivenMovementComponent(Actor))
 	{
@@ -361,7 +373,7 @@ bool APlayerController::AddMovementInput(const FVector& WorldDirection, float Sc
 
 	if (APawn* Pawn = Cast<APawn>(Actor))
 	{
-		Pawn->AddMovementInput(WorldDirection, Scale);
+		Pawn->AddMovementInput(Input.WorldDirection, Input.WorldDelta.Length());
 		return true;
 	}
 

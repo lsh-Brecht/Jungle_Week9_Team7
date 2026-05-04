@@ -26,6 +26,7 @@ public:
 	void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction) override;
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
 	void Serialize(FArchive& Ar) override;
+	void PostEditProperty(const char* PropertyName) override;
 	void ContributeSelectedVisuals(FScene& Scene) const override;
 
 	// ---------------------------------------------------------------------
@@ -98,6 +99,11 @@ protected:
 	FVector ConsumeFrameMovementInput();
 	float GetEffectiveMoveSpeed() const;
 	void RemoveAppliedHopOffset();
+	void CaptureGameplayPlane();
+	void LockUpdatedComponentToGameplayPlane();
+	bool ResolveVisualHopComponent(bool bResetBaseLocation = false);
+	USceneComponent* FindFallbackVisualHopComponent() const;
+	void ApplyVisualHopOffset(float NewHopOffset);
 
 	// Persistent/direct input. Input layer may set this every frame and clear it on release.
 	FVector MovementInput = FVector(0.0f, 0.0f, 0.0f);
@@ -125,6 +131,14 @@ protected:
 	float HopElapsedTime = 0.0f;
 	float AppliedHopOffset = 0.0f;
 	bool bSimulating = true;
+	float LockedGameplayPlaneZ = 0.0f;
+	bool bHasLockedGameplayPlaneZ = false;
+	USceneComponent* PlaneLockedComponent = nullptr;
+
+	FString VisualHopComponentPath;
+	USceneComponent* VisualHopComponent = nullptr;
+	FVector VisualHopBaseRelativeLocation = FVector::ZeroVector;
+	bool bHasVisualHopBaseRelativeLocation = false;
 
 	// Dash 설정. 에디터에서 튜닝.
 	float DashSpeed = 150.0f;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
@@ -11,6 +11,7 @@ class FArchive;
 class UActorComponent;
 class UCameraComponent;
 class UControllerInputComponent;
+struct FControllerMovementInput;
 
 class APlayerController : public AActor
 {
@@ -49,6 +50,7 @@ public:
 	void AddYawInput(float Value);
 	void AddPitchInput(float Value);
 	bool AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f, float DeltaTime = 0.0f);
+	bool ApplyControllerMovementInput(const FControllerMovementInput& Input);
 
 private:
 	UCameraComponent* FindCameraOnActor(AActor* Target) const;

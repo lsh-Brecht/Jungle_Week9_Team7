@@ -45,7 +45,9 @@ local CONFIG = {
         HopOnlyWhenMoving = true,
         ResetHopWhenIdle = true,
         Simulating = true,
-        ControllerInputPriority = 10
+        ControllerInputPriority = 10,
+        UpdatedComponent = "Root",
+        VisualHopComponent = "Root/0"
     },
 
     PawnMovement = {
@@ -446,7 +448,8 @@ local function SetupPawnMovementComponents()
         hopGeneric.TickEnabled = true
         SafeSetProperty(hopGeneric, "bTickEnable", true)
         SafeSetProperty(hopGeneric, "Auto Register Updated", true)
-        SafeSetProperty(hopGeneric, "Updated Component", "")
+        SafeSetProperty(hopGeneric, "Updated Component", CONFIG.HopMovement.UpdatedComponent)
+        SafeSetProperty(hopGeneric, "Visual Hop Component", CONFIG.HopMovement.VisualHopComponent)
         SafeSetProperty(hopGeneric, "Receive Controller Input", true)
         SafeSetProperty(hopGeneric, "Controller Input Priority", CONFIG.HopMovement.ControllerInputPriority)
     end
@@ -461,7 +464,7 @@ local function SetupPawnMovementComponents()
         SafeSetProperty(Player.pawnMovementComponent, "bTickEnable", true)
         SafeSetProperty(Player.pawnMovementComponent, "Auto Register Updated", true)
         SafeSetProperty(Player.pawnMovementComponent, "Updated Component", "")
-        SafeSetProperty(Player.pawnMovementComponent, "Receive Controller Input", true)
+        SafeSetProperty(Player.pawnMovementComponent, "Receive Controller Input", false)
         SafeSetProperty(Player.pawnMovementComponent, "Controller Input Priority", CONFIG.PawnMovement.ControllerInputPriority)
 
         Log("[PAWN] UPawnMovementComponent 설정 완료")

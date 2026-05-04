@@ -126,6 +126,14 @@ FGamePackageValidationResult FGamePackageValidator::Validate(
 	RequireFile(PackageRoot, "libvorbis.dll", Result);
 	RequireFile(PackageRoot, "libogg-0.dll", Result);
 	RequireFile(PackageRoot, "libsndfile-1.dll", Result);
+	RequireFile(PackageRoot, "rmlui.dll", Result);
+	RequireFile(PackageRoot, "freetype.dll", Result);
+	RequireFile(PackageRoot, "z.dll", Result);
+	RequireFile(PackageRoot, "libpng16.dll", Result);
+	RequireFile(PackageRoot, "bz2.dll", Result);
+	RequireFile(PackageRoot, "brotlicommon.dll", Result);
+	RequireFile(PackageRoot, "brotlidec.dll", Result);
+	RequireFile(PackageRoot, "brotlienc.dll", Result);
 
 	RequireFile(PackageRoot, "Settings/Game.ini", Result);
 	RequireFile(PackageRoot, "Settings/Resource.ini", Result);

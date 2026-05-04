@@ -387,6 +387,30 @@ bool FGamePackageBuilder::CopyRuntimeDependencies(const FEditorPackageSettings& 
 		}
 	}
 
+	const wchar_t* RmlUiDlls[] = {
+		L"rmlui.dll",
+		L"freetype.dll",
+		L"z.dll",
+		L"libpng16.dll",
+		L"bz2.dll",
+		L"brotlicommon.dll",
+		L"brotlidec.dll",
+		L"brotlienc.dll",
+	};
+	for (const wchar_t* DllName : RmlUiDlls)
+	{
+		const std::filesystem::path DllPath = FindRuntimeDll(DllName, ClientSearchDirectories);
+		if (DllPath.empty())
+		{
+			OutError = "Missing runtime dependency: " + ToUtf8Path(std::filesystem::path(DllName));
+			return false;
+		}
+		if (!CopyFileChecked(DllPath, PackageRootPath(Settings) / DllName, OutError))
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
 
