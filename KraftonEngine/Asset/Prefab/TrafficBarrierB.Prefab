@@ -1,7 +1,7 @@
 {
   "Name" : "TrafficBarrierB",
   "RootActor" : {
-    "ActorUUID" : 150,
+    "ActorUUID" : 23557,
     "ClassName" : "AActor",
     "NonSceneComponents" : [],
     "RootComponent" : {
@@ -14,7 +14,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [-0.004103, -0.001059, 0.398582],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 90.000000, 0.000000],
             "Scale" : [0.631491, 1.942770, 0.812024],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -30,8 +30,8 @@
           "Path" : "Asset/Materials/Auto/weathered_concrete_barriers.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [27.772596, -18.630491, -0.400000],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
+        "Location" : [1.543525, 2.407899, 1.005149],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [1.000000, 1.000000, 1.000000],
         "Static Mesh" : "Data/Obstacles/ObstacleB.obj",
         "Two Sided Shadow" : false,
@@ -40,6 +40,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : [],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",
