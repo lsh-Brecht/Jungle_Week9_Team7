@@ -13,6 +13,10 @@ local BIOME_NAME = {
 }
 
 local PREFABS = {
+    GRASSTILE = "Asset/Prefab/Grass.Prefab",
+    ROADTILE = "Asset/Prefab/Road.Prefab",
+    RAILWAYTILE = "Asset/Prefab/Road.Prefab",
+
     TREE1 = "Asset/Prefab/TreeA.Prefab",
     TREE2 = "Asset/Prefab/TreeB.Prefab",
     ROCK = "Asset/Prefab/BasicCube.Prefab",
@@ -22,12 +26,13 @@ local PREFABS = {
     CARB = "Asset/Prefab/CarB.Prefab",
     CARC = "Asset/Prefab/CarC.Prefab",
     CARD = "Asset/Prefab/CarD.Prefab",
+    MiniBus = "Asset/Prefab/MiniBus.Prefab",
 
     TRAIN = "Asset/Prefab/BasicCube.Prefab" -- Train 프리팹이 없다면 대체
 }
 
 RowGenerator.MapConfig = {
-    SlotCount = 9,
+    SlotCount = 15,
     SlotSize = 2.0,
     RowDepth = 2.0
 }
@@ -38,9 +43,9 @@ local LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
 -- 2. 가중치 테이블 설정
 -- 지형의 가중치
 local BiomeWeights = {
-    { type = BIOME.GRASS, weight = 50 },   -- 50%
-    { type = BIOME.ROAD, weight = 35 },    -- 35%
-    { type = BIOME.RAILWAY, weight = 15 }  -- 15%
+    { type = BIOME.GRASS,   weight = 40 },   -- 50%
+    { type = BIOME.ROAD,    weight = 60 },    -- 35%
+    { type = BIOME.RAILWAY, weight = 0 }  -- 15%
 }
 
 -- 장애물별 등장 가중치 설정 (합이 꼭 100일 필요는 없어)
@@ -57,13 +62,17 @@ local VehicleWeights = {
     { type = PREFABS.CARB, weight = 20 },
     { type = PREFABS.CARC, weight = 20 },
     { type = PREFABS.CARD, weight = 20 },
+    { type = PREFABS.MiniBus, weight = 20 }
 }
 
 function RowGenerator.ConfigureRows()
     SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
-    SetRowBufferCounts(15, 15)
+    SetRowBufferCounts(8, 8)
 
     if World and World.WarmUpPrefabPool then
+        World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
+        World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
+
         World.WarmUpPrefabPool(PREFABS.TREE1, 100)
         World.WarmUpPrefabPool(PREFABS.TREE2, 100)
         -- World.WarmUpPrefabPool(PREFABS.CARA, 30)
@@ -99,10 +108,19 @@ end
 function RowGenerator.GenerateRow(rowIndex)
     -- 1. 지형 결정 (Markov Chain)
     local biome = ChooseWeighted(BiomeWeights)
-    -- local biomeType = biome.type
-    local biomeType = BIOME.GRASS
+    local biomeType = biome.type
     SetRowBiome(rowIndex, biomeType)
     print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
+
+    for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
+        if biomeType == BIOME.GRASS then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.GRASSTILE)
+        elseif biomeType == BIOME.ROAD then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.ROADTILE)
+        elseif biomeType == BIOME.RAILWAY then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.RAILWAYTILE)
+        end
+    end
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
     local nextSafeSlot = LastSafeSlot + math.random(-1, 1)
@@ -113,7 +131,7 @@ function RowGenerator.GenerateRow(rowIndex)
         local obstacleChance = RowGenerator.GetObstacleChance(rowIndex)
         
         for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
-            if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰[cite: 9]
+            if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰
                 if math.random() < obstacleChance then
                     -- 가중치에 따라 확률적으로 장애물 프리팹을 선택
                     local obstacle = ChooseWeighted(ObstacleWeights)

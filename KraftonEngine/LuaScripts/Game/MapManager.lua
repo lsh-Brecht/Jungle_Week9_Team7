@@ -8,7 +8,7 @@ local MapManager = {
     playerPawn = nil,
 
     RowDepth = RowGenerator.MapConfig.RowDepth,        -- FRowRuntimeConfig의 RowDepth와 동일 (전진 방향 한 칸의 크기)
-    PreloadRows = 30,        -- 플레이어 앞에 미리 생성해 둘 칸의 수
+    PreloadRows = 40,        -- 플레이어 앞에 미리 생성해 둘 칸의 수
     CurrentPlayerRow = 0,    -- 플레이어가 현재 밟고 있는 칸의 인덱스
     HighestGeneratedRow = -1 -- 지금까지 생성된 가장 먼 칸의 인덱스
 }
