@@ -78,8 +78,8 @@ local CONFIG = {
         Location = Vec(0.0, 0.0, 0.0),
         Rotation = Rot(0.0, 0.0, 0.0),
 
-        AspectRatio = 1.777778,
-        FOVRadians = 1.047198,
+        AspectRatio = 1.2222,
+        FOVRadians = 1.77777,
         NearZ = 0.1,
         FarZ = 1000.0,
         Orthographic = false,

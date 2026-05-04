@@ -11,7 +11,7 @@
           "Braking Deceleration" : 4096.000000,
           "Controller Input Priority" : 10,
           "Dash Duration" : 0.150000,
-          "Dash Speed" : 50.000000,
+          "Dash Speed" : 85.000000,
           "Hop Coefficient" : 1.000000,
           "Hop Frequency" : 6.000000,
           "Hop Height" : 0.150000,
@@ -42,13 +42,6 @@
           "bTickEnable" : true
         }
       }, {
-        "ClassName" : "ULuaScriptComponent",
-        "Properties" : {
-          "ScriptPath" : "Game/Player.lua",
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      }, {
         "ClassName" : "UPawnOrientationComponent",
         "Properties" : {
           "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
@@ -63,13 +56,27 @@
       }, {
         "ClassName" : "ULuaScriptComponent",
         "Properties" : {
-          "ScriptPath" : "Game/Player.lua",
+          "ScriptPath" : "Game/IntroCameraController.lua",
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }, {
+        "ClassName" : "ULuaScriptComponent",
+        "Properties" : {
+          "ScriptPath" : "Game/GameManager.lua",
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
       }, {
         "ClassName" : "UParryComponent",
         "Properties" : {
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }, {
+        "ClassName" : "ULuaScriptComponent",
+        "Properties" : {
+          "ScriptPath" : "Game/Player.lua",
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
@@ -101,7 +108,7 @@
         "Box Extent" : [0.500000, 0.300000, 0.500000],
         "Cast Shadow" : true,
         "Generate Overlap Events" : true,
-        "Location" : [0.000000, 0.501545, -0.251383],
+        "Location" : [0.000000, 0.501545, 0.300000],
         "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [0.402405, 0.402405, 0.402405],
         "Two Sided Shadow" : false,
@@ -110,6 +117,7 @@
         "bTickEnable" : true
       }
     },
+    "Tags" : [],
     "bVisible" : true
   },
   "Type" : "ActorPrefab",
