@@ -124,7 +124,7 @@ function Tick(deltaTime)
                 local vehicle = SpawnDynamicVehicle(spawner.RowIndex, spawner.Prefab, spawner.Speed, spawner.DirY)
                 if vehicle then
                     -- 차량의 수명을 화면 너비 / 속도로 계산해서 배열에 담기
-                    local lifeTime = 100.0 / spawner.Speed
+                    local lifeTime = 100000000.0 / spawner.Speed
                     table.insert(MapManager.ActiveVehicles, {
                         Vehicle = vehicle,
                         Timer = lifeTime

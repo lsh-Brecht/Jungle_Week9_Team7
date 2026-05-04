@@ -20,13 +20,15 @@ local PREFABS = {
     TREE1 = "Asset/Prefab/TreeA.Prefab",
     TREE2 = "Asset/Prefab/TreeB.Prefab",
     PUBGBOX = "Asset/Prefab/PUBGBOX.Prefab",
-
-    RacingCar = "Asset/Prefab/RacingCar.Prefab",
+    
     CARA = "Asset/Prefab/CarA.Prefab",
     CARB = "Asset/Prefab/CarB.Prefab",
     CARC = "Asset/Prefab/CarC.Prefab",
     CARD = "Asset/Prefab/CarD.Prefab",
-    MiniBus = "Asset/Prefab/MiniBus.Prefab",
+    MINIBUS = "Asset/Prefab/MiniBus.Prefab",
+    FIRECAR = "Asset/Prefab/FireCar.Prefab",
+    POLICECAR = "Asset/Prefab/PoliceCar.Prefab",
+    RACINGCAR = "Asset/Prefab/RacingCar.Prefab",
 
     TRAIN = "Asset/Prefab/BasicCube.Prefab" -- Train 프리팹이 없다면 대체
 }
@@ -58,12 +60,14 @@ local ObstacleWeights = {
 
 -- 차량 등장 확률 (가중치)
 local VehicleWeights = {
-    { type = PREFABS.RacingCar, weight = 30 },
-    { type = PREFABS.CARA, weight = 10 },
-    { type = PREFABS.CARB, weight = 10 },
-    { type = PREFABS.CARC, weight = 10 },
-    { type = PREFABS.CARD, weight = 10 },
-    { type = PREFABS.MiniBus, weight = 30 }
+    { type = PREFABS.CARA,      weight = 5 },
+    { type = PREFABS.CARB,      weight = 5 },
+    { type = PREFABS.CARC,      weight = 5 },
+    { type = PREFABS.CARD,      weight = 5 },
+    { type = PREFABS.MINIBUS,   weight = 20 },
+    { type = PREFABS.FIRECAR,   weight = 20 },
+    { type = PREFABS.POLICECAR, weight = 20 },
+    { type = PREFABS.RacingCar, weight = 20 },
 }
 
 function RowGenerator.ConfigureRows()
@@ -82,7 +86,7 @@ function RowGenerator.ConfigureRows()
         World.WarmUpPrefabPool(PREFABS.CARA, 100)
         World.WarmUpPrefabPool(PREFABS.CARB, 100)
         World.WarmUpPrefabPool(PREFABS.CARC, 100)
-        World.WarmUpPrefabPool(PREFABS.MiniBus, 100)
+        World.WarmUpPrefabPool(PREFABS.MINIBUS, 100)
     end
 end
 
@@ -157,18 +161,18 @@ function RowGenerator.GenerateRow(rowIndex)
         local interval = 0
 
         -- 2. 뽑힌 차량의 종류에 따라 속도와 스폰 주기를 다르게 세팅
-        if selectedVehicle.type == PREFABS.RacingCar then
-            -- 스포츠카: 매우 빠른 속도, 짧은 간격
+        if selectedVehicle.type == PREFABS.RACINGCAR or selectedVehicle.type == PREFABS.POLICECAR then
+            -- 스포츠카, 경찰차: 매우 빠른 속도, 짧은 간격
             speed = 10.0 + (rowIndex * 0.05)
             interval = math.max(4.0, 10.0 - (rowIndex * 0.015))
 
-        elseif selectedVehicle.type == PREFABS.MiniBus then
-            -- 버스: 느린 속도, 넓은 간격
+        elseif selectedVehicle.type == PREFABS.MINIBUS or selectedVehicle.type == PREFABS.FIRECAR then
+            -- 버스, 소방차: 느린 속도, 넓은 간격
             speed = 1.25 + (rowIndex * 0.008)
             interval = math.max(2.0, 10.0 - (rowIndex * 0.03))
 
         else
-            -- 승용차: 표준 속도, 표준 간격
+            -- 승용차 (CAR A, B, C, D): 표준 속도, 표준 간격
             speed = 2.5 + (rowIndex * 0.016)
             interval = math.max(1.0, 10.0 - (rowIndex * 0.06))
         end
