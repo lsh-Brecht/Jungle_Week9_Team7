@@ -42,6 +42,67 @@
       },
       "bVisible" : true
     }, {
+      "ActorUUID" : 179,
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "179",
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [3.000000, 3.000000, 2.000000],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UStaticMeshComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Cast Shadow" : true,
+              "Element 0" : {
+                "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+              },
+              "Generate Overlap Events" : true,
+              "Location" : [0.000000, 0.000000, 1.020537],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [4.000000, 4.000000, 0.400000],
+              "Static Mesh" : "Data/BasicShape/Sphere.OBJ",
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Blocks Movement" : true,
+          "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
+          },
+          "Generate Overlap Events" : true,
+          "Location" : [4.248634, -9.135523, -0.500001],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [0.200000, 0.200000, 2.000000],
+          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
+          "Two Sided Shadow" : false,
+          "Visible" : true,
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
       "ActorUUID" : 105,
       "ClassName" : "ADirectionalLightActor",
       "NonSceneComponents" : [],
@@ -99,8 +160,8 @@
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
             "Hop Coefficient" : 1.000000,
-            "Hop Frequency" : 4.000000,
-            "Hop Height" : 0.300000,
+            "Hop Frequency" : 6.000000,
+            "Hop Height" : 0.150000,
             "Hop Only When Moving" : true,
             "Initial Speed" : 10.000000,
             "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
@@ -130,7 +191,7 @@
           "ClassName" : "UPawnOrientationComponent",
           "Properties" : {
             "Custom Facing Direction" : [1.000000, 0.000000, 0.000000],
-            "Facing Mode" : 1,
+            "Facing Mode" : 2,
             "Min Facing Input Size" : 0.010000,
             "Min Facing Speed" : 1.000000,
             "Rotation Speed" : 720.000000,
@@ -165,9 +226,9 @@
             "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [0.000000, 0.000000, 0.700000],
+          "Location" : [0.000000, 0.000000, -0.166396],
           "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Scale" : [0.402405, 0.402405, 0.402405],
           "Static Mesh" : "Data/Chicken/Chicken.obj",
           "Two Sided Shadow" : false,
           "Visible" : true,
@@ -225,7 +286,7 @@
         "ClassName" : "UCameraComponent",
         "Properties" : {
           "Aspect Ratio" : 1.777778,
-          "Back Distance" : 5.000000,
+          "Back Distance" : 2.000000,
           "Blend FOV" : true,
           "Blend Function" : 3,
           "Blend Location" : true,
@@ -235,7 +296,7 @@
           "Blend Time" : 0.350000,
           "Enable Look Ahead" : false,
           "Enable Smoothing" : true,
-          "Eye Height" : 1.600000,
+          "Eye Height" : 0.500000,
           "FOV" : 1.047198,
           "FOV Lag Speed" : 10.000000,
           "Far Z" : 1000.000000,
@@ -243,8 +304,8 @@
           "Follow Offset" : [0.000000, 0.000000, 0.000000],
           "Follow Subject Auto" : true,
           "Follow Target" : 0,
-          "Height" : 2.000000,
-          "Location" : [1.347203, -2.598638, -0.500000],
+          "Height" : 1.000000,
+          "Location" : [0.000000, 0.000000, 0.000000],
           "Location Lag Speed" : 12.000000,
           "Look Ahead Distance" : 1.000000,
           "Look Ahead Lag Speed" : 8.000000,
@@ -263,69 +324,8 @@
           "Vertical Dead Zone" : 0.400000,
           "Vertical Follow Strength" : 0.150000,
           "Vertical Lag Speed" : 2.000000,
-          "View Mode" : 0,
+          "View Mode" : 2,
           "View Offset" : [-5.000000, 5.000000, 5.000000],
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ActorUUID" : 179,
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [],
-      "PrimitiveKey" : "179",
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UBoxComponent",
-            "Properties" : {
-              "Blocks Movement" : true,
-              "Box Extent" : [0.500000, 0.500000, 0.500000],
-              "Cast Shadow" : true,
-              "Generate Overlap Events" : true,
-              "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [3.000000, 3.000000, 2.000000],
-              "Two Sided Shadow" : false,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }, {
-            "Children" : [],
-            "ClassName" : "UStaticMeshComponent",
-            "Properties" : {
-              "Blocks Movement" : true,
-              "Cast Shadow" : true,
-              "Element 0" : {
-                "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
-              },
-              "Generate Overlap Events" : true,
-              "Location" : [0.000000, 0.000000, 1.020537],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [4.000000, 4.000000, 0.400000],
-              "Static Mesh" : "Data/BasicShape/Sphere.OBJ",
-              "Two Sided Shadow" : false,
-              "Visible" : true,
-              "bEditorOnly" : false,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Blocks Movement" : true,
-          "Cast Shadow" : true,
-          "Element 0" : {
-            "Path" : "Asset/Materials/Auto/BasicShapeMaterial.mat"
-          },
-          "Generate Overlap Events" : true,
-          "Location" : [4.248634, -9.135523, -0.500001],
-          "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [0.200000, 0.200000, 2.000000],
-          "Static Mesh" : "Data/BasicShape/Cube.OBJ",
-          "Two Sided Shadow" : false,
-          "Visible" : true,
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
@@ -1052,11 +1052,11 @@
     "AspectRatio" : 1.847861,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-7.885139, 0.246277, 6.401345],
+    "Location" : [-7.871683, -1.595828, 3.869203],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 17.478531, -1.099829]
+    "Rotation" : [0.000000, 18.078621, 6.549789]
   },
   "Primitives" : {
     "102" : {
