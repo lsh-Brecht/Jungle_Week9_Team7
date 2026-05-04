@@ -79,7 +79,6 @@ protected:
 	FTimer* Timer = nullptr;
 
 	UGameViewportClient* GameViewportClient = nullptr;
-	FSoundManager SoundManager;
 	FRenderer Renderer;
 	FTaskScheduler TaskScheduler;
 

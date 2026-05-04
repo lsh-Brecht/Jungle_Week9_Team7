@@ -97,12 +97,16 @@
             "Acceleration" : 2048.000000,
             "Auto Register Updated" : true,
             "Braking Deceleration" : 4096.000000,
+            "Controller Input Priority" : 10,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 4.000000,
             "Hop Height" : 0.300000,
             "Hop Only When Moving" : true,
             "Initial Speed" : 10.000000,
+            "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+            "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
             "Max Speed" : 15.000000,
+            "Receive Controller Input" : true,
             "Reset Hop When Idle" : true,
             "Simulating" : true,
             "Updated Component" : "",
@@ -114,7 +118,18 @@
           "ClassName" : "UPawnMovementComponent",
           "Properties" : {
             "Auto Register Updated" : true,
+            "Controller Input Priority" : 0,
+            "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+            "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
+            "Receive Controller Input" : true,
             "Updated Component" : "",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -145,7 +160,7 @@
             "Path" : "Asset/Materials/Auto/ChickenBaseColor.mat"
           },
           "Generate Overlap Events" : true,
-          "Location" : [0.000000, 0.000000, 0.700000],
+          "Location" : [0.000000, 0.501545, 0.275351],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "Data/Chicken/Chicken.obj",
@@ -162,18 +177,20 @@
       "NonSceneComponents" : [{
           "ClassName" : "UControllerInputComponent",
           "Properties" : {
-            "Look Mode" : 0,
             "Look Sensitivity" : 0.080000,
             "Max Pitch" : 89.000000,
             "Min Pitch" : -89.000000,
             "Move Speed" : 10.000000,
-            "Movement Frame" : 1,
-            "PossessedActorUUID" : 108,
+            "Movement Basis" : 1,
             "Sprint Multiplier" : 2.500000,
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
         }],
+      "PlayerController" : {
+        "ControlRotation" : [0.000000, 0.000000, 0.000000],
+        "PossessedActorUUID" : 108
+      },
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UStaticMeshComponent",
@@ -195,44 +212,52 @@
     }, {
       "ActorUUID" : 115,
       "ClassName" : "ACameraActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "UCameraRigComponent",
-          "Properties" : {
-            "Enable Mouse LookAhead" : true,
-            "Far Z" : 200.000000,
-            "LookAhead Lag Speed" : 8.000000,
-            "Mouse LookAhead Distance" : 1.000000,
-            "Near Z" : 0.010000,
-            "Orthographic View Offset" : [-3.000000, 3.000000, 3.000000],
-            "Orthographic Width" : 12.000000,
-            "Perspective Back Distance" : 5.000000,
-            "Perspective FOV" : 1.047198,
-            "Perspective Height" : 3.000000,
-            "Perspective Side Offset" : 0.000000,
-            "Position Lag Speed" : 6.000000,
-            "Snap On Projection Change" : false,
-            "Stabilize Vertical In Orthographic" : true,
-            "Target Offset" : [0.000000, 0.000000, 0.800000],
-            "Vertical Dead Zone" : 0.400000,
-            "Vertical Follow Strength" : 0.150000,
-            "Vertical Lag Speed" : 2.000000,
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
+      "NonSceneComponents" : [],
       "RootComponent" : {
         "Children" : [],
         "ClassName" : "UCameraComponent",
         "Properties" : {
           "Aspect Ratio" : 1.777778,
+          "Back Distance" : 5.000000,
+          "Blend FOV" : true,
+          "Blend Function" : 3,
+          "Blend Location" : true,
+          "Blend Near/Far" : false,
+          "Blend Ortho Width" : true,
+          "Blend Rotation" : true,
+          "Blend Time" : 0.350000,
+          "Enable Look Ahead" : false,
+          "Enable Smoothing" : true,
+          "Eye Height" : 1.600000,
           "FOV" : 1.047198,
+          "FOV Lag Speed" : 10.000000,
           "Far Z" : 1000.000000,
-          "Location" : [1.347203, -2.598638, -0.500000],
+          "First Person Use Control Rotation" : true,
+          "Follow Offset" : [0.000000, 0.000000, 0.000000],
+          "Follow Subject Auto" : true,
+          "Follow Target" : 0,
+          "Height" : 2.000000,
+          "Location" : [1.347203, -3.362533, -0.500000],
+          "Location Lag Speed" : 12.000000,
+          "Look Ahead Distance" : 1.000000,
+          "Look Ahead Lag Speed" : 8.000000,
           "Near Z" : 0.100000,
           "Ortho Width" : 10.000000,
+          "Ortho Width Lag Speed" : 10.000000,
           "Orthographic" : false,
+          "Projection Switch Mode" : 1,
           "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Rotation Lag Speed" : 12.000000,
           "Scale" : [1.000000, 1.000000, 1.000000],
+          "Side Offset" : 0.000000,
+          "Stabilize Vertical In Orthographic" : true,
+          "Use Control Rotation Yaw" : true,
+          "Use Target Forward" : true,
+          "Vertical Dead Zone" : 0.400000,
+          "Vertical Follow Strength" : 0.150000,
+          "Vertical Lag Speed" : 2.000000,
+          "View Mode" : 0,
+          "View Offset" : [-5.000000, 5.000000, 5.000000],
           "bEditorOnly" : false,
           "bTickEnable" : true
         }
@@ -452,11 +477,11 @@
     "AspectRatio" : 1.847861,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-28.128033, -2.116618, 11.742407],
+    "Location" : [-5.006969, 1.508234, 5.424420],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 16.128969, -0.501709]
+    "Rotation" : [-0.000000, 38.082428, 1.448395]
   },
   "Primitives" : {
     "102" : {
