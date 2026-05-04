@@ -31,7 +31,7 @@ public:
 			[&Delegate, Instance,OwnerUUID]() {
 
 				if(UObjectManager::Get().FindByUUID(OwnerUUID))
-				Delegate.RemoveAllByInstance(Instance->GetUUID());
+				Delegate.RemoveAllByInstance(Instance->GetUUID()); 
 			}
 });
 		return ID;  // 보관해두면 부분 해제 가능

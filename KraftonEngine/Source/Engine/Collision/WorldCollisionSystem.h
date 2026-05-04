@@ -71,6 +71,10 @@ public:
 	{
 		WorldCollisionBVH.CollectDebugAABBs(OutAABBs, bIncludeFatBounds);
 	}
+	void QueryAABB(const FBoundingBox& QueryBounds, TArray<UPrimitiveComponent*>& OutCandidates) const
+	{
+		WorldCollisionBVH.QueryAABB(QueryBounds, OutCandidates);
+	}
 
 	const TSet<FOverlapPairKey>& GetCurrentOverlaps() const { return CurrentOverlapPairs; }
 
