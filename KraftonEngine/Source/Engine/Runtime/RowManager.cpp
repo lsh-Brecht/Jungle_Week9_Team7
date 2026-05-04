@@ -6,24 +6,48 @@
 
 #include <algorithm>
 
-void FRowData::ClearActors()
-{
-    for (FStaticObstacleData& Obstacle : StaticObstacles)
-    {
-        if (Obstacle.SpawnedActor)
-        {
-            FObjectPoolSystem::Get().ReleaseActor(Obstacle.SpawnedActor);
-            Obstacle.SpawnedActor = nullptr;
-        }
-    }
-    StaticObstacles.clear();
+#include "GameFramework/World.h"
 
-	for (AActor* DynActor : DynamicActors)
+void FRowData::ClearActors(bool bDestroyActors)
+{
+	auto ClearOneActor = [bDestroyActors](AActor*& Actor)
 	{
-		if (DynActor)
+		if (!Actor || !IsAliveObject(Actor))
 		{
-			FObjectPoolSystem::Get().ReleaseActor(DynActor);
+			Actor = nullptr;
+			return;
 		}
+
+		UWorld* World = Actor->GetWorld();
+
+		if (bDestroyActors)
+		{
+			if (World)
+			{
+				World->DestroyActor(Actor);
+			}
+			else
+			{
+				UObjectManager::Get().DestroyObject(Actor);
+			}
+		}
+		else
+		{
+			FObjectPoolSystem::Get().ReleaseActor(Actor);
+		}
+
+		Actor = nullptr;
+	};
+
+	for (FStaticObstacleData& Obstacle : StaticObstacles)
+	{
+		ClearOneActor(Obstacle.SpawnedActor);
+	}
+	StaticObstacles.clear();
+
+	for (AActor*& DynActor : DynamicActors)
+	{
+		ClearOneActor(DynActor);
 	}
 	DynamicActors.clear();
 }
@@ -33,11 +57,11 @@ void FRowManager::Initialize()
     ActiveRows.clear();
 }
 
-void FRowManager::Shutdown()
+void FRowManager::Shutdown(bool bDestroyActors)
 {
 	for (FRowData& Row : ActiveRows)
 	{
-		Row.ClearActors();
+		Row.ClearActors(bDestroyActors);
 	}
 	ActiveRows.clear();
 }
@@ -111,6 +135,11 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
     if (World)
     {
         Obstacle.SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, PrefabPath, SpawnLocation, SpawnRotation);
+
+        if (Obstacle.SpawnedActor)
+        {
+	        Obstacle.SpawnedActor->AddTag("__RuntimeSpawned");
+        }
     }
 
     Row.StaticObstacles.push_back(Obstacle);
@@ -141,6 +170,8 @@ AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPa
 
 	if (SpawnedActor)
 	{
+		SpawnedActor->AddTag("__RuntimeSpawned");
+		
 		Row.DynamicActors.push_back(SpawnedActor);
 		for (UActorComponent* Comp : SpawnedActor->GetComponents())
 		{
