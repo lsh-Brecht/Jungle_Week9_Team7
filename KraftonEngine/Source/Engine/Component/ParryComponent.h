@@ -20,7 +20,7 @@ public:
 
 private:
 	bool bIsParrying = false;
-	float ParryDuration = 0.5f;
+	float ParryDuration = 0.3f;
 	float CurrentParryTime = 0.0f;
 	FVector OriginalScale = { 1.0f , 1.0f , 1.0f };
 	USceneComponent* ScaleTarget = nullptr;

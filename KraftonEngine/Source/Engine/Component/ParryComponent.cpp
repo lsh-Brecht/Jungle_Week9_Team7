@@ -3,7 +3,7 @@
 #include "Component/PrimitiveComponent.h"
 #include "Component/Collision/BoxComponent.h"
 #include "Component/SceneComponent.h"
-
+#include "Sound/SoundManager.h"
 IMPLEMENT_CLASS(UParryComponent, UActorComponent)
 
 void UParryComponent::BeginPlay()
@@ -12,18 +12,37 @@ void UParryComponent::BeginPlay()
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
+	ParryDelegate.Add(
+		[]()
+		{
+			FSoundManager::Get().PlayEffect(SoundEffect::Parry);
+		}
+	);
+
+	// Find the best ScaleTarget (prefer BoxComponent)
 	for (UActorComponent* Comp : Owner->GetComponents())
 	{
 		if (UBoxComponent* Box = Cast<UBoxComponent>(Comp))
 		{
+			ScaleTarget = Box;
+			break;
+		}
+		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
+		{
 			if (!ScaleTarget)
 			{
-				ScaleTarget = Box;
-				OriginalScale = Box->GetRelativeScale();
+				ScaleTarget = Prim;
 			}
+		}
+	}
+
+	if (ScaleTarget)
+	{
+		if (UBoxComponent* Box = Cast<UBoxComponent>(ScaleTarget))
+		{
 			ParryDelegate.AddDynamic(Box, &UBoxComponent::OnParry);
 		}
-		else if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
+		else if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(ScaleTarget))
 		{
 			ParryDelegate.AddDynamic(Prim, &UPrimitiveComponent::OnParry);
 		}
@@ -50,5 +69,11 @@ void UParryComponent::Parry()
 	if (bIsParrying) return;
 	bIsParrying = true;
 	CurrentParryTime = 0.f;
+
+	if (ScaleTarget)
+	{
+		OriginalScale = ScaleTarget->GetRelativeScale();
+	}
+
 	ParryDelegate.BroadCast();
 }
