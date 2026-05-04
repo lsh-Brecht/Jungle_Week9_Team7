@@ -534,6 +534,11 @@ void FGameUiSystem::SetStatusText(const FString& Text)
 	SetElementTextAny("status-text", Text.c_str());
 }
 
+void FGameUiSystem::SetTopScoresText(const FString& Text)
+{
+	SetElementTextAny("top-scores-value", Text.c_str());
+}
+
 void FGameUiSystem::ShowGameOver(int32 FinalScore, int32 BestScore)
 {
 	const int32 SafeFinalScore = std::max(0, FinalScore);

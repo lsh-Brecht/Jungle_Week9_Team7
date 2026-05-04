@@ -31,6 +31,7 @@ State.Config = State.Config or {}
 State.Mode = State.Mode or "Boot"
 State.Score = State.Score or 0
 State.BestScore = State.BestScore or 0
+State.TopScores = State.TopScores or {}
 State.StartScoreRow = State.StartScoreRow or 0
 State.Elapsed = State.Elapsed or 0.0
 State.bInitialized = State.bInitialized or false
@@ -269,29 +270,90 @@ local function hide_game_over_ui()
     end
 end
 
-local function load_best_score()
+local function normalize_top_scores(scores)
+    local normalized = {}
+
+    if type(scores) == "table" then
+        for _, value in ipairs(scores) do
+            local score = math.max(0, math.floor(value or 0))
+            if score > 0 then
+                normalized[#normalized + 1] = score
+            end
+        end
+    end
+
+    table.sort(normalized, function(a, b)
+        return a > b
+    end)
+
+    while #normalized > 5 do
+        table.remove(normalized)
+    end
+
+    return normalized
+end
+
+local function sync_best_score_from_top_scores()
+    State.BestScore = math.max(State.BestScore or 0, State.TopScores[1] or 0)
+end
+
+local function format_top_scores()
+    if #State.TopScores == 0 then
+        return "기록 없음"
+    end
+
+    local lines = {}
+    for i = 1, 5 do
+        local score = State.TopScores[i]
+        if score ~= nil then
+            lines[#lines + 1] = tostring(i) .. ". " .. tostring(score)
+        else
+            lines[#lines + 1] = tostring(i) .. ". -"
+        end
+    end
+    return table.concat(lines, "<br/>")
+end
+
+local function load_top_scores()
     if State.bBestScoreLoaded then
         return
     end
 
     State.bBestScoreLoaded = true
 
-    if SaveGame ~= nil and SaveGame.LoadBestScore ~= nil then
-        local loaded = SaveGame.LoadBestScore()
-        loaded = math.max(0, math.floor(loaded or 0))
-        if loaded > (State.BestScore or 0) then
-            State.BestScore = loaded
+    if SaveGame ~= nil and SaveGame.LoadTopScores ~= nil then
+        State.TopScores = normalize_top_scores(SaveGame.LoadTopScores())
+        sync_best_score_from_top_scores()
+        print("[Score] Loaded top scores. Best = " .. tostring(State.BestScore or 0))
+    elseif SaveGame ~= nil and SaveGame.LoadBestScore ~= nil then
+        local loaded = math.max(0, math.floor(SaveGame.LoadBestScore() or 0))
+        if loaded > 0 then
+            State.TopScores = { loaded }
         end
-        print("[Score] Loaded best score = " .. tostring(State.BestScore or 0))
+        sync_best_score_from_top_scores()
+        print("[Score] Loaded legacy best score = " .. tostring(State.BestScore or 0))
     else
-        print("[Score] SaveGame binding is not available. Best score will not persist.")
+        print("[Score] SaveGame binding is not available. Scores will not persist.")
     end
 end
 
-local function save_best_score()
-    if SaveGame ~= nil and SaveGame.SaveBestScore ~= nil then
+local function save_top_scores()
+    if SaveGame ~= nil and SaveGame.SaveTopScores ~= nil then
+        SaveGame.SaveTopScores(State.TopScores or {})
+    elseif SaveGame ~= nil and SaveGame.SaveBestScore ~= nil then
         SaveGame.SaveBestScore(State.BestScore or 0)
     end
+end
+
+local function record_final_score(score)
+    local finalScore = math.max(0, math.floor(score or 0))
+    if finalScore > 0 then
+        State.TopScores[#State.TopScores + 1] = finalScore
+    end
+
+    State.TopScores = normalize_top_scores(State.TopScores)
+    sync_best_score_from_top_scores()
+    save_top_scores()
 end
 
 local function push_score_to_ui()
@@ -306,6 +368,10 @@ local function push_score_to_ui()
     if UI.SetBestScore ~= nil then
         UI.SetBestScore(State.BestScore or 0)
     end
+
+    if UI.SetTopScoresText ~= nil then
+        UI.SetTopScoresText(format_top_scores())
+    end
 end
 
 local function build_credit_text(reason)
@@ -317,6 +383,15 @@ local function build_credit_text(reason)
     lines[#lines + 1] = "Score: " .. tostring(State.Score or 0)
     lines[#lines + 1] = "Best: " .. tostring(State.BestScore or 0)
     lines[#lines + 1] = "Time: " .. format_time(State.Elapsed or 0.0)
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Top 5"
+    if #State.TopScores == 0 then
+        lines[#lines + 1] = "- 기록 없음"
+    else
+        for i = 1, math.min(5, #State.TopScores) do
+            lines[#lines + 1] = tostring(i) .. ". " .. tostring(State.TopScores[i])
+        end
+    end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "Credits"
 
@@ -491,6 +566,7 @@ function State.BeginPlay()
     State.bUIReady = false
     State.Configure(State.Config)
     State.RefreshReferences()
+    load_top_scores()
 
     if State.Config.StartLocation == nil then
         local player = State.GetPlayer()
@@ -638,7 +714,7 @@ function State.GameOver(reason)
 
     State.SetPlayerMovementEnabled(false)
     State.SetMenuObjectsVisible(true)
-    save_best_score()
+    record_final_score(State.Score or 0)
 
     local credits = build_credit_text(reason or "Defeat")
     if not set_text(State.CachedCreditsText, credits, true) then
@@ -669,7 +745,6 @@ function State.SetScore(value)
 
     if State.Score > (State.BestScore or 0) then
         State.BestScore = State.Score
-        save_best_score()
     end
 
     push_score_to_ui()

@@ -221,4 +221,13 @@ void RegisterUiBinding(sol::state& Lua)
 				GameUi.SetStatusText(FString(Text));
 			});
 		});
+
+	UI.set_function("SetTopScoresText",
+		[](const std::string& Text)
+		{
+			WithGameUi("UI.SetTopScoresText", [&Text](FGameUiSystem& GameUi)
+			{
+				GameUi.SetTopScoresText(FString(Text));
+			});
+		});
 }

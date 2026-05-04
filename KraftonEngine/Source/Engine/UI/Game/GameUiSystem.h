@@ -74,6 +74,7 @@ public:
 	void SetLane(int32 Lane);
 	void SetCombo(int32 Combo);
 	void SetStatusText(const FString& Text);
+	void SetTopScoresText(const FString& Text);
 	void ShowGameOver(int32 FinalScore, int32 BestScore);
 	void HideGameOver();
 	void ResetRunUi();
