@@ -1,4 +1,5 @@
 local State = require("Game.GameState")
+print("[GM] GameManager.lua loaded")
 
 local Config = {
     PlayerName = "Player",
@@ -7,7 +8,7 @@ local Config = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
-    AutoStart = false,
+    AutoStart = true,
     Creators = {
         "KraftonEngine Team 7",
         "Programmer: replace this name",

@@ -210,6 +210,7 @@ bool UGameClientEngine::RestartGame()
 {
 	CameraManager.ClearWorldBinding();
 	GameViewport.ReleaseWorldBinding();
+	FRowManager::Get().Shutdown();
 
 	if (!Session.Restart())
 	{

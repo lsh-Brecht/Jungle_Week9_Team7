@@ -5,13 +5,10 @@
 </head>
 <body>
     <div id="intro-root" class="screen-root">
-        <div class="soft-overlay-top"></div>
-        <div class="soft-overlay-bottom"></div>
-
         <div id="intro-panel" class="glass-panel">
-            <div class="panel-eyebrow">Team 7</div>
-            <div id="game-title">마당을 나온 치킨</div>
-            <div id="game-subtitle">오늘 저녁은 치킨이닭!</div>
+            <div class="panel-eyebrow">VOXEL ARCADE</div>
+            <div id="game-title">복셸 어드벤처</div>
+            <div id="game-subtitle">배경이 살아 있는 채로, 단정하고 여백 있는 타이틀 화면</div>
 
             <div id="intro-main-panel">
                 <div id="ui-start" class="menu-button primary">플레이</div>
@@ -26,6 +23,9 @@
                 <div id="ui-intro-back" class="menu-button slim">뒤로</div>
             </div>
         </div>
+
+        <div id="intro-soft-top" class="soft-overlay-top"></div>
+        <div id="intro-soft-bottom" class="soft-overlay-bottom"></div>
     </div>
 </body>
 </rml>

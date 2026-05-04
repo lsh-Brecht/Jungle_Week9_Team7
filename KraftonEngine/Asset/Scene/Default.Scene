@@ -1171,43 +1171,6 @@
       "Tags" : ["Vehicle"],
       "bVisible" : true
     }, {
-      "ActorUUID" : 522,
-      "ClassName" : "AActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/GameManager.lua",
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }, {
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/GameState.lua",
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
-      "RootComponent" : {
-        "Children" : [],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Blocks Movement" : true,
-          "Cast Shadow" : true,
-          "Generate Overlap Events" : true,
-          "Location" : [1.270294, 3.408593, 8.415577],
-          "Rotation" : [0.000000, 0.000000, 0.000000],
-          "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "None",
-          "Two Sided Shadow" : false,
-          "Visible" : true,
-          "bEditorOnly" : false,
-          "bTickEnable" : true
-        }
-      },
-      "Tags" : [],
-      "bVisible" : true
-    }, {
       "ActorUUID" : 374,
       "ClassName" : "AActor",
       "NonSceneComponents" : [],
@@ -1289,7 +1252,7 @@
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [-0.000000, 37.578331, -5.450864]
+    "Rotation" : [-0.000001, 37.578331, -5.450863]
   },
   "Primitives" : {
     "102" : {
