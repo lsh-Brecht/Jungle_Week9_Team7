@@ -35,8 +35,8 @@ RowGenerator.MapConfig = {
     SlotCount = 15,
     SlotSize = 2.0,
     RowDepth = 2.0,
-    KeepRowsBehind = 10,
-    KeepRowsAhead = 10
+    KeepRowsBehind = 25,
+    KeepRowsAhead = 25
 }
 RowGenerator.MapConfig.MaxSlotIndex = RowGenerator.MapConfig.SlotCount - 1
 
@@ -78,12 +78,11 @@ function RowGenerator.ConfigureRows()
         World.WarmUpPrefabPool(PREFABS.TREE2, 100)
         World.WarmUpPrefabPool(PREFABS.PUBGBOX, 100)
 
-        World.WarmUpPrefabPool(PREFABS.RacingCar, 10)
-        World.WarmUpPrefabPool(PREFABS.CARA, 10)
-        World.WarmUpPrefabPool(PREFABS.CARB, 10)
-        World.WarmUpPrefabPool(PREFABS.CARC, 10)
-        World.WarmUpPrefabPool(PREFABS.MiniBus, 10)
-
+        World.WarmUpPrefabPool(PREFABS.RacingCar, 100)
+        World.WarmUpPrefabPool(PREFABS.CARA, 100)
+        World.WarmUpPrefabPool(PREFABS.CARB, 100)
+        World.WarmUpPrefabPool(PREFABS.CARC, 100)
+        World.WarmUpPrefabPool(PREFABS.MiniBus, 100)
     end
 end
 
@@ -162,18 +161,18 @@ function RowGenerator.GenerateRow(rowIndex)
         -- 2. 뽑힌 차량의 종류에 따라 속도와 스폰 주기를 다르게 세팅
         if selectedVehicle.type == PREFABS.RacingCar then
             -- 스포츠카: 매우 빠른 속도, 짧은 간격
-            speed = 1.0 + (rowIndex * 0.015)
-            interval = math.max(0.5, 4.0 - (rowIndex * 0.05))
+            speed = 10.0 + (rowIndex * 0.05)
+            interval = math.max(4.0, 10.0 - (rowIndex * 0.015))
 
         elseif selectedVehicle.type == PREFABS.MiniBus then
             -- 버스: 느린 속도, 넓은 간격
-            speed = 0.35 + (rowIndex * 0.008)
+            speed = 1.25 + (rowIndex * 0.008)
             interval = math.max(2.0, 10.0 - (rowIndex * 0.03))
 
         else
             -- 승용차: 표준 속도, 표준 간격
-            speed = 0.5 + (rowIndex * 0.01)
-            interval = math.max(1.0, 6.0 - (rowIndex * 0.05))
+            speed = 2.5 + (rowIndex * 0.016)
+            interval = math.max(1.0, 10.0 - (rowIndex * 0.06))
         end
 
         -- 3. 결정된 데이터로 해당 Row에 스포너 등록 (Lua 단에서 스케줄링)

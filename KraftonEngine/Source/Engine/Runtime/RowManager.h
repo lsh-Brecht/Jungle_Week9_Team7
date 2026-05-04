@@ -19,8 +19,8 @@ struct FRowRuntimeConfig
     float SlotSize = 100.0f;
     float RowDepth = 100.0f;
 
-    int32 KeepRowsBehind = 6;
-    int32 KeepRowsAhead = 12;
+    int32 KeepRowsBehind = 25;
+    int32 KeepRowsAhead = 25;
 };
 
 struct FStaticObstacleData
