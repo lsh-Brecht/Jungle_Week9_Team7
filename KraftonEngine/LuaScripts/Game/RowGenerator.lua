@@ -42,6 +42,10 @@ RowGenerator.MapConfig.MaxSlotIndex = RowGenerator.MapConfig.SlotCount - 1
 
 local LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
 
+function RowGenerator.ResetRuntimeState()
+    LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
+end
+
 -- 2. 가중치 테이블 설정
 -- 지형의 가중치
 local BiomeWeights = {

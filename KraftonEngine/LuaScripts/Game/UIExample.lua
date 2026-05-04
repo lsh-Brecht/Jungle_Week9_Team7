@@ -58,21 +58,8 @@ function SetCombo(value)
     RefreshHud()
 end
 
-UI.SetEventHandler(function(eventName)
-    if eventName == "start" then
-        StartRun()
-    elseif eventName == "restart" then
-        StartRun()
-    elseif eventName == "main_menu" then
-        UI.ShowHUD(false)
-        UI.ShowGameOver(false)
-        UI.ShowIntro(true)
-    elseif eventName == "continue" then
-        UI.SetStatus("계속 진행하세요!")
-    elseif eventName == "exit" then
-        -- C++ 쪽 기본 종료 콜백도 같이 호출됩니다.
-    end
-end)
-
-UI.ShowIntro(true)
-UI.ShowHUD(false)
+-- 이 파일은 예제용입니다. 실제 GameOver/Intro 버튼 처리는
+-- IntroCameraController.lua의 OnUIEvent가 담당합니다.
+-- 여기서 UI.SetEventHandler를 등록하면 전역 UI 핸들러를 덮어써서
+-- restart/start 이벤트가 MapManager_Reset까지 도달하지 않을 수 있습니다.
+-- 필요하면 아래 함수들을 다른 게임 매니저에서 직접 호출하세요.
