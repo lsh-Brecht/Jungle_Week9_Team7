@@ -14,6 +14,7 @@ local DEFAULT_CONFIG = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
+    GameOverLocation = Vec(0.0, 0.501545, -2000.0),
     StartLocation = nil,
 
     -- X축으로 ScoreUnit만큼 전진할 때마다 1점
@@ -629,6 +630,12 @@ function State.GameOver(reason)
     end
 
     State.Mode = "GameOver"
+
+    local player = State.GetPlayer()
+    if is_valid(player) and State.Config.GameOverLocation ~= nil then
+        player.Location = clone_vector(State.Config.GameOverLocation)
+    end
+
     State.SetPlayerMovementEnabled(false)
     State.SetMenuObjectsVisible(true)
     save_best_score()

@@ -13,6 +13,7 @@
 
 local Vec = FVector.new
 local Rot = FRotator.new
+local State = require("Game.GameState")
 
 local DEBUG = true
 
@@ -883,6 +884,21 @@ function OnInput(deltaTime)
     Player.frame = Player.frame + 1
 
     if not Bootstrap() then
+        return
+    end
+
+    if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
+        Player.prevMouse1 = GetKey("MOUSE1")
+        Player.prevMouse2 = GetKey("MOUSE2")
+
+        if IsValidHandle(Player.hopMovement) then
+            Player.hopMovement:ClearMovementInput()
+        end
+
+        if Input ~= nil and Input.SetMouseCaptured ~= nil then
+            Input.SetMouseCaptured(false)
+        end
+
         return
     end
 

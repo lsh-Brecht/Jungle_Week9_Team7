@@ -62,8 +62,10 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		CurrentParryTime += DeltaTime;
 		if (CurrentParryTime >= ParryDuration)
 		{
-			if (ScaleTarget)
+			if (ScaleTarget && IsAliveObject(ScaleTarget))
 				ScaleTarget->SetRelativeScale(OriginalScale);
+			else
+				ScaleTarget = nullptr;
 			bIsParrying = false;
 			CurrentParryTime = 0.f;
 		}
@@ -78,9 +80,15 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	TArray<FSpinningProjectile> Remaining;
 	for (FSpinningProjectile& Spinning : SpinningProjectiles)
 	{
+		AActor* Actor = Spinning.Actor;
+		if (!Actor || !IsAliveObject(Actor) || !Actor->GetWorld())
+		{
+			continue;
+		}
+
 		Spinning.ElapsedTime += DeltaTime;
 
-		if (USceneComponent* Root = Spinning.Actor->GetRootComponent())
+		if (USceneComponent* Root = Actor->GetRootComponent())
 			Root->AddLocalRotation(FRotator(DeltaDeg, 0.0f, 0.0f));
 
 		if (Spinning.ElapsedTime < SpinDuration)
@@ -89,9 +97,9 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		}
 		else
 		{
-			Spinning.Actor->SetVisible(false);
-			Spinning.Actor->SetActorTickEnabled(false);
-			Spinning.Actor->SetActorEnableCollision(false);
+			Actor->SetVisible(false);
+			Actor->SetActorTickEnabled(false);
+			Actor->SetActorEnableCollision(false);
 		}
 	}
 	SpinningProjectiles = std::move(Remaining);
@@ -99,6 +107,9 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UParryComponent::Parry()
 {
+	AActor* Owner = GetOwner();
+	if (!Owner || !IsAliveObject(Owner) || !Owner->GetWorld()) return;
+
 	if (bIsParrying) return;
 	bIsParrying = true;
 	CurrentParryTime = 0.f;
@@ -116,7 +127,7 @@ void UParryComponent::Parry()
 void UParryComponent::DeflectNearbyProjectiles()
 {
 	AActor* Owner = GetOwner();
-	if (!Owner) return;
+	if (!Owner || !IsAliveObject(Owner)) return;
 
 	UWorld* World = Owner->GetWorld();
 	if (!World) return;
@@ -133,8 +144,11 @@ void UParryComponent::DeflectNearbyProjectiles()
 	TSet<AActor*> Processed;
 	for (UPrimitiveComponent* Prim : Candidates)
 	{
+		if (!Prim || !IsAliveObject(Prim)) continue;
+
 		AActor* OtherActor = Prim->GetOwner();
-		if (!OtherActor || OtherActor == Owner) continue;
+		if (!OtherActor || !IsAliveObject(OtherActor) || OtherActor == Owner) continue;
+		if (OtherActor->GetWorld() != World) continue;
 		if (Processed.contains(OtherActor)) continue;
 		if (Cast<APawn>(OtherActor)) continue;
 
