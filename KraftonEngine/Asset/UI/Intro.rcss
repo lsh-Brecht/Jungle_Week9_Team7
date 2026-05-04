@@ -35,3 +35,23 @@
 #intro-options-panel {
     display: none;
 }
+
+#intro-soft-top,
+#intro-soft-bottom {
+    display: block;
+    background-color: rgba(2, 4, 7, 58);
+    pointer-events: none;
+}
+
+#intro-soft-top {
+    top: 0px;
+    bottom: auto;
+    height: 180px;
+}
+
+#intro-soft-bottom {
+    top: auto;
+    bottom: 0px;
+    height: 220px;
+    background-color: rgba(2, 4, 7, 78);
+}

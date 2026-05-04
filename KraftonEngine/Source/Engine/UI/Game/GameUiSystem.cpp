@@ -295,6 +295,9 @@ void FGameUiSystem::Shutdown()
 	PendingScriptEvents.clear();
 	bFlushingScriptEvents = false;
 	bStartEventQueuedOrDispatched = false;
+	bStartTransitionActive = false;
+	bStartTransitionResetDispatched = false;
+	StartTransitionTime = 0.0f;
 	Callbacks = {};
 
 	OwnerWindow = nullptr;
@@ -360,7 +363,6 @@ void FGameUiSystem::SyncContextDimensions()
 
 void FGameUiSystem::Update(float DeltaTime)
 {
-	(void)DeltaTime;
 	if (!bInitialized)
 	{
 		return;
@@ -370,6 +372,8 @@ void FGameUiSystem::Update(float DeltaTime)
 	{
 		SetPresentationRect(ViewportClient->GetPresentationRect());
 	}
+
+	UpdateStartTransition(DeltaTime);
 
 #if WITH_RMLUI
 	RefreshOptionLabels();
@@ -401,6 +405,9 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	if (bVisible)
 	{
 		bStartEventQueuedOrDispatched = false;
+		bStartTransitionActive = false;
+		bStartTransitionResetDispatched = false;
+		StartTransitionTime = 0.0f;
 		bPauseMenuVisible = false;
 		bGameOverVisible = false;
 		bHudVisible = false;
@@ -414,6 +421,10 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	}
 	if (bVisible)
 	{
+		SetElementDisplay(IntroDocument, "intro-panel", true);
+		SetElementDisplay(IntroDocument, "intro-soft-top", true);
+		SetElementDisplay(IntroDocument, "intro-soft-bottom", true);
+		ApplyIntroIdleBoxVisual();
 		SetIntroOptionsVisible(false);
 		if (PauseMenuDocument) PauseMenuDocument->Hide();
 		if (GameOverDocument) GameOverDocument->Hide();
@@ -665,6 +676,11 @@ void FGameUiSystem::UnbindDocumentClickEvents(Rml::ElementDocument* Document, co
 
 void FGameUiSystem::HandleClick(const FString& ElementId)
 {
+	if (bStartTransitionActive)
+	{
+		return;
+	}
+
 	if (ElementId == "ui-start")
 	{
 		if (bStartEventQueuedOrDispatched)
@@ -673,9 +689,7 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 			return;
 		}
 
-		bStartEventQueuedOrDispatched = true;
-		ResetRunUi();
-		QueueScriptEvent("start");
+		BeginStartTransition();
 		return;
 	}
 	if (ElementId == "ui-settings")
@@ -837,6 +851,177 @@ void FGameUiSystem::DispatchScriptEvent(const FString& EventName)
 	}
 }
 
+void FGameUiSystem::BeginStartTransition()
+{
+	if (bStartTransitionActive || bStartEventQueuedOrDispatched)
+	{
+		return;
+	}
+
+	bStartEventQueuedOrDispatched = true;
+	bStartTransitionActive = true;
+	bStartTransitionResetDispatched = false;
+	StartTransitionTime = 0.0f;
+
+	SetIntroOptionsVisible(false);
+	SetElementDisplay(IntroDocument, "intro-panel", true);
+	SetElementDisplay(IntroDocument, "intro-soft-top", true);
+	SetElementDisplay(IntroDocument, "intro-soft-bottom", true);
+	ApplyIntroIdleBoxVisual();
+}
+
+void FGameUiSystem::UpdateStartTransition(float DeltaTime)
+{
+	if (!bStartTransitionActive)
+	{
+		return;
+	}
+
+	StartTransitionTime += std::max(0.0f, DeltaTime);
+
+	float Height = PresentationRect.Height;
+	if (Height <= 1.0f && OwnerWindow)
+	{
+		Height = static_cast<float>(OwnerWindow->GetHeight());
+	}
+	if (Height <= 1.0f)
+	{
+		Height = 720.0f;
+	}
+
+	const float BaseTop = std::max(96.0f, std::min(180.0f, Height * 0.22f));
+	const float BaseBottom = std::max(112.0f, std::min(220.0f, Height * 0.27f));
+	const float OpenTop = std::max(52.0f, BaseTop - 58.0f);
+	const float OpenBottom = std::max(58.0f, BaseBottom - 66.0f);
+	const float CoveredTop = Height * 0.54f;
+	const float CoveredBottom = Height * 0.54f;
+
+	// 멈춤 구간 없이 "가운데가 넓어짐 -> 바로 닫힘"으로 이어지는 타이밍.
+	const float GapWideTime = 0.24f;
+	const float CoveredTime = 0.88f;
+	const float FinishTime = 1.64f;
+
+	float TopHeight = BaseTop;
+	float BottomHeight = BaseBottom;
+	int32 Alpha = 72;
+
+	if (StartTransitionTime < GapWideTime)
+	{
+		// 원래 위치에서 중앙 틈이 한 번 넓어지는 구간. 정지 없이 다음 닫힘으로 이어진다.
+		const float T = EaseInOutCubic(StartTransitionTime / GapWideTime);
+		TopHeight = LerpFloat(BaseTop, OpenTop, T);
+		BottomHeight = LerpFloat(BaseBottom, OpenBottom, T);
+		Alpha = static_cast<int32>(LerpFloat(72.0f, 92.0f, T));
+	}
+	else if (StartTransitionTime < CoveredTime)
+	{
+		// 넓어진 순간 곧바로 닫힌다. 중간에 base 위치에서 멈추거나 눌리는 구간을 두지 않는다.
+		const float T = EaseInOutCubic((StartTransitionTime - GapWideTime) / (CoveredTime - GapWideTime));
+		TopHeight = LerpFloat(OpenTop, CoveredTop, T);
+		BottomHeight = LerpFloat(OpenBottom, CoveredBottom, T);
+		Alpha = static_cast<int32>(LerpFloat(92.0f, 240.0f, T));
+	}
+	else
+	{
+		if (!bStartTransitionResetDispatched)
+		{
+			bStartTransitionResetDispatched = true;
+
+			SetScore(0);
+			SetCoins(0);
+			SetLane(1);
+			SetCombo(1);
+			SetStatusText("READY");
+			SetIntroOptionsVisible(false);
+			SetElementDisplay(IntroDocument, "intro-panel", false);
+			SetElementDisplay(IntroDocument, "intro-soft-top", true);
+			SetElementDisplay(IntroDocument, "intro-soft-bottom", true);
+			SetGameOverVisible(false);
+			QueueScriptEvent("start");
+		}
+
+		// 초기화 후에는 카메라 전환이 보이도록 바로 열린다.
+		const float T = EaseInOutCubic(std::min(1.0f, (StartTransitionTime - CoveredTime) / (FinishTime - CoveredTime)));
+		TopHeight = LerpFloat(CoveredTop, 0.0f, T);
+		BottomHeight = LerpFloat(CoveredBottom, 0.0f, T);
+		Alpha = static_cast<int32>(LerpFloat(240.0f, 0.0f, T));
+	}
+
+	ApplyStartTransitionVisual(TopHeight, BottomHeight, Alpha);
+
+	if (StartTransitionTime >= FinishTime)
+	{
+		CompleteStartTransition();
+	}
+}
+
+void FGameUiSystem::CompleteStartTransition()
+{
+	bStartTransitionActive = false;
+	bStartTransitionResetDispatched = false;
+	StartTransitionTime = 0.0f;
+	ApplyStartTransitionVisual(0.0f, 0.0f, 0);
+	SetElementDisplay(IntroDocument, "intro-soft-top", false);
+	SetElementDisplay(IntroDocument, "intro-soft-bottom", false);
+	SetHudVisible(true);
+
+#if WITH_RMLUI
+	if (IntroDocument)
+	{
+		IntroDocument->Hide();
+	}
+#endif
+	bIntroVisible = false;
+}
+
+void FGameUiSystem::ApplyStartTransitionVisual(float TopHeightPx, float BottomHeightPx, int32 Alpha)
+{
+	const int32 SafeTopHeight = static_cast<int32>(std::max(0.0f, TopHeightPx));
+	const int32 SafeBottomHeight = static_cast<int32>(std::max(0.0f, BottomHeightPx));
+	const int32 SafeAlpha = std::max(0, std::min(255, Alpha));
+	const FString TopHeightText = std::to_string(SafeTopHeight) + "px";
+	const FString BottomHeightText = std::to_string(SafeBottomHeight) + "px";
+	const FString ColorText = "rgba(2, 4, 7, " + std::to_string(SafeAlpha) + ")";
+
+	SetElementProperty(IntroDocument, "intro-soft-top", "height", TopHeightText.c_str());
+	SetElementProperty(IntroDocument, "intro-soft-bottom", "height", BottomHeightText.c_str());
+	SetElementProperty(IntroDocument, "intro-soft-top", "background-color", ColorText.c_str());
+	SetElementProperty(IntroDocument, "intro-soft-bottom", "background-color", ColorText.c_str());
+}
+
+void FGameUiSystem::ApplyIntroIdleBoxVisual()
+{
+	float Height = PresentationRect.Height;
+	if (Height <= 1.0f && OwnerWindow)
+	{
+		Height = static_cast<float>(OwnerWindow->GetHeight());
+	}
+	if (Height <= 1.0f)
+	{
+		Height = 720.0f;
+	}
+
+	const float BaseTop = std::max(96.0f, std::min(180.0f, Height * 0.22f));
+	const float BaseBottom = std::max(112.0f, std::min(220.0f, Height * 0.27f));
+	ApplyStartTransitionVisual(BaseTop, BaseBottom, 72);
+}
+
+float FGameUiSystem::EaseInOutCubic(float T) const
+{
+	T = std::max(0.0f, std::min(1.0f, T));
+	if (T < 0.5f)
+	{
+		return 4.0f * T * T * T;
+	}
+	const float K = -2.0f * T + 2.0f;
+	return 1.0f - (K * K * K) * 0.5f;
+}
+
+float FGameUiSystem::LerpFloat(float A, float B, float T) const
+{
+	return A + (B - A) * std::max(0.0f, std::min(1.0f, T));
+}
+
 void FGameUiSystem::SetOptionsVisible(bool bVisible)
 {
 	bShowingOptions = bVisible;
@@ -870,6 +1055,25 @@ void FGameUiSystem::RefreshOptionLabels()
 	const char* FxaaText = bFxaa ? "FXAA: 켜짐" : "FXAA: 꺼짐";
 	SetElementText(PauseMenuDocument, "toggle-fxaa", FxaaText);
 	SetElementText(IntroDocument, "ui-intro-toggle-fxaa", FxaaText);
+#endif
+}
+
+void FGameUiSystem::SetElementProperty(Rml::ElementDocument* Document, const char* ElementId, const char* PropertyName, const char* Value)
+{
+#if WITH_RMLUI
+	if (!Document || !ElementId || !PropertyName || !Value)
+	{
+		return;
+	}
+	if (Rml::Element* Element = Document->GetElementById(ElementId))
+	{
+		Element->SetProperty(PropertyName, Value);
+	}
+#else
+	(void)Document;
+	(void)ElementId;
+	(void)PropertyName;
+	(void)Value;
 #endif
 }
 
@@ -924,7 +1128,7 @@ void FGameUiSystem::SetElementTextAny(const char* ElementId, const char* Text)
 
 bool FGameUiSystem::IsInteractiveUiVisible() const
 {
-	return bIntroVisible || bPauseMenuVisible || bGameOverVisible;
+	return bStartTransitionActive || bIntroVisible || bPauseMenuVisible || bGameOverVisible;
 }
 
 bool FGameUiSystem::ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam)

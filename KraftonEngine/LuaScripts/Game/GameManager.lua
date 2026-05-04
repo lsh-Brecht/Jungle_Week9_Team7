@@ -27,3 +27,14 @@ end
 function EndPlay()
     print("[GameManager] EndPlay")
 end
+
+function OnUIEvent(eventName)
+    if eventName == "start" then
+        State.Mode = "Ready"
+        State.StartGame()
+
+        if type(MapManager_Reset) == "function" then
+            MapManager_Reset()
+        end
+    end
+end
