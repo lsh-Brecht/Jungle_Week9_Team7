@@ -1,3 +1,5 @@
+local RowGenerator = {}
+
 local BIOME = {
     GRASS = 0,
     ROAD = 1,
@@ -11,21 +13,27 @@ local BIOME_NAME = {
 }
 
 local PREFABS = {
-    TREE1 = "Asset/Prefab/VoxelTreeA.Prefab",
-    TREE2 = "Asset/Prefab/VoxelTreeB.Prefab",
-    ROCK = "Data/Prefab/Rock.Prefab",
-    CAR = "Data/Prefab/Car.Prefab",
-    TRAIN = "Data/Prefab/Train.Prefab"
+    TREE1 = "Asset/Prefab/TreeA.Prefab",
+    TREE2 = "Asset/Prefab/TreeB.Prefab",
+    ROCK = "Asset/Prefab/BasicCube.Prefab",
+
+    RacingCar = "Asset/Prefab/RacingCar.Prefab",
+    CARA = "Asset/Prefab/CarA.Prefab",
+    CARB = "Asset/Prefab/CarB.Prefab",
+    CARC = "Asset/Prefab/CarC.Prefab",
+    CARD = "Asset/Prefab/CarD.Prefab",
+
+    TRAIN = "Asset/Prefab/BasicCube.Prefab" -- Train 프리팹이 없다면 대체
 }
 
-local MapConfig = {
+RowGenerator.MapConfig = {
     SlotCount = 9,
-    SlotSize = 1.0,
-    RowDepth = 1.0
+    SlotSize = 2.0,
+    RowDepth = 2.0
 }
-MapConfig.MaxSlotIndex = MapConfig.SlotCount - 1
+RowGenerator.MapConfig.MaxSlotIndex = RowGenerator.MapConfig.SlotCount - 1
 
-local LastSafeSlot = math.floor(MapConfig.SlotCount / 2)
+local LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
 
 -- 2. 가중치 테이블 설정
 -- 지형의 가중치
@@ -44,15 +52,15 @@ local ObstacleWeights = {
 
 -- 차량 등장 확률 (가중치)
 local VehicleWeights = {
-    { type = PREFABS.CAR, weight = 50 },         -- 승용차 50% (가장 흔함)
-    { type = PREFABS.TRUCK, weight = 30 },       -- 트럭 30% (조금 드묾)
-    --{ type = PREFABS.SPORTS_CAR, weight = 20 }   -- 스포츠카 20% (드물지만 위험함)
+    { type = PREFABS.RacingCar, weight = 20 },
+    { type = PREFABS.CARA, weight = 20 },
+    { type = PREFABS.CARB, weight = 20 },
+    { type = PREFABS.CARC, weight = 20 },
+    { type = PREFABS.CARD, weight = 20 },
 }
 
-local RowGenerator = {}
-
 function RowGenerator.ConfigureRows()
-    SetRowSize(MapConfig.SlotCount, MapConfig.SlotSize, MapConfig.RowDepth)
+    SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
     SetRowBufferCounts(6, 12)
 end
 
@@ -90,13 +98,13 @@ function RowGenerator.GenerateRow(rowIndex)
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
     local nextSafeSlot = LastSafeSlot + math.random(-1, 1)
-    nextSafeSlot = math.max(0, math.min(MapConfig.MaxSlotIndex, nextSafeSlot))
+    nextSafeSlot = math.max(0, math.min(RowGenerator.MapConfig.MaxSlotIndex, nextSafeSlot))
     LastSafeSlot = nextSafeSlot -- 다음 Row를 위해 갱신
 
     if biomeType == BIOME.GRASS then
         local obstacleChance = RowGenerator.GetObstacleChance(rowIndex)
         
-        for slot = 0, MapConfig.MaxSlotIndex do
+        for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
             if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰[cite: 9]
                 if math.random() < obstacleChance then
                     -- 가중치에 따라 확률적으로 장애물 프리팹을 선택
