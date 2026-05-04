@@ -1251,27 +1251,39 @@
       },
       "bVisible" : true
     }, {
-      "ActorUUID" : 860,
+      "ActorUUID" : 302,
       "ClassName" : "AActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "ULuaScriptComponent",
-          "Properties" : {
-            "ScriptPath" : "Game/IntroCameraController.lua",
-            "bEditorOnly" : false,
-            "bTickEnable" : true
-          }
-        }],
+      "NonSceneComponents" : [],
       "RootComponent" : {
-        "Children" : [],
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBoxComponent",
+            "Properties" : {
+              "Blocks Movement" : true,
+              "Box Extent" : [0.500000, 0.500000, 0.500000],
+              "Cast Shadow" : true,
+              "Generate Overlap Events" : true,
+              "Location" : [-0.010674, -0.013205, 0.463967],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [2.471906, 0.897289, 0.934706],
+              "Two Sided Shadow" : false,
+              "Visible" : true,
+              "bEditorOnly" : false,
+              "bTickEnable" : true
+            }
+          }],
         "ClassName" : "UStaticMeshComponent",
         "Properties" : {
           "Blocks Movement" : true,
           "Cast Shadow" : true,
+          "Element 0" : {
+            "Path" : "Asset/Materials/Auto/miniBusMTL.mat"
+          },
           "Generate Overlap Events" : true,
-          "Location" : [15.512953, 16.158907, -0.500002],
+          "Location" : [7.192332, -2.055345, -0.471785],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Static Mesh" : "None",
+          "Static Mesh" : "Data/VoxelCars/minibus.obj",
           "Two Sided Shadow" : false,
           "Visible" : true,
           "bEditorOnly" : false,
@@ -1285,14 +1297,14 @@
   "ContextName" : "Default",
   "Name" : "Default",
   "PerspectiveCamera" : {
-    "AspectRatio" : 1.847861,
+    "AspectRatio" : 1.846276,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-16.378567, 1.431615, 14.960399],
+    "Location" : [33.508858, -4.025183, 7.345507],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 35.777393, 1.148218]
+    "Rotation" : [0.000000, 11.477915, 164.646835]
   },
   "Primitives" : {
     "102" : {
