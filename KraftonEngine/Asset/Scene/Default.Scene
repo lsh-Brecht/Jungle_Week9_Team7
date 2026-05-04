@@ -205,6 +205,20 @@
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/IntroCameraController.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/GameManager.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
         }],
       "RootComponent" : {
         "Children" : [{
@@ -1258,7 +1272,7 @@
           "Cast Shadow" : true,
           "Generate Overlap Events" : true,
           "Location" : [-3.433448, 3.938135, 12.454313],
-          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Static Mesh" : "None",
           "Two Sided Shadow" : false,
