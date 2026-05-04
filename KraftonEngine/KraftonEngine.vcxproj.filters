@@ -905,6 +905,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaParryComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>

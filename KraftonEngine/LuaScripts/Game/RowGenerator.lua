@@ -13,23 +13,30 @@ local BIOME_NAME = {
 }
 
 local PREFABS = {
+    GRASSTILE = "Asset/Prefab/Grass.Prefab",
+    ROADTILE = "Asset/Prefab/Road.Prefab",
+    RAILWAYTILE = "Asset/Prefab/Road.Prefab",
+
     TREE1 = "Asset/Prefab/TreeA.Prefab",
     TREE2 = "Asset/Prefab/TreeB.Prefab",
-    ROCK = "Asset/Prefab/BasicCube.Prefab",
+    PUBGBOX = "Asset/Prefab/PUBGBOX.Prefab",
 
     RacingCar = "Asset/Prefab/RacingCar.Prefab",
     CARA = "Asset/Prefab/CarA.Prefab",
     CARB = "Asset/Prefab/CarB.Prefab",
     CARC = "Asset/Prefab/CarC.Prefab",
     CARD = "Asset/Prefab/CarD.Prefab",
+    MiniBus = "Asset/Prefab/MiniBus.Prefab",
 
     TRAIN = "Asset/Prefab/BasicCube.Prefab" -- Train 프리팹이 없다면 대체
 }
 
 RowGenerator.MapConfig = {
-    SlotCount = 9,
+    SlotCount = 15,
     SlotSize = 2.0,
-    RowDepth = 2.0
+    RowDepth = 2.0,
+    KeepRowsBehind = 10,
+    KeepRowsAhead = 10
 }
 RowGenerator.MapConfig.MaxSlotIndex = RowGenerator.MapConfig.SlotCount - 1
 
@@ -38,36 +45,45 @@ local LastSafeSlot = math.floor(RowGenerator.MapConfig.SlotCount / 2)
 -- 2. 가중치 테이블 설정
 -- 지형의 가중치
 local BiomeWeights = {
-    { type = BIOME.GRASS, weight = 50 },   -- 50%
-    { type = BIOME.ROAD, weight = 35 },    -- 35%
-    { type = BIOME.RAILWAY, weight = 15 }  -- 15%
+    { type = BIOME.GRASS,   weight = 40 },   -- 50%
+    { type = BIOME.ROAD,    weight = 60 },    -- 35%
 }
 
 -- 장애물별 등장 가중치 설정 (합이 꼭 100일 필요는 없어)
 local ObstacleWeights = {
-    { prefab = PREFABS.TREE1, weight = 50 }, -- 50의 비중
-    { prefab = PREFABS.TREE2, weight = 50 }, -- 50의 비중
-    --{ prefab = PREFABS.SIGN, weight = 10 }  -- 10의 비중
+    { prefab = PREFABS.TREE1,   weight = 30 },
+    { prefab = PREFABS.TREE2,   weight = 30 },
+    { prefab = PREFABS.PUBGBOX, weight = 40 }
 }
 
 -- 차량 등장 확률 (가중치)
 local VehicleWeights = {
-    { type = PREFABS.RacingCar, weight = 20 },
-    { type = PREFABS.CARA, weight = 20 },
-    { type = PREFABS.CARB, weight = 20 },
-    { type = PREFABS.CARC, weight = 20 },
-    { type = PREFABS.CARD, weight = 20 },
+    { type = PREFABS.RacingCar, weight = 30 },
+    { type = PREFABS.CARA, weight = 10 },
+    { type = PREFABS.CARB, weight = 10 },
+    { type = PREFABS.CARC, weight = 10 },
+    { type = PREFABS.CARD, weight = 10 },
+    { type = PREFABS.MiniBus, weight = 30 }
 }
 
 function RowGenerator.ConfigureRows()
     SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
-    SetRowBufferCounts(15, 15)
+    SetRowBufferCounts(RowGenerator.MapConfig.KeepRowsBehind, RowGenerator.MapConfig.KeepRowsAhead)
 
     if World and World.WarmUpPrefabPool then
+        World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
+        World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
+
         World.WarmUpPrefabPool(PREFABS.TREE1, 100)
         World.WarmUpPrefabPool(PREFABS.TREE2, 100)
-        -- World.WarmUpPrefabPool(PREFABS.CARA, 30)
-        -- World.WarmUpPrefabPool(PREFABS.ROCK, 20)
+        World.WarmUpPrefabPool(PREFABS.PUBGBOX, 100)
+
+        World.WarmUpPrefabPool(PREFABS.RacingCar, 10)
+        World.WarmUpPrefabPool(PREFABS.CARA, 10)
+        World.WarmUpPrefabPool(PREFABS.CARB, 10)
+        World.WarmUpPrefabPool(PREFABS.CARC, 10)
+        World.WarmUpPrefabPool(PREFABS.MiniBus, 10)
+
     end
 end
 
@@ -99,10 +115,19 @@ end
 function RowGenerator.GenerateRow(rowIndex)
     -- 1. 지형 결정 (Markov Chain)
     local biome = ChooseWeighted(BiomeWeights)
-    -- local biomeType = biome.type
-    local biomeType = BIOME.GRASS
+    local biomeType = biome.type
     SetRowBiome(rowIndex, biomeType)
-    print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
+    -- print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
+
+    for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
+        if biomeType == BIOME.GRASS then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.GRASSTILE)
+        elseif biomeType == BIOME.ROAD then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.ROADTILE)
+        elseif biomeType == BIOME.RAILWAY then
+            SpawnStaticObstacle(rowIndex, slot, PREFABS.RAILWAYTILE)
+        end
+    end
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
     local nextSafeSlot = LastSafeSlot + math.random(-1, 1)
@@ -113,7 +138,7 @@ function RowGenerator.GenerateRow(rowIndex)
         local obstacleChance = RowGenerator.GetObstacleChance(rowIndex)
         
         for slot = 0, RowGenerator.MapConfig.MaxSlotIndex do
-            if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰[cite: 9]
+            if slot ~= nextSafeSlot then -- 안전 구역이 아닌 곳만 장애물 스폰
                 if math.random() < obstacleChance then
                     -- 가중치에 따라 확률적으로 장애물 프리팹을 선택
                     local obstacle = ChooseWeighted(ObstacleWeights)
@@ -135,24 +160,26 @@ function RowGenerator.GenerateRow(rowIndex)
         local interval = 0
 
         -- 2. 뽑힌 차량의 종류에 따라 속도와 스폰 주기를 다르게 세팅
-        if selectedVehicle.type == PREFABS.CAR then
-            -- 승용차: 표준 속도, 표준 간격
-            speed = 5.0 + (rowIndex * 0.1)
-            interval = math.max(1.0, 3.0 - (rowIndex * 0.05))
+        if selectedVehicle.type == PREFABS.RacingCar then
+            -- 스포츠카: 매우 빠른 속도, 짧은 간격
+            speed = 10.0 + (rowIndex * 0.15)
+            interval = math.max(0.5, 2.0 - (rowIndex * 0.05))
 
-        elseif selectedVehicle.type == PREFABS.TRUCK then
-            -- 트럭: 느린 속도, 넓은 간격 (길막 주의)
+        elseif selectedVehicle.type == PREFABS.MiniBus then
+            -- 버스: 느린 속도, 넓은 간격
             speed = 3.5 + (rowIndex * 0.08)
             interval = math.max(2.0, 5.0 - (rowIndex * 0.03))
 
-        elseif selectedVehicle.type == PREFABS.SPORTS_CAR then
-            -- 스포츠카: 매우 빠른 속도, 짧은 간격 (위협적)
-            speed = 10.0 + (rowIndex * 0.15)
-            interval = math.max(0.5, 2.0 - (rowIndex * 0.05))
+        else
+            -- 승용차: 표준 속도, 표준 간격
+            speed = 5.0 + (rowIndex * 0.1)
+            interval = math.max(1.0, 3.0 - (rowIndex * 0.05))
         end
 
-        -- 3. 결정된 데이터로 해당 Row에 스포너 등록
-        SetDynamicSpawner(rowIndex, selectedVehicle.type, speed, interval, dirY)
+        -- 3. 결정된 데이터로 해당 Row에 스포너 등록 (Lua 단에서 스케줄링)
+        if _G.AddDynamicSpawner then
+            _G.AddDynamicSpawner(rowIndex, selectedVehicle.type, speed, interval, dirY)
+        end
 
     elseif biomeType == BIOME.RAILWAY then
         -- 기차는 매우 빠르고 간격이 긺
@@ -160,7 +187,9 @@ function RowGenerator.GenerateRow(rowIndex)
         local interval = math.max(3.0, 6.0 - (rowIndex * 0.02))
         local dirY = (math.random(0, 1) == 0) and -1 or 1
 
-        SetDynamicSpawner(rowIndex, PREFABS.TRAIN, speed, interval, dirY)
+        if _G.AddDynamicSpawner then
+            _G.AddDynamicSpawner(rowIndex, PREFABS.TRAIN, speed, interval, dirY)
+        end
     end
 end
 

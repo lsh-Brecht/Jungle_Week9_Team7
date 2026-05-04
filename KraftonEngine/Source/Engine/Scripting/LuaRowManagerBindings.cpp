@@ -29,10 +29,10 @@ void RegisterRowManagerBinding(sol::state& Lua)
             FRowManager::Get().SpawnStaticObstacle(RowIndex, SlotIndex, PrefabPath);
         });
 
-    Lua.set_function("SetDynamicSpawner",
-        [](int32 RowIndex, const FString& PrefabPath, float Speed, float Interval, int32 DirectionX)
+    Lua.set_function("SpawnDynamicVehicle",
+        [](int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX)
         {
-            FRowManager::Get().SetDynamicSpawner(RowIndex, PrefabPath, Speed, Interval, DirectionX);
+            FRowManager::Get().SpawnDynamicVehicle(RowIndex, PrefabPath, Speed, DirectionX);
         });
 
 	Lua.set_function("MoveForward",

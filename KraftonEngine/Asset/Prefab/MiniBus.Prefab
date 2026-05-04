@@ -1,8 +1,24 @@
 {
   "Name" : "MiniBus",
   "RootActor" : {
-    "ActorUUID" : 278,
+    "ActorUUID" : 302,
     "ClassName" : "AActor",
+    "NonSceneComponents" : [{
+        "ClassName" : "UProjectileMovementComponent",
+        "Properties" : {
+          "Auto Register Updated" : true,
+          "Controller Input Priority" : 0,
+          "Initial Speed" : 0.000000,
+          "Last Controller Delta" : [0.000000, 0.000000, 0.000000],
+          "Last Controller Direction" : [0.000000, 0.000000, 0.000000],
+          "Max Speed" : 100.000000,
+          "Receive Controller Input" : false,
+          "Updated Component" : "",
+          "Velocity" : [0.000000, 0.000000, 0.000000],
+          "bEditorOnly" : false,
+          "bTickEnable" : true
+        }
+      }],
     "Tags" : ["Vehicle"],
     "NonSceneComponents" : [],
     "RootComponent" : {
@@ -15,7 +31,7 @@
             "Cast Shadow" : true,
             "Generate Overlap Events" : true,
             "Location" : [-0.010674, -0.013205, 0.463967],
-            "Rotation" : [-0.000000, 0.000000, 0.000000],
+            "Rotation" : [0.000000, 0.000000, 0.000000],
             "Scale" : [2.471906, 0.897289, 0.934706],
             "Two Sided Shadow" : false,
             "Visible" : true,
@@ -31,8 +47,8 @@
           "Path" : "Asset/Materials/Auto/miniBusMTL.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [2.437662, -0.727491, 5.434450],
-        "Rotation" : [-0.000000, 0.000000, 0.000000],
+        "Location" : [0.000000, 0.000000, 0.000000],
+        "Rotation" : [0.000000, 0.000000, 0.000000],
         "Scale" : [1.000000, 1.000000, 1.000000],
         "Static Mesh" : "Data/VoxelCars/minibus.obj",
         "Two Sided Shadow" : false,

@@ -30,25 +30,14 @@ struct FStaticObstacleData
     AActor* SpawnedActor = nullptr;
 };
 
-struct FSpawnerData
-{
-    bool bIsActive = false;
-    float SpawnTimer = 0.0f;
-    float SpawnInterval = 3.0f;
-
-    float Speed = 5.0f;
-    int32 DirectionX = 1;
-    FString PrefabPath;
-};
-
 struct FRowData
 {
-    int32 RowIndex = 0;
-    ERowBiome Biome = ERowBiome::Grass;
-    TArray<FStaticObstacleData> StaticObstacles;
-	TArray<FSpawnerData> Spawners;
+	int32 RowIndex = 0;
+	ERowBiome Biome = ERowBiome::Grass;
+	TArray<FStaticObstacleData> StaticObstacles;
+	TArray<AActor*> DynamicActors;
 
-    void ClearActors();
+	void ClearActors();
 };
 
 class FRowManager : public TSingleton<FRowManager>
@@ -64,7 +53,6 @@ private:
 public:
     void Initialize();
     void Shutdown();
-    void Tick(float DeltaTime);
 
     FRowData* GetRowData(int32 RowIndex);
     FRowData& PushEmptyRow(int32 RowIndex);
@@ -73,7 +61,7 @@ public:
     void SetRowBufferCounts(int32 KeepRowsBehind, int32 KeepRowsAhead);
     void SetRowBiome(int32 RowIndex, int32 BiomeType);
     void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath);
-    void SetDynamicSpawner(int32 RowIndex, const FString& PrefabPath, float Speed, float Interval, int32 DirectionX);
+    void SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX);
 
     void MoveForward(int32 NewCurrentRowIndex);
     void PopOldRows(int32 ThresholdRowIndex);

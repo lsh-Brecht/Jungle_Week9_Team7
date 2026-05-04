@@ -8,10 +8,23 @@ local MapManager = {
     playerPawn = nil,
 
     RowDepth = RowGenerator.MapConfig.RowDepth,        -- FRowRuntimeConfig의 RowDepth와 동일 (전진 방향 한 칸의 크기)
-    PreloadRows = 30,        -- 플레이어 앞에 미리 생성해 둘 칸의 수
+    PreloadRows = 40,        -- 플레이어 앞에 미리 생성해 둘 칸의 수
     CurrentPlayerRow = 0,    -- 플레이어가 현재 밟고 있는 칸의 인덱스
-    HighestGeneratedRow = -1 -- 지금까지 생성된 가장 먼 칸의 인덱스
+    HighestGeneratedRow = -1,-- 지금까지 생성된 가장 먼 칸의 인덱스
+
+    ActiveSpawners = {}      -- 관리할 스패너 배열
 }
+
+_G.AddDynamicSpawner = function(rowIndex, prefab, speed, interval, dirY)
+    table.insert(MapManager.ActiveSpawners, {
+        RowIndex = rowIndex,
+        Prefab = prefab,
+        Speed = speed,
+        Interval = interval,
+        Timer = interval,
+        DirY = dirY
+    })
+end
 
 function BeginPlay()
     -- 1. RowGenerator 초기 설정
@@ -75,6 +88,25 @@ function Tick(deltaTime)
         -- 임계값(NewCurrentRowIndex - KeepRowsBehind) 미만의 후방 청크를 제거
         if MoveForward ~= nil then
             MoveForward(MapManager.CurrentPlayerRow)
+        end
+
+        -- 임계값 미만(KeepRowsBehind칸 전) 스패너 지우기
+        local threshold = MapManager.CurrentPlayerRow - RowGenerator.MapConfig.KeepRowsBehind
+        for i = #MapManager.ActiveSpawners, 1, -1 do
+            if MapManager.ActiveSpawners[i].RowIndex < threshold then
+                table.remove(MapManager.ActiveSpawners, i)
+            end
+        end
+    end
+
+    -- 6. 루아 스패너 타이머 업데이트
+    for _, spawner in ipairs(MapManager.ActiveSpawners) do
+        spawner.Timer = spawner.Timer - deltaTime
+        if spawner.Timer <= 0 then
+            spawner.Timer = spawner.Interval
+            if SpawnDynamicVehicle then
+                SpawnDynamicVehicle(spawner.RowIndex, spawner.Prefab, spawner.Speed, spawner.DirY)
+            end
         end
     end
 end

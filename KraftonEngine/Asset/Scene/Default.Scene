@@ -14,7 +14,7 @@
               "Cast Shadow" : true,
               "Generate Overlap Events" : true,
               "Location" : [0.000000, 0.000000, 0.000000],
-              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
               "Scale" : [1.000000, 1.000000, 1.000000],
               "Two Sided Shadow" : false,
               "Visible" : true,
@@ -160,7 +160,7 @@
             "Braking Deceleration" : 4096.000000,
             "Controller Input Priority" : 10,
             "Dash Duration" : 0.150000,
-            "Dash Speed" : 50.000000,
+            "Dash Speed" : 85.000000,
             "Hop Coefficient" : 1.000000,
             "Hop Frequency" : 6.000000,
             "Hop Height" : 0.150000,
@@ -199,6 +199,19 @@
             "Min Facing Speed" : 1.000000,
             "Rotation Speed" : 720.000000,
             "Yaw Only" : true,
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "ULuaScriptComponent",
+          "Properties" : {
+            "ScriptPath" : "Game/Player.lua",
+            "bEditorOnly" : false,
+            "bTickEnable" : true
+          }
+        }, {
+          "ClassName" : "UParryComponent",
+          "Properties" : {
             "bEditorOnly" : false,
             "bTickEnable" : true
           }
@@ -1332,7 +1345,11 @@
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 37.728325, -5.450865]
+<<<<<<< HEAD
+    "Rotation" : [0.000000, 26.778360, 7.749015]
+=======
+    "Rotation" : [0.000000, 39.828350, -2.000975]
+>>>>>>> feature/delegate
   },
   "Primitives" : {
     "102" : {

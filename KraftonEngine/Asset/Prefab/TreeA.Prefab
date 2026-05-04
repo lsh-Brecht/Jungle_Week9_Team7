@@ -46,7 +46,7 @@
           "Path" : "Asset/Materials/Auto/VoxelTreeA.mat"
         },
         "Generate Overlap Events" : true,
-        "Location" : [-7.269365, -15.959886, 1.591845],
+        "Location" : [0.000000, 0.000000, 0.000000],
         "Rotation" : [-0.000000, 0.000000, 0.000000],
         "Scale" : [1.000000, 1.000000, 1.000000],
         "Static Mesh" : "Data/VoxelTrees/VoxelTreeA.obj",

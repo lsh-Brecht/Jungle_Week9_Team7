@@ -32,6 +32,7 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterPendulumMovementComponentBinding(Lua);
 	RegisterRotatingMovementComponentBinding(Lua);
 	RegisterHopMovementComponentBinding(Lua);
+	RegisterParryComponentBinding(Lua);
 
 	RegisterPawnBinding(Lua);
 	RegisterPlayerControllerBinding(Lua);

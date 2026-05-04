@@ -193,7 +193,6 @@ void UGameClientEngine::TickInGame(float DeltaTime)
 
     TaskScheduler.Tick(DeltaTime);
     WorldTick(DeltaTime);
-	FRowManager::Get().Tick(DeltaTime);
 
     CameraManager.SyncWorldViewCamera();
 }

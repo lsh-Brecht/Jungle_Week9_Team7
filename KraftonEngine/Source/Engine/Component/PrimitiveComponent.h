@@ -92,6 +92,7 @@ public:
 public:
 	virtual ECollisionShapeType GetCollisionShapeType() const;
 	virtual FBoundingBox GetWorldAABB() const;
+	virtual void OnParry();
 
 protected:
 	void OnTransformDirty() override;
