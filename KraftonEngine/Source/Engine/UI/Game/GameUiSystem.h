@@ -29,6 +29,7 @@ struct FGameUiCallbacks
 	std::function<void()> OnContinue;
 	std::function<void()> OnRestart;
 	std::function<void()> OnExit;
+	std::function<void()> OnClosePauseMenu;
 	std::function<void()> OnToggleFullscreen;
 	std::function<bool()> IsFullscreen;
 	std::function<void(bool)> OnFxaaChanged;
@@ -123,6 +124,9 @@ private:
 	void SetElementText(Rml::ElementDocument* Document, const char* ElementId, const char* Text);
 	void SetElementTextAny(const char* ElementId, const char* Text);
 	bool IsInteractiveUiVisible() const;
+	bool ShouldCaptureKeyboard() const;
+	void ClearDocumentFocus(Rml::ElementDocument* Document);
+	void ClearInteractiveFocus();
 	void SyncContextDimensions();
 
 private:

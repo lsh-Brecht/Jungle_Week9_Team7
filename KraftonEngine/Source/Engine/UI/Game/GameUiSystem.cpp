@@ -419,6 +419,10 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	{
 		bVisible ? IntroDocument->Show() : IntroDocument->Hide();
 	}
+	if (!bVisible)
+	{
+		ClearDocumentFocus(IntroDocument);
+	}
 	if (bVisible)
 	{
 		SetElementDisplay(IntroDocument, "intro-panel", true);
@@ -451,6 +455,7 @@ void FGameUiSystem::SetPauseMenuVisible(bool bVisible)
 	{
 		bShowingOptions = false;
 		bShowingIntroOptions = false;
+		ClearDocumentFocus(PauseMenuDocument);
 	}
 
 #if WITH_RMLUI
@@ -487,6 +492,10 @@ void FGameUiSystem::SetGameOverVisible(bool bVisible)
 	if (GameOverDocument)
 	{
 		bVisible ? GameOverDocument->Show() : GameOverDocument->Hide();
+	}
+	if (!bVisible)
+	{
+		ClearDocumentFocus(GameOverDocument);
 	}
 	if (bVisible)
 	{
@@ -565,6 +574,7 @@ void FGameUiSystem::ResetRunUi()
 	SetPauseMenuVisible(false);
 	SetGameOverVisible(false);
 	SetHudVisible(true);
+	ClearInteractiveFocus();
 }
 
 bool FGameUiSystem::LoadDocuments()
@@ -762,6 +772,10 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	{
 		// 인게임 재시작은 PIE/GameClient 세션 재시작이 아니라
 		// 현재 월드 안에서 런타임 맵과 플레이 상태만 다시 시작합니다.
+		if (ElementId == "restart" && Callbacks.OnClosePauseMenu)
+		{
+			Callbacks.OnClosePauseMenu();
+		}
 		ResetRunUi();
 		SetPauseMenuVisible(false);
 		SetGameOverVisible(false);
@@ -985,6 +999,7 @@ void FGameUiSystem::CompleteStartTransition()
 	}
 #endif
 	bIntroVisible = false;
+	ClearDocumentFocus(IntroDocument);
 }
 
 void FGameUiSystem::ApplyStartTransitionVisual(float TopHeightPx, float BottomHeightPx, int32 Alpha)
@@ -1142,6 +1157,38 @@ void FGameUiSystem::SetElementTextAny(const char* ElementId, const char* Text)
 bool FGameUiSystem::IsInteractiveUiVisible() const
 {
 	return bStartTransitionActive || bIntroVisible || bPauseMenuVisible || bGameOverVisible;
+}
+
+bool FGameUiSystem::ShouldCaptureKeyboard() const
+{
+	return bIntroVisible || bPauseMenuVisible || bGameOverVisible;
+}
+
+void FGameUiSystem::ClearDocumentFocus(Rml::ElementDocument* Document)
+{
+#if WITH_RMLUI
+	if (!Context || !Document)
+	{
+		return;
+	}
+
+	if (Rml::Element* FocusElement = Context->GetFocusElement())
+	{
+		FocusElement->Blur();
+	}
+	Context->UnfocusDocument(Document);
+#else
+	(void)Document;
+#endif
+}
+
+void FGameUiSystem::ClearInteractiveFocus()
+{
+#if WITH_RMLUI
+	ClearDocumentFocus(IntroDocument);
+	ClearDocumentFocus(PauseMenuDocument);
+	ClearDocumentFocus(GameOverDocument);
+#endif
 }
 
 bool FGameUiSystem::ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam)
@@ -1363,7 +1410,7 @@ bool FGameUiSystem::WantsMouse() const
 bool FGameUiSystem::WantsKeyboard() const
 {
 #if WITH_RMLUI
-	return Context && IsInteractiveUiVisible();
+	return Context && ShouldCaptureKeyboard();
 #else
 	return false;
 #endif

@@ -51,6 +51,13 @@ bool FGameClientViewport::Initialize(
 			InEngine->SetPauseMenuOpen(false);
 		}
 	};
+	UiCallbacks.OnClosePauseMenu = [InEngine]()
+	{
+		if (InEngine)
+		{
+			InEngine->SetPauseMenuOpen(false);
+		}
+	};
 	UiCallbacks.OnRestart = [InEngine]()
 	{
 		if (InEngine)

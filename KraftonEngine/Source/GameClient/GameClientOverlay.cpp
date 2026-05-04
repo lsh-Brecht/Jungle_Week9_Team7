@@ -199,9 +199,12 @@ void FGameClientOverlay::Update(float DeltaTime)
 		}
 	}
 
-	InputSystem::Get().SetGuiMouseCapture(bMenuOpen || bGameUiWantsMouse || IO.WantCaptureMouse);
-	InputSystem::Get().SetGuiKeyboardCapture(bMenuOpen || bGameUiWantsKeyboard || IO.WantCaptureKeyboard);
-	InputSystem::Get().SetGuiTextInputCapture(bGameUiWantsKeyboard || IO.WantTextInput);
+	const bool bImGuiWantsMouse = bMenuOpen && IO.WantCaptureMouse;
+	const bool bImGuiWantsKeyboard = bMenuOpen && IO.WantCaptureKeyboard;
+	const bool bImGuiWantsTextInput = bMenuOpen && IO.WantTextInput;
+	InputSystem::Get().SetGuiMouseCapture(bMenuOpen || bGameUiWantsMouse || bImGuiWantsMouse);
+	InputSystem::Get().SetGuiKeyboardCapture(bMenuOpen || bGameUiWantsKeyboard || bImGuiWantsKeyboard);
+	InputSystem::Get().SetGuiTextInputCapture(bGameUiWantsKeyboard || bImGuiWantsTextInput);
 }
 
 void FGameClientOverlay::Render(float DeltaTime)
