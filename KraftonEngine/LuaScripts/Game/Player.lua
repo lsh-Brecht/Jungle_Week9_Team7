@@ -44,8 +44,8 @@ local CONFIG = {
         HopCoefficient = 1.0,
         Acceleration = 2048.0,
         BrakingDeceleration = 4096.0,
-        HopHeight = 0.300000,
-        HopFrequency = 4.0,
+        HopHeight = 0.150000,
+        HopFrequency = 6.0,
         HopOnlyWhenMoving = true,
         ResetHopWhenIdle = true,
         Simulating = true,
@@ -67,7 +67,7 @@ local CONFIG = {
         -- 5 = CustomWorldDirection
 
         -- 추천: 실제 이동 속도 방향을 바라봅니다.
-        FacingMode = 4,
+        FacingMode = 1,
 
         RotationSpeed = 720.0,
         YawOnly = true,
@@ -75,7 +75,7 @@ local CONFIG = {
     },
 
     Camera = {
-        Location = Vec(1.347203, -2.598638, -0.500000),
+        Location = Vec(0.0, 0.0, 0.0),
         Rotation = Rot(0.0, 0.0, 0.0),
 
         AspectRatio = 1.777778,
@@ -83,22 +83,22 @@ local CONFIG = {
         NearZ = 0.1,
         FarZ = 1000.0,
         Orthographic = false,
-        OrthoWidth = 20.0,
+        OrthoWidth = 10.0,
 
-        -- Scene JSON: "View Mode" : 3
+        -- Scene JSON: "View Mode" : 2
         -- 0 = Static, 1 = FirstPerson, 2 = ThirdPerson, 3 = OrthographicFollow, 4 = Custom
-        ViewMode = 3,
+        ViewMode = 2,
 
         FollowOffset = Vec(0.0, 0.0, 0.0),
         ViewOffset = Vec(-5.0, 5.0, 5.0),
 
-        EyeHeight = 1.6,
-        BackDistance = 5.0,
-        Height = 2.0,
+        EyeHeight = 0.5,
+        BackDistance = 2.0,
+        Height = 1.0,
         SideOffset = 0.0,
 
         FirstPersonUseControlRotation = true,
-        FollowSubjectAuto = false,
+        FollowSubjectAuto = true,
         UseControlRotationYaw = true,
         UseTargetForward = true,
 
@@ -113,21 +113,16 @@ local CONFIG = {
 
         EnableSmoothing = true,
         LocationLagSpeed = 12.0,
-
-        -- 카메라 전환 중 회전 보간이 마우스 회전과 충돌하지 않도록 조정
-        RotationLagSpeed = 24.0,
+        RotationLagSpeed = 12.0,
 
         FOVLagSpeed = 10.0,
         OrthoWidthLagSpeed = 10.0,
 
-        -- 기존 0.35보다 짧게 해서 전환 중 입력 충돌 체감 감소
-        BlendTime = 0.20,
+        BlendTime = 0.35,
         BlendFunction = 3,
         ProjectionSwitchMode = 1,
         BlendLocation = true,
-
-        -- 화면을 크게 돌릴 때 뚝 끊기는 느낌을 줄이기 위해 회전 블렌드는 끔
-        BlendRotation = false,
+        BlendRotation = true,
 
         BlendFOV = true,
         BlendOrthoWidth = true,
