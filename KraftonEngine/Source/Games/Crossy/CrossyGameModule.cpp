@@ -2,6 +2,7 @@
 
 #include "Engine/Platform/Paths.h"
 #include "Games/Crossy/Audio/CrossyAudioIds.h"
+#include "Games/Crossy/Components/ParryableProjectileComponent.h"
 #include "Games/Crossy/Components/HopMovementComponent.h"
 #include "Games/Crossy/Components/ParryComponent.h"
 #include "Games/Crossy/Map/RowManager.h"
@@ -27,6 +28,9 @@ namespace
 void RegisterCrossyGameModule()
 {
 	FRuntimeModuleRegistry::RegisterFactory("CrossyGame", &CreateCrossyGameModule);
+	(void)UHopMovementComponent::StaticClass();
+	(void)UParryComponent::StaticClass();
+	(void)UParryableProjectileComponent::StaticClass();
 }
 
 void FCrossyGameModule::OnRegister()

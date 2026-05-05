@@ -23,6 +23,7 @@
 #include "Engine/Platform/Paths.h"
 #include "Runtime/ActorPoolSystem.h"
 #include "Runtime/EngineFactory.h"
+#include "GameClient/LinkedRuntimeModules.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
@@ -55,6 +56,8 @@ FString GetFileStem(const FString& InPath)
 
 void UEditorEngine::Init(FWindowsWindow* InWindow)
 {
+	RegisterLinkedRuntimeModules();
+	
 	FProjectSettings::Get().LoadFromFile(FProjectSettings::GetDefaultPath());
 	GetRuntimeModules().LoadModules(FProjectSettings::Get().RuntimeModules);
 

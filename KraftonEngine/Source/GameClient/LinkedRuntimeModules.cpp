@@ -1,12 +1,16 @@
 #include "GameClient/LinkedRuntimeModules.h"
 
-#if IS_GAME_CLIENT
+#ifndef WITH_CROSSY_GAME_MODULE
+#define WITH_CROSSY_GAME_MODULE IS_GAME_CLIENT
+#endif
+
+#if WITH_CROSSY_GAME_MODULE
 #include "Games/Crossy/CrossyGameModule.h"
 #endif
 
 void RegisterLinkedRuntimeModules()
 {
-#if IS_GAME_CLIENT
+#if WITH_CROSSY_GAME_MODULE
 	RegisterCrossyGameModule();
 #endif
 }

@@ -62,6 +62,12 @@ CONFIGURATIONS = [
     ("GameClient", "x64"),
 ]
 
+CROSSY_LINK_CONFIGURATIONS = {
+    ("Debug", "x64"),
+    ("Release", "x64"),
+    ("GameClient", "x64"),
+}
+
 # Per-configuration overrides for the application project
 CONFIG_PROPS = {
     "ObjViewDebug": {
@@ -577,6 +583,8 @@ def generate_vcxproj(
         base_defs.append(f"WITH_EDITOR={1 if props.get('with_editor', True) else 0}")
         base_defs.append(f"IS_OBJ_VIEWER={1 if props.get('is_obj_viewer', False) else 0}")
         base_defs.append(f"IS_GAME_CLIENT={1 if props.get('is_game_client', False) else 0}")
+        if application_project:
+            base_defs.append(f"WITH_CROSSY_GAME_MODULE={1 if (cfg, plat) in CROSSY_LINK_CONFIGURATIONS else 0}")
         base_defs.extend(props.get("extra_defines", []))
         base_defs.append("%(PreprocessorDefinitions)")
         ET.SubElement(cl, "PreprocessorDefinitions").text = ";".join(base_defs)
@@ -743,12 +751,13 @@ def generate_sln():
         lines.append(f"\t\t{engine_guid}.{cfg}|{sln_plat}.Build.0 = {cfg}|{plat}")
 
     # CrossyGame is visible in the solution for all configurations, but it is
-    # only built by solution build for GameClient|x64. Other configs can still
-    # manually build it if needed from the project context menu.
+    # built automatically only for configurations that can load game runtime modules:
+    # GameClient|x64, Debug|x64, and Release|x64. ObjViewer/Demo and Win32 configs
+    # do not build it by default.
     for cfg, plat in CONFIGURATIONS:
         sln_plat = "x86" if plat == "Win32" else plat
         lines.append(f"\t\t{crossy_guid}.{cfg}|{sln_plat}.ActiveCfg = {cfg}|{plat}")
-        if cfg == "GameClient" and plat == "x64":
+        if (cfg, plat) in CROSSY_LINK_CONFIGURATIONS:
             lines.append(f"\t\t{crossy_guid}.{cfg}|{sln_plat}.Build.0 = {cfg}|{plat}")
 
     lines.append("\tEndGlobalSection")
@@ -841,7 +850,10 @@ def main():
             ProjectReference(
                 include=f"{CROSSY_PROJECT_NAME}.vcxproj",
                 guid=CROSSY_PROJECT_GUID,
-                condition="'$(Configuration)|$(Platform)'=='GameClient|x64'",
+                condition=" Or ".join(
+                    f"'$(Configuration)|$(Platform)'=='{cfg}|{plat}'"
+                    for cfg, plat in sorted(CROSSY_LINK_CONFIGURATIONS)
+                ),
             )
         ],
     )
