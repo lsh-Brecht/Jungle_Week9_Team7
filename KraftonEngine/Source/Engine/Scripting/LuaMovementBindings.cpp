@@ -304,28 +304,6 @@ void RegisterHopMovementComponentBinding(sol::state& Lua)
 			SetMovementInput(Value)
 		),
 
-		// Backward/short alias for scripts that treat this as the input axis vector.
-		LUA_COMPONENT_RW_PROPERTY(
-			"HopMovementComponent",
-			"InputVector",
-			FLuaHopMovementComponentHandle,
-			UHopMovementComponent,
-			FVector,
-			FVector::ZeroVector,
-			GetMovementInput(),
-			SetMovementInput(Value)
-		),
-
-		LUA_COMPONENT_RO_PROPERTY(
-			"HopMovementComponent",
-			"LastMovementInput",
-			FLuaHopMovementComponentHandle,
-			UHopMovementComponent,
-			FVector,
-			FVector::ZeroVector,
-			GetLastMovementInput()
-		),
-
 		LUA_COMPONENT_RW_PROPERTY(
 			"HopMovementComponent",
 			"Velocity",
@@ -447,52 +425,6 @@ void RegisterHopMovementComponentBinding(sol::state& Lua)
 			SetSimulating(Value)
 		),
 
-		LUA_COMPONENT_RO_PROPERTY(
-			"HopMovementComponent",
-			"PreviewVelocity",
-			FLuaHopMovementComponentHandle,
-			UHopMovementComponent,
-			FVector,
-			FVector::ZeroVector,
-			GetPreviewVelocity()
-		),
-
-		"AddMovementInput",
-		[](const FLuaHopMovementComponentHandle& Self, const FVector& Direction, float Scale)
-		{
-			UHopMovementComponent* Component = Self.Resolve();
-			if (!Component)
-			{
-				UE_LOG("[Lua] Invalid HopMovementComponent.AddMovementInput Call.");
-				return;
-			}
-			Component->AddMovementInput(Direction, Scale);
-		},
-
-		"AddLocalMovementInput",
-		[](const FLuaHopMovementComponentHandle& Self, const FVector& Direction, float Scale)
-		{
-			UHopMovementComponent* Component = Self.Resolve();
-			if (!Component)
-			{
-				UE_LOG("[Lua] Invalid HopMovementComponent.AddLocalMovementInput Call.");
-				return;
-			}
-			Component->AddLocalMovementInput(Direction, Scale);
-		},
-
-		"SetLocalMovementInput",
-		[](const FLuaHopMovementComponentHandle& Self, const FVector& Direction)
-		{
-			UHopMovementComponent* Component = Self.Resolve();
-			if (!Component)
-			{
-				UE_LOG("[Lua] Invalid HopMovementComponent.SetLocalMovementInput Call.");
-				return;
-			}
-			Component->SetLocalMovementInput(Direction);
-		},
-
 		LUA_COMPONENT_METHOD(
 			"HopMovementComponent",
 			"ClearMovementInput",
@@ -509,21 +441,7 @@ void RegisterHopMovementComponentBinding(sol::state& Lua)
 			StopMovementImmediately()
 		),
 
-		LUA_COMPONENT_METHOD(
-			"HopMovementComponent",
-			"StartSimulating",
-			FLuaHopMovementComponentHandle,
-			UHopMovementComponent,
-			StartSimulating()
-		),
 
-		LUA_COMPONENT_METHOD(
-			"HopMovementComponent",
-			"StopSimulating",
-			FLuaHopMovementComponentHandle,
-			UHopMovementComponent,
-			StopSimulating()
-		),
 		LUA_COMPONENT_METHOD(
         "HopMovementComponent",
         "Dash",

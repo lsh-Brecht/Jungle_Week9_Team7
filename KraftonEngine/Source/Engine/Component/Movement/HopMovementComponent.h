@@ -40,9 +40,6 @@ public:
 	// 누적형 입력. 여러 입력 소스(WASD, 패드, AI, 스크립트)가 한 프레임에 더할 수 있으며 Tick 후 자동으로 비워진다.
 	void AddMovementInput(const FVector& WorldDirection, float Scale = 1.0f);
 
-	// 로컬 입력. X는 Forward, Y는 Right 기준으로 월드 입력으로 변환된다.
-	void SetLocalMovementInput(const FVector& InLocalInput);
-	void AddLocalMovementInput(const FVector& InLocalDirection, float Scale = 1.0f);
 	bool ApplyControllerMovementInput(const FControllerMovementInput& Input) override;
 
 	const FVector& GetLastMovementInput() const { return LastMovementInput; }
@@ -89,13 +86,10 @@ public:
 	void StopSimulating();
 	void StopMovementImmediately();
 
-	FVector GetPreviewVelocity() const;
-
 	void Dash();
 	bool IsDashing() const { return DashTimeRemaining > 0.0f; }
 
 protected:
-	FVector BuildWorldInputFromLocal(const FVector& InLocalInput) const;
 	FVector ConsumeFrameMovementInput();
 	float GetEffectiveMoveSpeed() const;
 	void RemoveAppliedHopOffset();
