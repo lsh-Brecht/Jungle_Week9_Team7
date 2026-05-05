@@ -1,4 +1,4 @@
-﻿#include "Runtime/RowManager.h"
+#include "Runtime/RowManager.h"
 
 #include "Runtime/ObjectPoolSystem.h"
 #include "Scripting/LuaWorldLibrary.h"
@@ -33,7 +33,23 @@ void FRowData::ClearActors(bool bDestroyActors)
 		}
 		else
 		{
-			FObjectPoolSystem::Get().ReleaseActor(Actor);
+			if (Actor->IsPooledActorInactive())
+			{
+				// 이미 풀로 반환된 액터입니다. Row 참조만 제거하고 풀은 유지합니다.
+			}
+			else if (!FObjectPoolSystem::Get().ReleaseActor(Actor))
+			{
+				if (World)
+				{
+					FObjectPoolSystem::Get().ForgetActor(Actor);
+					Actor->SetPooledActorState(false, false);
+					World->DestroyActor(Actor);
+				}
+				else
+				{
+					UObjectManager::Get().DestroyObject(Actor);
+				}
+			}
 		}
 
 		Actor = nullptr;

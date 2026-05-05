@@ -1,4 +1,4 @@
-﻿#include "LuaBindings.h"
+#include "LuaBindings.h"
 #include "SolInclude.h"
 
 #include "Runtime/RowManager.h"
@@ -110,14 +110,65 @@ namespace
         return DestroyedCount;
     }
 
-    void ResetRuntimeMap()
+    int32 SweepRuntimeMapActorsForSoftReset(UWorld* World)
+    {
+        if (!World)
+        {
+            return 0;
+        }
+
+        int32 HandledCount = 0;
+        const TArray<AActor*> ActorSnapshot = World->GetActors();
+
+        for (AActor* Actor : ActorSnapshot)
+        {
+            if (!Actor || !IsAliveObject(Actor) || !IsRuntimeMapActor(Actor))
+            {
+                continue;
+            }
+
+            // 이미 비활성 풀 상태인 액터는 월드에 남아 있어도 게임플레이/충돌/Tick에서 제외됩니다.
+            if (Actor->IsPooledActorInactive())
+            {
+                continue;
+            }
+
+            // 풀에서 나온 액터라면 Destroy하지 않고 비활성 풀로 되돌립니다.
+            if (FObjectPoolSystem::Get().ReleaseActor(Actor))
+            {
+                ++HandledCount;
+                continue;
+            }
+
+            // 풀에서 관리하지 않는 이전 빌드 잔여 런타임 액터만 강제로 제거합니다.
+            FObjectPoolSystem::Get().ForgetActor(Actor);
+            Actor->SetPooledActorState(false, false);
+            World->DestroyActor(Actor);
+            ++HandledCount;
+        }
+
+        return HandledCount;
+    }
+
+    void SoftResetRuntimeMap()
     {
         UWorld* World = FLuaWorldLibrary::GetActiveWorld();
 
-        // RowManager가 알고 있는 행/장애물/차량을 먼저 정상 경로로 삭제합니다.
+        FRowManager::Get().Shutdown(false);
+
+        const int32 SweptActors = SweepRuntimeMapActorsForSoftReset(World);
+        FRowManager::Get().Initialize();
+
+        UE_LOG("[ResetMapSoft] Runtime map soft reset. SweptActors=%d World=%p", SweptActors, World);
+    }
+
+    void HardResetRuntimeMap()
+    {
+        UWorld* World = FLuaWorldLibrary::GetActiveWorld();
+
+        // 레벨 종료/완전 재로드용: 실제 Destroy와 풀 월드 참조 제거를 수행합니다.
         FRowManager::Get().Shutdown(true);
 
-        // RowManager가 더 이상 참조하지 못하는 차량/풀 액터/이전 빌드 잔여 액터까지 월드에서 직접 제거합니다.
         const int32 SweptActors = DestroyRuntimeMapActorsInWorld(World);
 
         if (World)
@@ -127,7 +178,7 @@ namespace
 
         FRowManager::Get().Initialize();
 
-        UE_LOG("[ResetMap] Runtime map reset. SweptActors=%d World=%p", SweptActors, World);
+        UE_LOG("[ResetMapHard] Runtime map hard reset. SweptActors=%d World=%p", SweptActors, World);
     }
 }
 
@@ -186,13 +237,18 @@ void RegisterRowManagerBinding(sol::state& Lua)
 	Lua.set_function("ResetMap",
 		[]()
 		{
-            ResetRuntimeMap();
+            SoftResetRuntimeMap();
 		});
 
-    // 디버깅/비상용: Lua에서 직접 호출해도 같은 강제 스윕을 수행합니다.
-    Lua.set_function("ResetRuntimeMap",
+    Lua.set_function("ResetMapSoft",
         []()
         {
-            ResetRuntimeMap();
+            SoftResetRuntimeMap();
+        });
+
+    Lua.set_function("ResetMapHard",
+        []()
+        {
+            HardResetRuntimeMap();
         });
 }

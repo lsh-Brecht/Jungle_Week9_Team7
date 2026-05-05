@@ -89,31 +89,42 @@ local VehicleSpeedMultipliers = {
     [PREFABS.CARD] = 1.10,
 }
 
+local bPoolWarmed = false
+
 function RowGenerator.ConfigureRows()
     SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
     SetRowBufferCounts(RowGenerator.MapConfig.KeepRowsBehind, RowGenerator.MapConfig.KeepRowsAhead)
 
+    -- 시작/재시작에서는 ObjectPool을 유지하므로 WarmUp을 반복하지 않습니다.
+    -- 부족분은 AcquirePrefab이 필요할 때만 생성하고, 초기 스파이크는 RowsPerFrame 분산 생성으로 줄입니다.
+    if bPoolWarmed then
+        return
+    end
+
     if World and World.WarmUpPrefabPool then
-        World.WarmUpPrefabPool(PREFABS.GRASSTILE, 100)
-        World.WarmUpPrefabPool(PREFABS.ROADTILE, 100)
-        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 100)
-        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_A, 100)
-        World.WarmUpPrefabPool(PREFABS.INVISIBLE_SIDE_WALL, 100)
+        bPoolWarmed = true
 
-        World.WarmUpPrefabPool(PREFABS.ROCK, 100)
-        World.WarmUpPrefabPool(PREFABS.TREE1, 100)
-        World.WarmUpPrefabPool(PREFABS.TREE2, 100)
-        World.WarmUpPrefabPool(PREFABS.TREE3, 100)
-        World.WarmUpPrefabPool(PREFABS.TREE4, 100)
+        World.WarmUpPrefabPool(PREFABS.GRASSTILE, 40)
+        World.WarmUpPrefabPool(PREFABS.ROADTILE, 40)
+        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 30)
+        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_A, 30)
+        World.WarmUpPrefabPool(PREFABS.INVISIBLE_SIDE_WALL, 90)
+
+        World.WarmUpPrefabPool(PREFABS.ROCK, 25)
+        World.WarmUpPrefabPool(PREFABS.TREE1, 15)
+        World.WarmUpPrefabPool(PREFABS.TREE2, 15)
+        World.WarmUpPrefabPool(PREFABS.TREE3, 15)
+        World.WarmUpPrefabPool(PREFABS.TREE4, 15)
         
-        World.WarmUpPrefabPool(PREFABS.CARA, 100)
-        World.WarmUpPrefabPool(PREFABS.CARB, 100)
-        World.WarmUpPrefabPool(PREFABS.CARC, 100)
-        World.WarmUpPrefabPool(PREFABS.MINIBUS, 100)
-        World.WarmUpPrefabPool(PREFABS.FIRECAR, 100)
-        World.WarmUpPrefabPool(PREFABS.POLICECAR, 100)
-        World.WarmUpPrefabPool(PREFABS.RACINGCAR, 100)
-
+        World.WarmUpPrefabPool(PREFABS.CARA, 10)
+        World.WarmUpPrefabPool(PREFABS.CARB, 10)
+        World.WarmUpPrefabPool(PREFABS.CARC, 10)
+        World.WarmUpPrefabPool(PREFABS.CARD, 10)
+        World.WarmUpPrefabPool(PREFABS.MINIBUS, 10)
+        World.WarmUpPrefabPool(PREFABS.FIRECAR, 10)
+        World.WarmUpPrefabPool(PREFABS.POLICECAR, 10)
+        World.WarmUpPrefabPool(PREFABS.RACINGCAR, 10)
+        World.WarmUpPrefabPool(PREFABS.TRAIN, 4)
     end
 end
 

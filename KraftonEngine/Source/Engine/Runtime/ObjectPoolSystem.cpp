@@ -1,6 +1,7 @@
 ﻿#include "Runtime/ObjectPoolSystem.h"
 
 #include "Component/ActorComponent.h"
+#include "Component/Movement/ProjectileMovementComponent.h"
 #include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Object/UClass.h"
@@ -456,10 +457,18 @@ void FObjectPoolSystem::DeactivateActor(AActor* Actor)
 
 	for (UActorComponent* Component : Actor->GetComponents())
 	{
-		if (Component)
+		if (!Component)
 		{
-			Component->Deactivate();
+			continue;
 		}
+
+		if (UProjectileMovementComponent* Projectile = Cast<UProjectileMovementComponent>(Component))
+		{
+			Projectile->StopSimulating();
+			Projectile->SetParried(false);
+		}
+
+		Component->Deactivate();
 	}
 }
 

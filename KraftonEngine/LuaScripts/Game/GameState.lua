@@ -670,7 +670,22 @@ end
 function State.StartFreshRun(reason)
     local resetReason = reason or "FreshRun"
 
+    if State.Mode == "Resetting" then
+        print("[GameState] StartFreshRun ignored: reset already in progress")
+        return
+    end
+
+    State.Mode = "Resetting"
+    State.SetPlayerMovementEnabled(false)
+
+    local asyncResetFunc = nil
     local resetFunc = nil
+
+    if _G ~= nil and _G.MapManager_ResetAsync ~= nil then
+        asyncResetFunc = _G.MapManager_ResetAsync
+    elseif MapManager_ResetAsync ~= nil then
+        asyncResetFunc = MapManager_ResetAsync
+    end
 
     if _G ~= nil and _G.MapManager_Reset ~= nil then
         resetFunc = _G.MapManager_Reset
@@ -678,14 +693,23 @@ function State.StartFreshRun(reason)
         resetFunc = MapManager_Reset
     end
 
+    local function start_after_reset(doneReason)
+        State.Mode = "Ready"
+        State.StartGame(doneReason or resetReason)
+    end
+
+    if asyncResetFunc ~= nil then
+        asyncResetFunc(resetReason, start_after_reset)
+        return
+    end
+
     if resetFunc ~= nil then
         resetFunc(resetReason)
     else
-        print("[GameState] StartFreshRun: _G.MapManager_Reset is nil")
+        print("[GameState] StartFreshRun: MapManager reset function is nil")
     end
 
-    State.Mode = "Ready"
-    State.StartGame(resetReason)
+    start_after_reset(resetReason)
 end
 
 function State.RestartRun()
