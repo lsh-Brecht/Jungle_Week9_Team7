@@ -94,6 +94,7 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 
 void UGameClientEngine::Shutdown()
 {
+	FSoundManager::Get().StopBGM();
 	CameraManager.ClearWorldBinding();
 	Overlay.Shutdown();
 	SetGameViewportClient(nullptr);
@@ -102,6 +103,12 @@ void UGameClientEngine::Shutdown()
 	FRowManager::Get().Shutdown();
 
 	UEngine::Shutdown();
+}
+
+void UGameClientEngine::BeginPlay()
+{
+	UEngine::BeginPlay();
+	FSoundManager::Get().PlayBGM();
 }
 
 void UGameClientEngine::Tick(float DeltaTime)
