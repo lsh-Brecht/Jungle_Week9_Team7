@@ -26,8 +26,6 @@ void RegisterProjectileMovementComponentBinding(sol::state& Lua);
 void RegisterInterpToMovementComponentBinding(sol::state& Lua);
 void RegisterPendulumMovementComponentBinding(sol::state& Lua);
 void RegisterRotatingMovementComponentBinding(sol::state& Lua);
-void RegisterHopMovementComponentBinding(sol::state& Lua);
-void RegisterParryComponentBinding(sol::state& Lua);
 
 void RegisterShapeComponentBinding(sol::state& Lua);
 void RegisterBoxComponentBinding(sol::state& Lua);
@@ -40,8 +38,3 @@ void RegisterWorldExtendedBinding(sol::state& Lua);
 void RegisterInputBinding(sol::state& Lua);
 
 void RegisterDelegateBinding(sol::state& Lua);
-void RegisterRowManagerBinding(sol::state& Lua);
-void RegisterUiBinding(sol::state& Lua);
-void RegisterSaveGameBinding(sol::state& Lua);
-void InstallLuaUiEventRouter();
-void ClearLuaUiEventHandler();

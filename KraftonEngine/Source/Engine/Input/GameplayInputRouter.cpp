@@ -15,9 +15,9 @@ void FGameplayInputRouter::ApplyGuiCapture(FInputFrame& InputFrame)
 bool FGameplayInputRouter::Route(FInputFrame& InputFrame, const FGameplayInputRouteContext& Context)
 {
     const bool bPossessedGameplay = Context.ViewportClient && Context.ViewportClient->IsPossessed();
-    const bool bGameUiCapturing = Context.ViewportClient &&
-        (Context.ViewportClient->GetGameUiSystem().WantsMouse() ||
-         Context.ViewportClient->GetGameUiSystem().WantsKeyboard());
+    const bool bGameUiCapturing = Context.ViewportClient && Context.ViewportClient->GetUiLayer() &&
+        (Context.ViewportClient->GetUiLayer()->WantsMouse() ||
+         Context.ViewportClient->GetUiLayer()->WantsKeyboard());
 
     // Possessed gameplay에서는 이전 프레임의 에디터 ImGui 캡처가 남아 있어도
     // 마우스 룩/이동 입력을 소비하지 않는다. 실제 게임 UI가 떠 있을 때만 캡처한다.

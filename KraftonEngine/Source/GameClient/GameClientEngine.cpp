@@ -1,7 +1,8 @@
-﻿#include "GameClient/GameClientEngine.h"
+#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "GameClient/GameClientPackageValidator.h"
+#include "GameClient/LinkedRuntimeModules.h"
 #include "Core/Notification.h"
 #include "Engine/Platform/Paths.h"
 #include "Engine/Input/GameplayInputRouter.h"
@@ -9,12 +10,23 @@
 #include "Engine/Input/InputSystem.h"
 #include "Engine/Platform/DirectoryWatcher.h"
 #include "Engine/Runtime/WindowsWindow.h"
-#include "Runtime/RowManager.h"
 #include "GameFramework/PlayerController.h"
-#include "Runtime/ObjectPoolSystem.h"
+#include "Runtime/ActorPoolSystem.h"
+#include "Runtime/EngineFactory.h"
+#include "Object/ObjectFactory.h"
 #include "GameFramework/World.h"
 
 IMPLEMENT_CLASS(UGameClientEngine, UEngine)
+
+namespace
+{
+	UEngine* CreateGameClientEngine()
+	{
+		return UObjectManager::Get().CreateObject<UGameClientEngine>();
+	}
+
+	FEngineFactoryRegistrar GGameClientEngineRegistrar("GameClient", &CreateGameClientEngine);
+}
 
 void UGameClientEngine::InitCameraManager()
 {
@@ -56,6 +68,8 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 		return;
 	}
 
+	RegisterLinkedRuntimeModules();
+
 	if (InWindow)
 	{
 		InWindow->SetTitle(FPaths::ToWide(Settings.WindowTitle).c_str());
@@ -66,8 +80,9 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 		}
 	}
 
+	GetRuntimeModules().LoadModules(Settings.RuntimeModules);
+
 	UEngine::Init(InWindow);
-	FRowManager::Get().Initialize();
 
 	if (!Session.Initialize(this))
 	{
@@ -79,6 +94,8 @@ void UGameClientEngine::Init(FWindowsWindow* InWindow)
 		::PostQuitMessage(1);
 		return;
 	}
+
+	GetRuntimeModules().OnWorldCreated(GetWorld());
 
 	InitCameraManager();
 
@@ -100,7 +117,6 @@ void UGameClientEngine::Shutdown()
 	SetGameViewportClient(nullptr);
 	GameViewport.Shutdown();
 	Session.Shutdown();
-	FRowManager::Get().Shutdown();
 
 	UEngine::Shutdown();
 }
@@ -201,6 +217,7 @@ void UGameClientEngine::TickInGame(float DeltaTime)
 
     TaskScheduler.Tick(DeltaTime);
     WorldTick(DeltaTime);
+	GetRuntimeModules().OnTick(DeltaTime);
 
     CameraManager.SyncWorldViewCamera();
 }
@@ -221,18 +238,19 @@ bool UGameClientEngine::RestartGame()
 
 	TaskScheduler.Clear();
 
+	GetRuntimeModules().OnPreWorldReset(GetWorld());
+
 	// 재시작에서는 풀 반환이 아니라 월드에서 실제 삭제
-	FRowManager::Get().Shutdown(true);
 
 	// 풀에 남은 비활성 액터까지 제거
-	FObjectPoolSystem::Get().Shutdown();
+	FActorPoolSystem::Get().Shutdown();
 
 	if (!Session.Restart())
 	{
 		return false;
 	}
 
-	FRowManager::Get().Initialize();
+	GetRuntimeModules().OnPostWorldReset(GetWorld());
 
 	InitCameraManager();
 	GameViewport.BindPlayerController(CameraManager.GetPlayerController());

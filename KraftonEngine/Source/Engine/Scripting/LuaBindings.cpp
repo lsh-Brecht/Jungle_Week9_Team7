@@ -31,8 +31,6 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterInterpToMovementComponentBinding(Lua);
 	RegisterPendulumMovementComponentBinding(Lua);
 	RegisterRotatingMovementComponentBinding(Lua);
-	RegisterHopMovementComponentBinding(Lua);
-	RegisterParryComponentBinding(Lua);
 
 	RegisterPawnBinding(Lua);
 	RegisterPlayerControllerBinding(Lua);
@@ -41,7 +39,4 @@ void RegisterLuaBindings(sol::state& Lua)
 	RegisterWorldExtendedBinding(Lua);
 	RegisterInputBinding(Lua);
 	RegisterDelegateBinding(Lua);
-	RegisterRowManagerBinding(Lua);
-	RegisterUiBinding(Lua);
-	RegisterSaveGameBinding(Lua);
 }

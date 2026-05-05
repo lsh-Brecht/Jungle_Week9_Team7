@@ -119,10 +119,10 @@ local function tick_reset_job()
 end
 
 local function run_soft_reset()
-    if ResetMapSoft ~= nil then
-        ResetMapSoft()
-    elseif ResetMap ~= nil then
-        ResetMap()
+    if Game ~= nil and Game.Map ~= nil and Game.Map.ResetSoft ~= nil then
+        Game.Map.ResetSoft()
+    elseif Game ~= nil and Game.Map ~= nil and Game.Map.Reset ~= nil then
+        Game.Map.Reset()
     else
         print("[MapManager] ResetMapSoft/ResetMap is nil")
     end
@@ -222,8 +222,8 @@ function Tick(deltaTime)
             RowGenerator.GenerateRow(MapManager.HighestGeneratedRow)
         end
 
-        if MoveForward ~= nil then
-            MoveForward(MapManager.CurrentPlayerRow)
+        if Game ~= nil and Game.Map ~= nil and Game.Map.MoveForward ~= nil then
+            Game.Map.MoveForward(MapManager.CurrentPlayerRow)
         end
 
         local threshold = MapManager.CurrentPlayerRow - RowGenerator.MapConfig.KeepRowsBehind
@@ -241,8 +241,8 @@ function Tick(deltaTime)
         if spawner.Timer <= 0 then
             spawner.Timer = spawner.Interval
 
-            if SpawnDynamicVehicle ~= nil then
-                local vehicle = SpawnDynamicVehicle(
+            if Game ~= nil and Game.Map ~= nil and Game.Map.SpawnDynamicVehicle ~= nil then
+                local vehicle = Game.Map.SpawnDynamicVehicle(
                     spawner.RowIndex,
                     spawner.Prefab,
                     spawner.Speed,
@@ -268,8 +268,8 @@ function Tick(deltaTime)
             vInfo.Timer = vInfo.Timer - deltaTime
 
             if vInfo.Timer <= 0 then
-                if ReleaseActor ~= nil and vInfo.Vehicle ~= nil then
-                    ReleaseActor(vInfo.Vehicle)
+                if Game ~= nil and Game.Map ~= nil and Game.Map.ReleaseRuntimeActor ~= nil and vInfo.Vehicle ~= nil then
+                    Game.Map.ReleaseRuntimeActor(vInfo.Vehicle)
                 end
 
                 table.remove(MapManager.ActiveVehicles, i)

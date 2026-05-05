@@ -1,12 +1,45 @@
-#include "Runtime/RowManager.h"
+#include "Games/Crossy/Map/RowManager.h"
 
-#include "Runtime/ObjectPoolSystem.h"
-#include "Scripting/LuaWorldLibrary.h"
+#include "Runtime/ActorPoolSystem.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
 
 #include <algorithm>
 
 #include "GameFramework/World.h"
+
+namespace
+{
+	struct FCrossyPoolWarmupDesc
+	{
+		const char* PrefabPath;
+		int32 Count;
+	};
+
+	const FCrossyPoolWarmupDesc GCrossyDefaultPoolWarmups[] =
+	{
+		{ "Asset/Prefab/Grass.Prefab", 40 },
+		{ "Asset/Prefab/Road.Prefab", 40 },
+		{ "Asset/Prefab/TrafficBarrierB.Prefab", 30 },
+		{ "Asset/Prefab/TrafficBarrierA.Prefab", 30 },
+		{ "Asset/Prefab/InvisibleSideWall.Prefab", 90 },
+
+		{ "Asset/Prefab/Rock.Prefab", 25 },
+		{ "Asset/Prefab/TreeA.Prefab", 15 },
+		{ "Asset/Prefab/TreeB.Prefab", 15 },
+		{ "Asset/Prefab/TreeC.Prefab", 15 },
+		{ "Asset/Prefab/TreeD.Prefab", 15 },
+
+		{ "Asset/Prefab/CarA.Prefab", 10 },
+		{ "Asset/Prefab/CarB.Prefab", 10 },
+		{ "Asset/Prefab/CarC.Prefab", 10 },
+		{ "Asset/Prefab/CarD.Prefab", 10 },
+		{ "Asset/Prefab/MiniBus.Prefab", 10 },
+		{ "Asset/Prefab/FireCar.Prefab", 10 },
+		{ "Asset/Prefab/PoliceCar.Prefab", 10 },
+		{ "Asset/Prefab/RacingCar.Prefab", 10 },
+		{ "Asset/Prefab/BasicCube.Prefab", 4 },
+	};
+}
 
 void FRowData::ClearActors(bool bDestroyActors)
 {
@@ -37,11 +70,11 @@ void FRowData::ClearActors(bool bDestroyActors)
 			{
 				// 이미 풀로 반환된 액터입니다. Row 참조만 제거하고 풀은 유지합니다.
 			}
-			else if (!FObjectPoolSystem::Get().ReleaseActor(Actor))
+			else if (!FActorPoolSystem::Get().ReleaseActor(Actor))
 			{
 				if (World)
 				{
-					FObjectPoolSystem::Get().ForgetActor(Actor);
+					FActorPoolSystem::Get().ForgetActor(Actor);
 					Actor->SetPooledActorState(false, false);
 					World->DestroyActor(Actor);
 				}
@@ -68,9 +101,24 @@ void FRowData::ClearActors(bool bDestroyActors)
 	DynamicActors.clear();
 }
 
-void FRowManager::Initialize()
+void FRowManager::Initialize(UWorld* World)
 {
+    ActiveWorld = World;
     ActiveRows.clear();
+    WarmUpDefaultPools();
+}
+
+void FRowManager::WarmUpDefaultPools()
+{
+	if (!ActiveWorld)
+	{
+		return;
+	}
+
+	for (const FCrossyPoolWarmupDesc& Desc : GCrossyDefaultPoolWarmups)
+	{
+		FActorPoolSystem::Get().WarmUpPrefab(ActiveWorld, FString(Desc.PrefabPath), Desc.Count);
+	}
 }
 
 void FRowManager::Shutdown(bool bDestroyActors)
@@ -80,6 +128,7 @@ void FRowManager::Shutdown(bool bDestroyActors)
 		Row.ClearActors(bDestroyActors);
 	}
 	ActiveRows.clear();
+	ActiveWorld = nullptr;
 }
 
 FRowData* FRowManager::GetRowData(int32 RowIndex)
@@ -148,13 +197,13 @@ void FRowManager::SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FSt
     FRotator SpawnRotation = FRotator();
 	SpawnRotation.Yaw = YawDegrees;
 
-    UWorld* World = FLuaWorldLibrary::GetActiveWorld();
-    if (World)
+    if (ActiveWorld)
     {
-        Obstacle.SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, PrefabPath, SpawnLocation, SpawnRotation);
+        Obstacle.SpawnedActor = FActorPoolSystem::Get().AcquirePrefab(ActiveWorld, PrefabPath, SpawnLocation, SpawnRotation);
 
         if (Obstacle.SpawnedActor)
         {
+            Obstacle.SpawnedActor->SetSerializeToScene(false);
             Obstacle.SpawnedActor->AddTag("__RuntimeSpawned");
             Obstacle.SpawnedActor->AddTag("__RuntimeMap");
             Obstacle.SpawnedActor->AddTag("__RowManaged");
@@ -168,8 +217,7 @@ AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPa
 {
 	FRowData& Row = PushEmptyRow(RowIndex);
 
-	UWorld* World = FLuaWorldLibrary::GetActiveWorld();
-	if (!World) return nullptr;
+	if (!ActiveWorld) return nullptr;
 
 	const float OffsetY = (static_cast<float>(Config.SlotCount) - 1.0f) * 0.5f;
 	const float ExtentY = OffsetY * Config.SlotSize;
@@ -185,7 +233,7 @@ AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPa
 		SpawnRotation.Yaw = 180.0f; 
 	}
 
-	AActor* SpawnedActor = FObjectPoolSystem::Get().AcquirePrefab(World, PrefabPath, SpawnLocation, SpawnRotation);
+	AActor* SpawnedActor = FActorPoolSystem::Get().AcquirePrefab(ActiveWorld, PrefabPath, SpawnLocation, SpawnRotation);
 
 	if (SpawnedActor)
 	{
@@ -207,6 +255,36 @@ AActor* FRowManager::SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPa
 	}
 
 	return SpawnedActor;
+}
+
+bool FRowManager::ReleaseRuntimeActor(AActor* Actor)
+{
+	if (!Actor || !IsAliveObject(Actor))
+	{
+		return false;
+	}
+
+	for (FRowData& Row : ActiveRows)
+	{
+		Row.DynamicActors.erase(
+			std::remove(Row.DynamicActors.begin(), Row.DynamicActors.end(), Actor),
+			Row.DynamicActors.end());
+
+		for (FStaticObstacleData& Obstacle : Row.StaticObstacles)
+		{
+			if (Obstacle.SpawnedActor == Actor)
+			{
+				Obstacle.SpawnedActor = nullptr;
+			}
+		}
+	}
+
+	if (Actor->IsPooledActorInactive())
+	{
+		return true;
+	}
+
+	return FActorPoolSystem::Get().ReleaseActor(Actor);
 }
 
 void FRowManager::MoveForward(int32 NewCurrentRowIndex)

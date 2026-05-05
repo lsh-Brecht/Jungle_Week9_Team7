@@ -89,43 +89,13 @@ local VehicleSpeedMultipliers = {
     [PREFABS.CARD] = 1.10,
 }
 
-local bPoolWarmed = false
 
 function RowGenerator.ConfigureRows()
-    SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
-    SetRowBufferCounts(RowGenerator.MapConfig.KeepRowsBehind, RowGenerator.MapConfig.KeepRowsAhead)
+    Game.Map.SetRowSize(RowGenerator.MapConfig.SlotCount, RowGenerator.MapConfig.SlotSize, RowGenerator.MapConfig.RowDepth)
+    Game.Map.SetRowBufferCounts(RowGenerator.MapConfig.KeepRowsBehind, RowGenerator.MapConfig.KeepRowsAhead)
 
-    -- 시작/재시작에서는 ObjectPool을 유지하므로 WarmUp을 반복하지 않습니다.
-    -- 부족분은 AcquirePrefab이 필요할 때만 생성하고, 초기 스파이크는 RowsPerFrame 분산 생성으로 줄입니다.
-    if bPoolWarmed then
-        return
-    end
+    -- ActorPool warmup 정책은 Crossy C++ RowManager가 담당합니다.
 
-    if World and World.WarmUpPrefabPool then
-        bPoolWarmed = true
-
-        World.WarmUpPrefabPool(PREFABS.GRASSTILE, 40)
-        World.WarmUpPrefabPool(PREFABS.ROADTILE, 40)
-        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_B, 30)
-        World.WarmUpPrefabPool(PREFABS.TRAFFIC_BARRIER_A, 30)
-        World.WarmUpPrefabPool(PREFABS.INVISIBLE_SIDE_WALL, 90)
-
-        World.WarmUpPrefabPool(PREFABS.ROCK, 25)
-        World.WarmUpPrefabPool(PREFABS.TREE1, 15)
-        World.WarmUpPrefabPool(PREFABS.TREE2, 15)
-        World.WarmUpPrefabPool(PREFABS.TREE3, 15)
-        World.WarmUpPrefabPool(PREFABS.TREE4, 15)
-        
-        World.WarmUpPrefabPool(PREFABS.CARA, 10)
-        World.WarmUpPrefabPool(PREFABS.CARB, 10)
-        World.WarmUpPrefabPool(PREFABS.CARC, 10)
-        World.WarmUpPrefabPool(PREFABS.CARD, 10)
-        World.WarmUpPrefabPool(PREFABS.MINIBUS, 10)
-        World.WarmUpPrefabPool(PREFABS.FIRECAR, 10)
-        World.WarmUpPrefabPool(PREFABS.POLICECAR, 10)
-        World.WarmUpPrefabPool(PREFABS.RACINGCAR, 10)
-        World.WarmUpPrefabPool(PREFABS.TRAIN, 4)
-    end
 end
 
 -- 가중치 기반 독립적 선택
@@ -155,7 +125,7 @@ local function SpawnGrassObstacle(rowIndex, slot, prefab)
     local offsetX = RandomRange(-0.2, 0.2)
     local offsetY = RandomRange(-0.2, 0.2)
     local yaw = RandomRange(-15.0, 15.0)
-    SpawnStaticObstacle(rowIndex, slot, prefab, offsetX, offsetY, yaw)
+    Game.Map.SpawnStaticObstacle(rowIndex, slot, prefab, offsetX, offsetY, yaw)
 end
 
 -- 진행도(RowIndex)에 따른 장애물 확률 증가
@@ -168,20 +138,20 @@ function RowGenerator.GenerateRow(rowIndex)
     -- 1. 지형 결정 (Markov Chain)
     local biome = ChooseWeighted(BiomeWeights)
     local biomeType = biome.type
-    SetRowBiome(rowIndex, biomeType)
+    Game.Map.SetRowBiome(rowIndex, biomeType)
     -- print("Biome : " .. (BIOME_NAME[biomeType] or tostring(biomeType)))
 
-    SpawnStaticObstacle(rowIndex, -1, PREFABS.INVISIBLE_SIDE_WALL)
-    SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.SlotCount, PREFABS.INVISIBLE_SIDE_WALL)
+    Game.Map.SpawnStaticObstacle(rowIndex, -1, PREFABS.INVISIBLE_SIDE_WALL)
+    Game.Map.SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.SlotCount, PREFABS.INVISIBLE_SIDE_WALL)
 
     if biomeType == BIOME.GRASS then
-        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
-        SpawnStaticObstacle(rowIndex, 0, PREFABS.TRAFFIC_BARRIER_B)
-        SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.MaxSlotIndex, PREFABS.TRAFFIC_BARRIER_B)
+        Game.Map.SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.GRASSTILE)
+        Game.Map.SpawnStaticObstacle(rowIndex, 0, PREFABS.TRAFFIC_BARRIER_B)
+        Game.Map.SpawnStaticObstacle(rowIndex, RowGenerator.MapConfig.MaxSlotIndex, PREFABS.TRAFFIC_BARRIER_B)
     elseif biomeType == BIOME.ROAD then
-        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.ROADTILE)
+        Game.Map.SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.ROADTILE)
     elseif biomeType == BIOME.RAILWAY then
-        SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.RAILWAYTILE)
+        Game.Map.SpawnStaticObstacle(rowIndex, math.floor(RowGenerator.MapConfig.SlotCount / 2), PREFABS.RAILWAYTILE)
     end
 
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)

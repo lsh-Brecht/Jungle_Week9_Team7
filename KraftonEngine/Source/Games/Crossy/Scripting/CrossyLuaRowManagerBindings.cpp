@@ -1,8 +1,8 @@
-#include "LuaBindings.h"
-#include "SolInclude.h"
+#include "Games/Crossy/Scripting/CrossyLuaBindings.h"
+#include "Scripting/SolInclude.h"
 
-#include "Runtime/RowManager.h"
-#include "Runtime/ObjectPoolSystem.h"
+#include "Games/Crossy/Map/RowManager.h"
+#include "Runtime/ActorPoolSystem.h"
 #include "Scripting/LuaHandles.h"
 #include "Scripting/LuaWorldLibrary.h"
 #include "GameFramework/World.h"
@@ -24,7 +24,7 @@ namespace
             return false;
         }
 
-        // RowManager/ObjectPool에서 생성한 런타임 맵 액터.
+        // RowManager/ActorPool에서 생성한 런타임 맵 액터.
         if (Actor->HasTag("__RuntimeMap") ||
             Actor->HasTag("__RuntimeSpawned") ||
             Actor->HasTag("__RowManaged") ||
@@ -99,8 +99,8 @@ namespace
                 continue;
             }
 
-            // ObjectPool이 들고 있는 active/inactive 참조를 먼저 끊습니다.
-            FObjectPoolSystem::Get().ForgetActor(Actor);
+            // ActorPool이 들고 있는 active/inactive 참조를 먼저 끊습니다.
+            FActorPoolSystem::Get().ForgetActor(Actor);
             Actor->SetPooledActorState(false, false);
 
             World->DestroyActor(Actor);
@@ -134,14 +134,14 @@ namespace
             }
 
             // 풀에서 나온 액터라면 Destroy하지 않고 비활성 풀로 되돌립니다.
-            if (FObjectPoolSystem::Get().ReleaseActor(Actor))
+            if (FActorPoolSystem::Get().ReleaseActor(Actor))
             {
                 ++HandledCount;
                 continue;
             }
 
             // 풀에서 관리하지 않는 이전 빌드 잔여 런타임 액터만 강제로 제거합니다.
-            FObjectPoolSystem::Get().ForgetActor(Actor);
+            FActorPoolSystem::Get().ForgetActor(Actor);
             Actor->SetPooledActorState(false, false);
             World->DestroyActor(Actor);
             ++HandledCount;
@@ -157,7 +157,7 @@ namespace
         FRowManager::Get().Shutdown(false);
 
         const int32 SweptActors = SweepRuntimeMapActorsForSoftReset(World);
-        FRowManager::Get().Initialize();
+        FRowManager::Get().Initialize(World);
 
         UE_LOG("[ResetMapSoft] Runtime map soft reset. SweptActors=%d World=%p", SweptActors, World);
     }
@@ -173,82 +173,103 @@ namespace
 
         if (World)
         {
-            FObjectPoolSystem::Get().ClearWorld(World);
+            FActorPoolSystem::Get().ClearWorld(World);
         }
 
-        FRowManager::Get().Initialize();
+        FRowManager::Get().Initialize(World);
 
         UE_LOG("[ResetMapHard] Runtime map hard reset. SweptActors=%d World=%p", SweptActors, World);
     }
 }
 
-void RegisterRowManagerBinding(sol::state& Lua)
+void RegisterCrossyRowManagerBinding(sol::state& Lua)
 {
-    Lua.set_function("SetRowSize",
-        [](int32 SlotCount, float SlotSize, float RowDepth)
-        {
-            FRowManager::Get().SetRowSize(SlotCount, SlotSize, RowDepth);
-        });
+	sol::table Game = Lua.get_or("Game", Lua.create_table());
+	Lua["Game"] = Game;
+	sol::table Map = Game.get_or("Map", Lua.create_table());
+	Game["Map"] = Map;
 
-    Lua.set_function("SetRowBufferCounts",
-        [](int32 KeepRowsBehind, int32 KeepRowsAhead)
-        {
-            FRowManager::Get().SetRowBufferCounts(KeepRowsBehind, KeepRowsAhead);
-        });
-
-    Lua.set_function("SetRowBiome",
-        [](int32 RowIndex, int32 BiomeType)
-        {
-            FRowManager::Get().SetRowBiome(RowIndex, BiomeType);
-        });
-
-    Lua.set_function("SpawnStaticObstacle",
-        [](int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, sol::optional<float> OffsetX, sol::optional<float> OffsetY, sol::optional<float> YawDegrees)
-        {
-            FRowManager::Get().SpawnStaticObstacle(
-                RowIndex,
-                SlotIndex,
-                PrefabPath,
-                OffsetX.value_or(0.0f),
-                OffsetY.value_or(0.0f),
-                YawDegrees.value_or(0.0f));
-        });
-
-    Lua.set_function("SpawnDynamicVehicle",
-        [](int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX, sol::this_state State) -> sol::object
-        {
-            AActor* Spawned = FRowManager::Get().SpawnDynamicVehicle(RowIndex, PrefabPath, Speed, DirectionX);
-            if (!Spawned)
-            {
-                return sol::nil;
-            }
-
-            FLuaGameObjectHandle Handle;
-            Handle.UUID = Spawned->GetUUID();
-            return sol::make_object(sol::state_view(State), Handle);
-        });
-
-	Lua.set_function("MoveForward",
-		[](int32 NewCurrentRowIndex)
+	Map.set_function("SetRowSize", [](int32 SlotCount, float SlotSize, float RowDepth)
+	{
+		FRowManager::Get().SetRowSize(SlotCount, SlotSize, RowDepth);
+	});
+	Map.set_function("SetRowBufferCounts", [](int32 KeepRowsBehind, int32 KeepRowsAhead)
+	{
+		FRowManager::Get().SetRowBufferCounts(KeepRowsBehind, KeepRowsAhead);
+	});
+	Map.set_function("SetRowBiome", [](int32 RowIndex, int32 BiomeType)
+	{
+		FRowManager::Get().SetRowBiome(RowIndex, BiomeType);
+	});
+	Map.set_function("SpawnStaticObstacle", [](int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, sol::optional<float> OffsetX, sol::optional<float> OffsetY, sol::optional<float> YawDegrees)
+	{
+		FRowManager::Get().SpawnStaticObstacle(RowIndex, SlotIndex, PrefabPath, OffsetX.value_or(0.0f), OffsetY.value_or(0.0f), YawDegrees.value_or(0.0f));
+	});
+	Map.set_function("SpawnDynamicVehicle", [](int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX, sol::this_state State) -> sol::object
+	{
+		AActor* Spawned = FRowManager::Get().SpawnDynamicVehicle(RowIndex, PrefabPath, Speed, DirectionX);
+		if (!Spawned)
 		{
-			FRowManager::Get().MoveForward(NewCurrentRowIndex);
-		});
-
-	Lua.set_function("ResetMap",
-		[]()
+			return sol::nil;
+		}
+		FLuaGameObjectHandle Handle;
+		Handle.UUID = Spawned->GetUUID();
+		return sol::make_object(sol::state_view(State), Handle);
+	});
+	Map.set_function("MoveForward", [](int32 NewCurrentRowIndex)
+	{
+		FRowManager::Get().MoveForward(NewCurrentRowIndex);
+	});
+	Map.set_function("ReleaseRuntimeActor", [](const FLuaGameObjectHandle& Handle)
+	{
+		return FRowManager::Get().ReleaseRuntimeActor(Handle.Resolve());
+	});
+	Map.set_function("IsVehicle", [](const FLuaGameObjectHandle& Handle)
+	{
+		AActor* Actor = Handle.Resolve();
+		if (!Actor || !IsAliveObject(Actor))
 		{
-            SoftResetRuntimeMap();
-		});
+			return false;
+		}
 
-    Lua.set_function("ResetMapSoft",
-        []()
-        {
-            SoftResetRuntimeMap();
-        });
+		if (Actor->HasTag("Vehicle") || Actor->HasTag("__RuntimeVehicle"))
+		{
+			return true;
+		}
 
-    Lua.set_function("ResetMapHard",
-        []()
-        {
-            HardResetRuntimeMap();
-        });
+		const FString ActorName = Actor->GetFName().ToString();
+		if (ContainsToken(ActorName, "Car") ||
+			ContainsToken(ActorName, "Bus") ||
+			ContainsToken(ActorName, "Vehicle") ||
+			ContainsToken(ActorName, "RacingCar") ||
+			ContainsToken(ActorName, "MiniBus"))
+		{
+			return true;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(Component);
+			if (!StaticMeshComponent)
+			{
+				continue;
+			}
+
+			const FString& MeshPath = StaticMeshComponent->GetStaticMeshPath();
+			if (ContainsToken(MeshPath, "Car") ||
+				ContainsToken(MeshPath, "Bus") ||
+				ContainsToken(MeshPath, "Vehicle") ||
+				ContainsToken(MeshPath, "RacingCar") ||
+				ContainsToken(MeshPath, "MiniBus"))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	});
+	Map.set_function("Reset", []() { SoftResetRuntimeMap(); });
+	Map.set_function("ResetSoft", []() { SoftResetRuntimeMap(); });
+	Map.set_function("ResetHard", []() { HardResetRuntimeMap(); });
+
 }

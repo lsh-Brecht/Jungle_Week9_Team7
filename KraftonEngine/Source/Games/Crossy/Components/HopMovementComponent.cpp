@@ -1,4 +1,4 @@
-﻿#include "HopMovementComponent.h"
+#include "Games/Crossy/Components/HopMovementComponent.h"
 
 #include "Component/SceneComponent.h"
 #include "Math/MathUtils.h"
@@ -6,6 +6,7 @@
 #include "Render/Scene/FScene.h"
 #include "Serialization/Archive.h"
 #include "Sound/SoundManager.h"
+#include "Games/Crossy/Audio/CrossyAudioIds.h"
 #include <cmath>
 #include <cstring>
 
@@ -72,7 +73,7 @@ UHopMovementComponent::UHopMovementComponent()
 	DashDelegate.Add(
 		[]()
 		{
-			FSoundManager::Get().PlayEffect(SoundEffect::Dash);
+			FSoundManager::Get().PlayEffect(CrossyAudioIds::Dash);
 		}
 	);
 

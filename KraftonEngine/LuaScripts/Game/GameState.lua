@@ -1,4 +1,4 @@
-local MODULE_NAME = "Game.GameState"
+﻿local MODULE_NAME = "Game.GameState"
 local Vec = FVector.new
 
 local State = package.loaded[MODULE_NAME]
@@ -56,6 +56,25 @@ local function copy_defaults(target, defaults)
             end
         end
     end
+end
+
+
+local function resolve_member(value, owner)
+    if type(value) ~= "function" then
+        return value
+    end
+
+    local ok, result = pcall(value, owner)
+    if ok then
+        return result
+    end
+
+    ok, result = pcall(value)
+    if ok then
+        return result
+    end
+
+    return nil
 end
 
 local function is_valid(handle)
@@ -265,8 +284,8 @@ local function get_score_row_from_location(location)
 end
 
 local function hide_game_over_ui()
-    if UI ~= nil and UI.HideGameOver ~= nil then
-        UI.HideGameOver()
+    if Game ~= nil and Game.UI ~= nil and Game.UI.HideGameOver ~= nil then
+        Game.UI.HideGameOver()
     end
 end
 
@@ -345,6 +364,10 @@ local function save_top_scores()
     end
 end
 
+local function has_game_ui()
+    return Game ~= nil and Game.UI ~= nil
+end
+
 local function record_final_score(score)
     local finalScore = math.max(0, math.floor(score or 0))
     if finalScore > 0 then
@@ -357,20 +380,20 @@ local function record_final_score(score)
 end
 
 local function push_score_to_ui()
-    if UI == nil then
+    if not has_game_ui() then
         return
     end
 
-    if UI.SetScore ~= nil then
-        UI.SetScore(State.Score or 0)
+    if Game.UI.SetScore ~= nil then
+        Game.UI.SetScore(State.Score or 0)
     end
 
-    if UI.SetBestScore ~= nil then
-        UI.SetBestScore(State.BestScore or 0)
+    if Game.UI.SetBestScore ~= nil then
+        Game.UI.SetBestScore(State.BestScore or 0)
     end
 
-    if UI.SetTopScoresText ~= nil then
-        UI.SetTopScoresText(format_top_scores())
+    if Game.UI.SetTopScoresText ~= nil then
+        Game.UI.SetTopScoresText(format_top_scores())
     end
 end
 
@@ -464,8 +487,8 @@ function State.SetPlayerMovementEnabled(enabled)
         return
     end
 
-    local hop = player.HopMovement
-    if hop ~= nil and hop.IsValid ~= nil and hop:IsValid() then
+    local hop = resolve_member(player.HopMovement, player)
+    if hop ~= nil and type(hop) ~= "function" and hop.IsValid ~= nil and hop:IsValid() then
         hop.Simulating = enabled
 
         if not enabled then
@@ -549,13 +572,17 @@ function State.ResetToIntro()
     set_visible(State.CachedHUDText, false)
     set_visible(State.CachedCreditsText, false)
 
-    if UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(false)
+    if has_game_ui() then
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(false)
         end
 
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(true)
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(true)
+        end
+
+        if Game.UI.HideGameOver ~= nil then
+            Game.UI.HideGameOver()
         end
     end
 
@@ -608,13 +635,21 @@ function State.StartGame(reason)
 
     hide_game_over_ui()
 
-    if UI ~= nil then
-        if UI.ResetRun ~= nil then
-            UI.ResetRun()
+    if has_game_ui() then
+        if Game.UI.ResetRun ~= nil then
+            Game.UI.ResetRun()
         end
 
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(true)
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(false)
+        end
+
+        if Game.UI.HideGameOver ~= nil then
+            Game.UI.HideGameOver()
+        end
+
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(true)
         end
     end
 
@@ -717,8 +752,8 @@ function State.RestartRun()
 end
 
 function State.RestartLevel()
-    if Game ~= nil and Game.Restart ~= nil then
-        Game.Restart()
+    if Application ~= nil and Application.RestartSession ~= nil then
+        Application.RestartSession()
         return
     end
     State.RestartRun()
@@ -748,8 +783,19 @@ function State.GameOver(reason)
     State.UpdateHUD()
     push_score_to_ui()
 
-    if UI ~= nil and UI.ShowGameOver ~= nil then
-        UI.ShowGameOver(State.Score or 0, State.BestScore or State.Score or 0)
+    if has_game_ui() then
+        if Game.UI.SetTopScoresText ~= nil then
+            Game.UI.SetTopScoresText(format_top_scores())
+        end
+
+        if Game.UI.ShowGameOver ~= nil then
+            Game.UI.ShowGameOver(State.Score or 0, State.BestScore or State.Score or 0)
+        end
+
+        -- GameOver 문서가 Show된 뒤 다시 한 번 넣어줍니다.
+        if Game.UI.SetTopScoresText ~= nil then
+            Game.UI.SetTopScoresText(format_top_scores())
+        end
     end
 
     if not State.bCreditsPrinted then
@@ -813,13 +859,19 @@ function State.Tick(deltaTime)
         return
     end
 
-    if not State.bUIReady and UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(State.Mode == "Playing")
+    if not State.bUIReady and has_game_ui() then
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(State.Mode == "Playing")
         end
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(State.Mode ~= "Playing")
+
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(State.Mode ~= "Playing")
         end
+
+        if Game.UI.HideGameOver ~= nil and State.Mode ~= "GameOver" then
+            Game.UI.HideGameOver()
+        end
+
         push_score_to_ui()
         State.bUIReady = true
     end

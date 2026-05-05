@@ -1,12 +1,12 @@
-﻿// LuaParryComponentBindings.cpp
+// LuaParryComponentBindings.cpp
 
-#include "LuaBindings.h"
-#include "SolInclude.h"
+#include "Games/Crossy/Scripting/CrossyLuaBindings.h"
+#include "Scripting/SolInclude.h"
 
-#include "LuaBindingHelper.h"
-#include "LuaHandles.h"
+#include "Scripting/LuaBindingHelper.h"
+#include "Games/Crossy/Scripting/CrossyLuaHandles.h"
 
-void RegisterParryComponentBinding(sol::state& Lua)
+void RegisterCrossyParryComponentBinding(sol::state& Lua)
 {
 	Lua.new_usertype<FLuaParryComponentHandle>(
 		"UParryComponent",

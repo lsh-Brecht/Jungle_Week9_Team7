@@ -86,16 +86,16 @@ local function safe_call(label, fn)
 end
 
 local function clear_ui_handler()
-    if UI ~= nil and UI.ClearEventHandler ~= nil then
-        safe_call("UI.ClearEventHandler", function()
-            UI.ClearEventHandler()
+    if Game ~= nil and Game.UI ~= nil and Game.UI.ClearEventHandler ~= nil then
+        safe_call("Game.UI.ClearEventHandler", function()
+            Game.UI.ClearEventHandler()
         end)
     end
 end
 
 local function hide_game_over_ui()
-    if UI ~= nil and UI.HideGameOver ~= nil then
-        UI.HideGameOver()
+    if Game ~= nil and Game.UI ~= nil and Game.UI.HideGameOver ~= nil then
+        Game.UI.HideGameOver()
     end
 end
 
@@ -332,12 +332,12 @@ local function init_intro_camera()
     hide_game_over_ui()
 
     if UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(false)
+        if Game ~= nil and Game.UI ~= nil and Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(false)
         end
 
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(true)
+        if Game ~= nil and Game.UI ~= nil and Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(true)
         end
     end
 
@@ -365,12 +365,12 @@ local function reset_to_intro()
     hide_game_over_ui()
 
     if UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(false)
+        if Game ~= nil and Game.UI ~= nil and Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(false)
         end
 
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(true)
+        if Game ~= nil and Game.UI ~= nil and Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(true)
         end
     end
 
@@ -491,11 +491,47 @@ local function handle_ui_event(eventName)
     end
 
     if eventName == "main_menu" then
-        if State.ResetToIntro ~= nil then
-            State.ResetToIntro()
+        bStarted = false
+        pendingStart = false
+        bIntroActive = true
+
+        hide_game_over_ui()
+
+        local function finish_main_menu_reset()
+            if State.ResetToIntro ~= nil then
+                State.ResetToIntro()
+            end
+
+            reset_to_intro()
         end
 
-        reset_to_intro()
+        local asyncResetFunc = nil
+        local resetFunc = nil
+
+        if _G ~= nil and _G.MapManager_ResetAsync ~= nil then
+            asyncResetFunc = _G.MapManager_ResetAsync
+        elseif MapManager_ResetAsync ~= nil then
+            asyncResetFunc = MapManager_ResetAsync
+        end
+
+        if _G ~= nil and _G.MapManager_Reset ~= nil then
+            resetFunc = _G.MapManager_Reset
+        elseif MapManager_Reset ~= nil then
+            resetFunc = MapManager_Reset
+        end
+
+        if asyncResetFunc ~= nil then
+            asyncResetFunc("MainMenu", function()
+                finish_main_menu_reset()
+            end)
+            return
+        end
+
+        if resetFunc ~= nil then
+            resetFunc("MainMenu")
+        end
+
+        finish_main_menu_reset()
         return
     end
 
@@ -515,8 +551,8 @@ end
 local function bind_ui()
     clear_ui_handler()
 
-    if UI ~= nil and UI.SetEventHandler ~= nil then
-        UI.SetEventHandler(function(eventName)
+    if Game ~= nil and Game.UI ~= nil and Game.UI.SetEventHandler ~= nil then
+        Game.UI.SetEventHandler(function(eventName)
             handle_ui_event(eventName)
         end)
 

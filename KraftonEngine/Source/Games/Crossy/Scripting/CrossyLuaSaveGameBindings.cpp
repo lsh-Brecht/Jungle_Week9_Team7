@@ -1,5 +1,5 @@
-#include "LuaBindings.h"
-#include "SolInclude.h"
+#include "Games/Crossy/Scripting/CrossyLuaBindings.h"
+#include "Scripting/SolInclude.h"
 
 #include "Core/CoreTypes.h"
 #include "Core/Log.h"
@@ -192,7 +192,7 @@ namespace
 	}
 }
 
-void RegisterSaveGameBinding(sol::state& Lua)
+void RegisterCrossySaveGameBinding(sol::state& Lua)
 {
 	sol::table SaveGame = Lua.get_or("SaveGame", Lua.create_table());
 	Lua["SaveGame"] = SaveGame;
