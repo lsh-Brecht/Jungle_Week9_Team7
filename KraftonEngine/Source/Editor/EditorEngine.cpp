@@ -1,4 +1,4 @@
-﻿#include "Editor/EditorEngine.h"
+#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -257,6 +257,7 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 {
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
+	InputSystem::Get().ClearGuiCapture();
 
 	// 1) 현재 에디터 월드를 복제해 PIE 월드 생성 (UE의 CreatePIEWorldByDuplication 대응).
 	UWorld* EditorWorld = GetWorld();
@@ -525,6 +526,7 @@ bool UEditorEngine::EnterPIEPossessedMode()
 	InputSystem::Get().SetUseRawMouse(true);
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
+	InputSystem::Get().ClearGuiCapture();
 	return true;
 }
 
@@ -540,6 +542,7 @@ bool UEditorEngine::EnterPIEEjectedMode()
 	InputSystem::Get().SetUseRawMouse(false);
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
+	InputSystem::Get().ClearGuiCapture();
 	return true;
 }
 

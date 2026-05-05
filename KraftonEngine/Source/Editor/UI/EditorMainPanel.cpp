@@ -1,9 +1,10 @@
-﻿#include "Editor/UI/EditorMainPanel.h"
+#include "Editor/UI/EditorMainPanel.h"
 
 #include "Editor/EditorEngine.h"
 #include "Editor/Packaging/GamePackageBuilder.h"
 #include "Editor/Settings/EditorSettings.h"
 #include "Editor/Viewport/LevelEditorViewportClient.h"
+#include "Viewport/GameViewportClient.h"
 #include "Component/CameraComponent.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/World.h"
@@ -787,20 +788,40 @@ void FEditorMainPanel::Update()
 
 	ImGuiIO& IO = ImGui::GetIO();
 
-	// 뷰포트 슬롯 위에서는 bUsingMouse를 해제해야 TickInteraction이 동작
-	bool bWantMouse = IO.WantCaptureMouse;
-	bool bWantKeyboard = IO.WantCaptureKeyboard || bShowShortcutOverlay;
-	if (EditorEngine && EditorEngine->IsMouseOverViewport())
+	// PIE possessed 중에는 에디터 ImGui hover/click 상태가 게임 룩 입력을 막으면 안 된다.
+	// 이 구간에서는 Rml 게임 UI(인트로/일시정지/게임오버)만 입력 캡처 권한을 가진다.
+	if (EditorEngine && EditorEngine->IsPIEPossessedMode())
 	{
-		bWantMouse = false;
-		if (!IO.WantTextInput && !bShowShortcutOverlay)
+		bool bGameUiWantsMouse = false;
+		bool bGameUiWantsKeyboard = false;
+		if (UGameViewportClient* GameViewportClient = EditorEngine->GetGameViewportClient())
 		{
-			bWantKeyboard = false;
+			FGameUiSystem& GameUi = GameViewportClient->GetGameUiSystem();
+			bGameUiWantsMouse = GameUi.WantsMouse();
+			bGameUiWantsKeyboard = GameUi.WantsKeyboard();
 		}
+
+		InputSystem::Get().SetGuiMouseCapture(bGameUiWantsMouse);
+		InputSystem::Get().SetGuiKeyboardCapture(bGameUiWantsKeyboard);
+		InputSystem::Get().SetGuiTextInputCapture(bGameUiWantsKeyboard);
 	}
-	InputSystem::Get().SetGuiMouseCapture(bWantMouse);
-	InputSystem::Get().SetGuiKeyboardCapture(bWantKeyboard);
-	InputSystem::Get().SetGuiTextInputCapture(IO.WantTextInput);
+	else
+	{
+		// 뷰포트 슬롯 위에서는 bUsingMouse를 해제해야 TickInteraction이 동작
+		bool bWantMouse = IO.WantCaptureMouse;
+		bool bWantKeyboard = IO.WantCaptureKeyboard || bShowShortcutOverlay;
+		if (EditorEngine && EditorEngine->IsMouseOverViewport())
+		{
+			bWantMouse = false;
+			if (!IO.WantTextInput && !bShowShortcutOverlay)
+			{
+				bWantKeyboard = false;
+			}
+		}
+		InputSystem::Get().SetGuiMouseCapture(bWantMouse);
+		InputSystem::Get().SetGuiKeyboardCapture(bWantKeyboard);
+		InputSystem::Get().SetGuiTextInputCapture(IO.WantTextInput);
+	}
 
 	// IME는 ImGui가 텍스트 입력을 원할 때만 활성화.
 	if (Window)
