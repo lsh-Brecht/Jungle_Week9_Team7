@@ -1,8 +1,9 @@
 ﻿#include "SoundManager.h"
+#include <filesystem>
 
 void FSoundManager::initialize()
 {
-	if (!m_bgm.openFromFile(FPaths::ToUtf8(FPaths::Combine(FPaths::AssetDir() , L"Sound/BackgroundMusic.wav"))))
+	if (!m_bgm.openFromFile(std::filesystem::path(FPaths::Combine(FPaths::AssetDir(), L"Sound/BackgroundMusic.wav"))))
 	{
 		throw std::runtime_error("BGM Load Failed : Sound/BackGround.wav" );
 	}
@@ -30,7 +31,7 @@ void FSoundManager::StopBGM()
 void FSoundManager::LoadEffect(SoundEffect ID, const std::wstring& FilePath)
 {
 	auto buffer = std::make_unique<sf::SoundBuffer>();
-	if (!buffer.get()->loadFromFile(FPaths::ToUtf8(FilePath)))
+	if (!buffer.get()->loadFromFile(std::filesystem::path(FilePath)))
 
 		throw std::runtime_error("Effect Load Failed");
 
