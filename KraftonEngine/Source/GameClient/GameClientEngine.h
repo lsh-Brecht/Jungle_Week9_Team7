@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine/Runtime/Engine.h"
 #include "GameClient/GameCameraManager.h"
@@ -43,8 +43,8 @@ public:
 	void RequestExit() override;
 
 private:
-	void TickAlways(float DeltaTime);
-	void TickInGame(float DeltaTime);
+	void TickAlways(float RawDeltaTime);
+	void TickInGame(float GameDeltaTime, float RawDeltaTime);
 	void ProcessPendingCommands();
 	bool RestartGame();
 	void InitCameraManager();

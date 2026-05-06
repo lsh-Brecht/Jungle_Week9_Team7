@@ -78,7 +78,7 @@ public:
 
 	void InitWorld();      // Set up the world before gameplay begins
 	void BeginPlay();      // Triggers BeginPlay on all actors
-	void Tick(float DeltaTime, ELevelTick TickType);  // Drives the game loop every frame
+	void Tick(float GameDeltaTime, float RawDeltaTime, ELevelTick TickType);  // Drives the game loop every frame
 	void EndPlay();        // Cleanup before world is destroyed
 
 	bool HasBegunPlay() const { return bHasBegunPlay; }
@@ -112,7 +112,7 @@ public:
 	// FScene — 렌더 프록시 관리자
 	FScene& GetScene() { return Scene; }
 	const FScene& GetScene() const { return Scene; }
-	
+
 	FSpatialPartition& GetPartition() { return Partition; }
 	const FOctree* GetOctree() const { return Partition.GetOctree(); }
 	void InsertActorToOctree(AActor* actor);
@@ -122,7 +122,7 @@ public:
 	void UpdateCollision();
 	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 	void ApplyCollisionDebugVisualization();
-	void UpdatePlayerCameraManagers(float DeltaTime);
+	void UpdatePlayerCameraManagers(float GameDeltaTime, float RawDeltaTime);
 
 private:
 	//TArray<AActor*> Actors;
@@ -136,7 +136,7 @@ private:
 	bool bHasBegunPlay = false;
 	bool bHasLastFullLODUpdateCameraPos = false;
 	mutable FWorldPrimitivePickingBVH WorldPrimitivePickingBVH;
-	mutable FWorldCollisionSystem WorldCollisionSystem{this};
+	mutable FWorldCollisionSystem WorldCollisionSystem{ this };
 	int32 DeferredPickingBVHUpdateDepth = 0;
 	bool bDeferredPickingBVHDirty = false;
 	uint32 VisibleProxyBuildFrame = 0;

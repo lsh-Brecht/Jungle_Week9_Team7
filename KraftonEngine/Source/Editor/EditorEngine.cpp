@@ -1,4 +1,4 @@
-#include "Editor/EditorEngine.h"
+﻿#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -40,24 +40,24 @@ namespace
 
 namespace
 {
-FString BuildScenePathFromStem(const FString& InStem)
-{
-	std::filesystem::path ScenePath = std::filesystem::path(FSceneSaveManager::GetSceneDirectory())
-		/ (FPaths::ToWide(InStem) + FSceneSaveManager::SceneExtension);
-	return FPaths::ToUtf8(ScenePath.wstring());
-}
+	FString BuildScenePathFromStem(const FString& InStem)
+	{
+		std::filesystem::path ScenePath = std::filesystem::path(FSceneSaveManager::GetSceneDirectory())
+			/ (FPaths::ToWide(InStem) + FSceneSaveManager::SceneExtension);
+		return FPaths::ToUtf8(ScenePath.wstring());
+	}
 
-FString GetFileStem(const FString& InPath)
-{
-	const std::filesystem::path Path(FPaths::ToWide(InPath));
-	return FPaths::ToUtf8(Path.stem().wstring());
-}
+	FString GetFileStem(const FString& InPath)
+	{
+		const std::filesystem::path Path(FPaths::ToWide(InPath));
+		return FPaths::ToUtf8(Path.stem().wstring());
+	}
 }
 
 void UEditorEngine::Init(FWindowsWindow* InWindow)
 {
 	RegisterLinkedRuntimeModules();
-	
+
 	FProjectSettings::Get().LoadFromFile(FProjectSettings::GetDefaultPath());
 	GetRuntimeModules().LoadModules(FProjectSettings::Get().RuntimeModules);
 
@@ -135,6 +135,8 @@ void UEditorEngine::OnWindowResized(uint32 Width, uint32 Height)
 
 void UEditorEngine::Tick(float DeltaTime)
 {
+	const float RawDeltaTime = DeltaTime;
+
 	// --- PIE 요청 처리 (프레임 경계에서 처리되도록 Tick 선두에서 소비) ---
 	if (bRequestEndPlayMapQueued)
 	{
@@ -146,22 +148,30 @@ void UEditorEngine::Tick(float DeltaTime)
 		StartQueuedPlaySessionRequest();
 	}
 
+	float WorldDeltaTime = RawDeltaTime;
+	if (IsPlayingInEditor() || (GetWorld() && GetWorld()->HasBegunPlay()))
+	{
+		GetTimeManager().Update(RawDeltaTime);
+		WorldDeltaTime = GetTimeManager().GetGameDeltaTime();
+	}
+
 	ApplyTransformSettingsToGizmo();
 	FDirectoryWatcher::Get().ProcessChanges();
-	FNotificationManager::Get().Tick(DeltaTime);
+	FNotificationManager::Get().Tick(RawDeltaTime);
 	InputSystem::Get().Tick();
-	TaskScheduler.Tick(DeltaTime);
+	// 추후 게임 전용 Task 분리 시 WorldDeltaTime 적용 여부 검토
+	TaskScheduler.Tick(RawDeltaTime);
 	MainPanel.Update();
 	InputSystem::Get().RefreshSnapshot();
 
 
 	for (FEditorViewportClient* VC : ViewportLayout.GetAllViewportClients())
 	{
-		VC->Tick(DeltaTime);
+		VC->Tick(RawDeltaTime);
 	}
 
-	WorldTick(DeltaTime);
-	Render(DeltaTime);
+	WorldTick(WorldDeltaTime, RawDeltaTime);
+	Render(RawDeltaTime);
 	SelectionManager.Tick();
 }
 
@@ -389,22 +399,22 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		ModuleContext.Renderer = &Renderer;
 		ModuleContext.ViewportClient = PIEViewportClient;
 		ModuleContext.UiCommands.ExecuteCommand = [this](const FString& CommandName)
-		{
-			if (CommandName == "Viewport.Resume" || CommandName == "Viewport.ClosePauseMenu" || CommandName == "Application.Exit")
 			{
-				RequestEndPlayMap();
-			}
-			else if (CommandName == "Application.RestartSession")
-			{
-				FRequestPlaySessionParams Params;
-				RequestPlaySession(Params);
-			}
-		};
+				if (CommandName == "Viewport.Resume" || CommandName == "Viewport.ClosePauseMenu" || CommandName == "Application.Exit")
+				{
+					RequestEndPlayMap();
+				}
+				else if (CommandName == "Application.RestartSession")
+				{
+					FRequestPlaySessionParams Params;
+					RequestPlaySession(Params);
+				}
+			};
 		GetRuntimeModules().OnViewportCreated(ModuleContext);
 
 	}
 	EnterPIEPossessedMode();
-	
+
 	//이 코드와 대응되는 게 아래 EndPlayMap()에 있음.
 	//MainPanel.HideEditorWindowsForPIE(); //PIE 중에는 에디터 패널을 숨김.
 	//ViewportLayout.DisableWorldAxisForPIE(); //PIE 중에는 월드 축 렌더링을 비활성화.
@@ -482,7 +492,7 @@ void UEditorEngine::EndPlayMap()
 	SelectionManager.ClearSelection();
 	//SelectionManager.SetGizmoEnabled(true); //PIE가 끝나면 gizmo 활성화
 	SelectionManager.SetWorld(GetWorld());
-	
+
 	//이 코드와 대응되는 게 위의 StartPlayInEditorSession()에 있음.
 	//MainPanel.RestoreEditorWindowsAfterPIE();
 	//ViewportLayout.RestoreWorldAxisAfterPIE();
@@ -759,7 +769,7 @@ bool UEditorEngine::SaveSceneAsWithDialog()
 		.bPathMustExist = true,
 		.bPromptOverwrite = true,
 		.bReturnRelativeToProjectRoot = false,
-	});
+		});
 	if (SelectedPath.empty())
 	{
 		return false;
@@ -809,7 +819,7 @@ bool UEditorEngine::LoadSceneWithDialog()
 		.bPathMustExist = true,
 		.bPromptOverwrite = false,
 		.bReturnRelativeToProjectRoot = false,
-	});
+		});
 	if (SelectedPath.empty())
 	{
 		return false;

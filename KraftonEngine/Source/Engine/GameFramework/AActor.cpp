@@ -305,7 +305,7 @@ void AActor::TickActor(float DeltaSeconds, ELevelTick TickType, FActorTickFuncti
 	if (GetWorld())
 	{
 		//유저 코드 
-		Tick(DeltaSeconds);	
+		Tick(DeltaSeconds);
 	}
 }
 

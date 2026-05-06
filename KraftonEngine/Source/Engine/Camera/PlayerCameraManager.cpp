@@ -1,5 +1,6 @@
 ﻿#include "Camera/PlayerCameraManager.h"
 
+#include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
 #include "Component/ComponentReferenceUtils.h"
@@ -70,8 +71,6 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
-	//UE_LOG("[CameraManager] Initialize");
-	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
@@ -175,15 +174,6 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 {
-	//if (!bDebugModifierAdded)
-	//{
-	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-	//	AddCameraModifier(TestModifier);
-	//	bDebugModifierAdded = true;
-
-	//	UE_LOG("[CameraManager] Debug modifier added");
-	//}
-
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -194,12 +184,6 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 	{
 		return;
 	}
-
-	//테스트
-	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-	//AddCameraModifier(TestModifier);
-
-	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -242,6 +226,7 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 		FCameraView FinalView = CurrentView;
 		ApplyCameraModifiers(RawDeltaTime, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
+		UpdateVignetteCenter(TargetCamera);
 
 		return;
 	}
@@ -295,6 +280,7 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 	FCameraView FinalView = CurrentView;
 	ApplyCameraModifiers(RawDeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
+	UpdateVignetteCenter(TargetCamera);
 }
 
 void APlayerCameraManager::SnapToActiveCamera()
@@ -318,28 +304,29 @@ void APlayerCameraManager::SnapToActiveCamera()
 		FCameraView FinalView = CurrentView;
 		ApplyCameraModifiers(0.0f, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
+		UpdateVignetteCenter(ActiveCamera);
 	}
 }
 
 void APlayerCameraManager::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
 {
 	auto RemapRef = [&ActorUUIDRemap](FCameraComponentReference& Ref)
-	{
-		if (Ref.OwnerActorUUID == 0)
 		{
-			return;
-		}
+			if (Ref.OwnerActorUUID == 0)
+			{
+				return;
+			}
 
-		auto It = ActorUUIDRemap.find(Ref.OwnerActorUUID);
-		if (It != ActorUUIDRemap.end())
-		{
-			Ref.OwnerActorUUID = It->second;
-		}
-		else
-		{
-			Ref.Reset();
-		}
-	};
+			auto It = ActorUUIDRemap.find(Ref.OwnerActorUUID);
+			if (It != ActorUUIDRemap.end())
+			{
+				Ref.OwnerActorUUID = It->second;
+			}
+			else
+			{
+				Ref.Reset();
+			}
+		};
 
 	RemapRef(ActiveCameraRef);
 	RemapRef(PendingCameraRef);
@@ -421,7 +408,7 @@ UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeP
 			{
 				continue;
 			}
-			
+
 			if (!ExistingShake->IsPendingRemove())
 			{
 				ExistingShake->StartShake(Params);
@@ -429,16 +416,16 @@ UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeP
 			}
 		}
 	}
-	
+
 	UCameraShakeModifier* NewShake = UObjectManager::Get().CreateObject<UCameraShakeModifier>(this);
 	if (!NewShake)
 	{
 		return nullptr;
 	}
-	
+
 	NewShake->SetPriority(128);
 	NewShake->StartShake(Params);
-	
+
 	AddCameraModifier(NewShake);
 	return NewShake;
 }
@@ -535,6 +522,15 @@ FCameraView APlayerCameraManager::BlendViews(
 		break;
 	}
 
+	// PostProcess 보간 — 카메라 자체 baseline. modifier가 ApplyCameraModifiers에서 추가로 덮어씀.
+	Out.PostProcess.VignetteCenter.X = LerpFloat(From.PostProcess.VignetteCenter.X, To.PostProcess.VignetteCenter.X, Alpha);
+	Out.PostProcess.VignetteCenter.Y = LerpFloat(From.PostProcess.VignetteCenter.Y, To.PostProcess.VignetteCenter.Y, Alpha);
+	Out.PostProcess.VignetteIntensity = LerpFloat(From.PostProcess.VignetteIntensity, To.PostProcess.VignetteIntensity, Alpha);
+	Out.PostProcess.VignetteSmoothness = LerpFloat(From.PostProcess.VignetteSmoothness, To.PostProcess.VignetteSmoothness, Alpha);
+	Out.PostProcess.VignetteColor = LerpVector(From.PostProcess.VignetteColor, To.PostProcess.VignetteColor, Alpha);
+	Out.PostProcess.FadeColor = LerpVector(From.PostProcess.FadeColor, To.PostProcess.FadeColor, Alpha);
+	Out.PostProcess.FadeAlpha = LerpFloat(From.PostProcess.FadeAlpha, To.PostProcess.FadeAlpha, Alpha);
+
 	return Out;
 }
 
@@ -573,7 +569,6 @@ void APlayerCameraManager::EnsureOutputCamera()
 
 void APlayerCameraManager::AddCameraModifier(UCameraModifier* Modifier)
 {
-	UE_LOG("[CameraManager] AddCameraModifier: %p", Modifier);
 	if (!Modifier || !IsAliveObject(Modifier))
 	{
 		return;
@@ -634,16 +629,47 @@ void APlayerCameraManager::ClearCameraModifiers()
 	}
 
 	ModifierList.clear();
+	FadeModifier = nullptr;
 }
 
-void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
+UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
+{
+	if (FadeModifier && IsAliveObject(FadeModifier)
+		&& std::find(ModifierList.begin(), ModifierList.end(), FadeModifier) != ModifierList.end())
+	{
+		return FadeModifier;
+	}
+
+	FadeModifier = UObjectManager::Get().CreateObject<UCameraFadeModifier>(this);
+	if (FadeModifier)
+	{
+		AddCameraModifier(FadeModifier);
+	}
+	return FadeModifier;
+}
+
+void APlayerCameraManager::StartFadeIn(float Duration, float TargetAlpha, const FVector& Color)
+{
+	if (UCameraFadeModifier* Mod = EnsureFadeModifier())
+	{
+		Mod->StartFadeIn(Duration, TargetAlpha, Color);
+	}
+}
+
+void APlayerCameraManager::StartFadeOut(float Duration)
+{
+	if (FadeModifier && IsAliveObject(FadeModifier))
+	{
+		FadeModifier->StartFadeOut(Duration);
+	}
+}
+
+void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView& InOutView)
 {
 	if (!InOutView.bValid || ModifierList.empty())
 	{
 		return;
 	}
-
-	//UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
 
 	CleanupCameraModifiers();
 	SortCameraModifiers();
@@ -656,7 +682,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 			continue;
 		}
 
-		const bool bContinueChain = Modifier->UpdateCameraModifier(DeltaTime, InOutView);
+		const bool bContinueChain = Modifier->UpdateCameraModifier(RawDeltaTime, InOutView);
 		if (!bContinueChain)
 		{
 			break;
