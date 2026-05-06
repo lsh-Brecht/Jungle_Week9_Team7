@@ -295,15 +295,6 @@ void UHopMovementComponent::AddMovementInput(const FVector& WorldDirection, floa
 	PendingMovementInput += Direction * Scale;
 }
 
-void UHopMovementComponent::SetLocalMovementInput(const FVector& InLocalInput)
-{
-	SetMovementInput(BuildWorldInputFromLocal(InLocalInput));
-}
-
-void UHopMovementComponent::AddLocalMovementInput(const FVector& InLocalDirection, float Scale)
-{
-	AddMovementInput(BuildWorldInputFromLocal(InLocalDirection), Scale);
-}
 
 bool UHopMovementComponent::ApplyControllerMovementInput(const FControllerMovementInput& Input)
 {
@@ -317,18 +308,6 @@ bool UHopMovementComponent::ApplyControllerMovementInput(const FControllerMoveme
 	return true;
 }
 
-FVector UHopMovementComponent::BuildWorldInputFromLocal(const FVector& InLocalInput) const
-{
-	USceneComponent* BasisComponent = GetUpdatedComponent();
-	if (!BasisComponent)
-	{
-		return ClampInputMagnitude(InLocalInput);
-	}
-
-	const FVector Forward = ClampInputMagnitude(BasisComponent->GetForwardVector());
-	const FVector Right = ClampInputMagnitude(BasisComponent->GetRightVector());
-	return ClampInputMagnitude((Forward * InLocalInput.X) + (Right * InLocalInput.Y));
-}
 
 FVector UHopMovementComponent::ConsumeFrameMovementInput()
 {
@@ -487,15 +466,6 @@ void UHopMovementComponent::StopSimulating()
 	StopMovementImmediately();
 }
 
-FVector UHopMovementComponent::GetPreviewVelocity() const
-{
-	const FVector Input = ClampInputMagnitude(MovementInput + PendingMovementInput);
-	if (Input.Length() <= KInputTolerance)
-	{
-		return FVector::ZeroVector;
-	}
-	return Input * GetEffectiveMoveSpeed();
-}
 
 void UHopMovementComponent::Dash()
 {

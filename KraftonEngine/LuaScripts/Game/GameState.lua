@@ -490,12 +490,6 @@ function State.SetPlayerMovementEnabled(enabled)
     local hop = resolve_member(player.HopMovement, player)
     if hop ~= nil and type(hop) ~= "function" and hop.IsValid ~= nil and hop:IsValid() then
         hop.Simulating = enabled
-
-        if not enabled then
-            hop:ClearMovementInput()
-            hop:StopMovementImmediately()
-        end
-
         return
     end
 
