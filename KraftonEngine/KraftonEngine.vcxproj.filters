@@ -950,6 +950,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaSpringArmComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>

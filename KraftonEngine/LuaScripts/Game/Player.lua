@@ -173,7 +173,10 @@ local Player = {
     isDeadTriggered = false,
     deathTimer = 0.0,
     fadeStarted = false,
-    vignetteStarted = false
+    vignetteStarted = false,
+
+    -- [테스트] 카메라 셰이크 쿨다운
+    cameraShakeCooldown = 0.0
 }
 
 local function Log(msg)
@@ -310,12 +313,6 @@ local function ResetPostProcessEffect()
     Player.fadeStarted = false
     Player.vignetteStarted = false
     
-    if IsValidHandle(Player.camera) then
-        -- 기본값으로 복구 (C++ 기본값과 일치)
-        Player.camera.VignetteIntensity = 1.0
-        Player.camera.FadeAlpha = 0.0
-    end
-    
     if IsValidHandle(Player.controller) then
         if Player.controller.StopVignette ~= nil then
             Player.controller:StopVignette(0.0)
@@ -396,8 +393,9 @@ local function BuildInputState()
             Player.prevGuiMouse = guiMouse
         end
     end
+    
     if IsGuiUsingKeyboard() then
-        Log("!!! GUI IS CONSUMING KEYBOARD")
+        -- Log("!!! GUI IS CONSUMING KEYBOARD")
         return {
             W = false,
             A = false,
@@ -405,6 +403,7 @@ local function BuildInputState()
             D = false,
             SHIFT = false,
             Dash = false,
+            Parry = false,
             any = false,
             signature = "GUI_KEYBOARD_CAPTURED"
         }
@@ -415,10 +414,6 @@ local function BuildInputState()
     local manualEdge2 = mouse2Now and (not Player.prevMouse2)
     local dashEdge = engineEdge2 or manualEdge2
 
-    if dashEdge then
-        Log("!!! MOUSE2 EDGE DETECTED !!!")
-    end
-
     Player.prevMouse2 = mouse2Now
 
     -- Parry 에지 판정용 (직전 프레임의 MOUSE1 상태)
@@ -426,10 +421,6 @@ local function BuildInputState()
     local engineEdge1 = GetKeyDown("MOUSE1")
     local manualEdge1 = mouse1Now and (not Player.prevMouse1)
     local parryEdge = engineEdge1 or manualEdge1
-
-    if parryEdge then
-        Log("!!! MOUSE1 EDGE DETECTED (PARRY) !!!")
-    end
 
     Player.prevMouse1 = mouse1Now
 
@@ -450,7 +441,9 @@ local function BuildInputState()
         " A=" .. BoolStr(state.A) ..
         " S=" .. BoolStr(state.S) ..
         " D=" .. BoolStr(state.D) ..
-        " SHIFT=" .. BoolStr(state.SHIFT)
+        " SHIFT=" .. BoolStr(state.SHIFT) ..
+        " Dash=" .. BoolStr(state.Dash) ..
+        " Parry=" .. BoolStr(state.Parry)
 
     return state
 end
@@ -786,8 +779,6 @@ local function SetupCamera()
     ConfigureCameraProperties(Player.camera)
 
     -- ActiveCamera 연결.
-    -- SetActiveCamera는 ControlRotation을 카메라 월드 회전으로 덮어쓸 수 있으므로
-    -- 호출 직후 현재 yaw/pitch 기준으로 다시 복원합니다.
     Player.controller:SetActiveCamera(Player.camera)
 
     if Player.camera.SetAsActiveCamera ~= nil then
@@ -802,12 +793,10 @@ local function SetupCamera()
     Player.cameraSwitchGuardTime = CONFIG.ControllerInput.CameraSwitchLookGuardTime
     Player.dropMouseDeltaFrames = 2
 
-    -- 기존처럼 CONFIG.Controller.ControlRotation으로 0도 복원하지 않고
-    -- 현재 Player.yaw / Player.pitch를 유지합니다.
     Player.controller:SetControlRotation(Rot(Player.pitch, Player.yaw, 0.0))
     Player.pawn.Rotation = Rot(0.0, Player.yaw, 0.0)
 
-    Log("[CAMERA] CameraActor/CameraComponent 설정 완료: Follow Target = owner Pawn, ActiveCamera 연결")
+    Log("[CAMERA] CameraActor/CameraComponent 설정 완료")
 
     return true
 end
@@ -842,7 +831,7 @@ local function Bootstrap()
 
     ResetPostProcessEffect()
 
-    print("[Player.lua][BOOT_OK] 설정 완료: Pawn / PlayerController / CameraActor 구조를 씬 설정대로 구성했습니다.")
+    print("[Player.lua][BOOT_OK] 설정 완료")
 
     return true
 end
@@ -852,15 +841,12 @@ local function UpdateLook(dt)
         return
     end
 
-    -- 카메라 전환 직후 몇 프레임은 마우스 델타를 읽어서 버립니다.
-    -- 읽지 않고 return만 하면 엔진에 따라 델타가 다음 프레임에 누적될 수 있습니다.
     if Player.dropMouseDeltaFrames ~= nil and Player.dropMouseDeltaFrames > 0 then
         GetMouseDelta()
         Player.dropMouseDeltaFrames = Player.dropMouseDeltaFrames - 1
         return
     end
 
-    -- 카메라 전환 직후 짧은 시간 동안 마우스 입력을 버립니다.
     if Player.cameraSwitchGuardTime ~= nil and Player.cameraSwitchGuardTime > 0.0 then
         GetMouseDelta()
         Player.cameraSwitchGuardTime = Player.cameraSwitchGuardTime - dt
@@ -875,7 +861,6 @@ local function UpdateLook(dt)
         return
     end
 
-    -- 한 프레임에 너무 큰 마우스 델타가 들어오면 화면이 뚝 끊겨 보일 수 있으므로 제한합니다.
     local maxDelta = CONFIG.ControllerInput.MaxMouseDeltaPerFrame or 80.0
     dx = Clamp(dx, -maxDelta, maxDelta)
     dy = Clamp(dy, -maxDelta, maxDelta)
@@ -890,9 +875,6 @@ local function UpdateLook(dt)
     )
 
     Player.controller:SetControlRotation(Rot(Player.pitch, Player.yaw, 0.0))
-
-    -- OrientationComponent도 ControlRotationYaw지만,
-    -- Tick 순서 문제를 피하려고 Pawn yaw를 즉시 맞춰줍니다.
     Player.pawn.Rotation = Rot(0.0, Player.yaw, 0.0)
 end
 
@@ -962,11 +944,6 @@ local function UpdateMovement(dt, inputState)
 
     local speed = CONFIG.ControllerInput.MoveSpeed * sprintScale
     Player.pawn.Location = Player.pawn.Location + worldDir * speed * dt
-
-    if not Player.printedMove then
-        print("[Player.lua][MOVE_FALLBACK] HopMovementComponent가 없어 Pawn.Location 직접 이동")
-        Player.printedMove = true
-    end
 end
 
 local function UpdateCombat(inputState)
@@ -987,7 +964,6 @@ function OnOverlap(otherActor)
         return
     end
 
-    -- 패링 중이면 차량 충돌 패배를 무시합니다. 실제 투사체 반사/밀어내기는 ParryComponent가 처리합니다.
     if IsValidHandle(Player.parryComp) and Player.parryComp.IsParrying ~= nil then
         local ok, isParrying = pcall(function()
             return Player.parryComp:IsParrying()
@@ -1000,13 +976,31 @@ function OnOverlap(otherActor)
 
     -- 사망 연출 시작
     Player.isDeadTriggered = true
-    Player.deathTimer = 2.0 -- 총 연출 시간 (Phase 1: Vignette 0.5s + Phase 2: Fade 1.5s)
+    Player.deathTimer = 2.0
     Player.fadeStarted = false
     Player.vignetteStarted = false
     
-    local camUUID = "nil"
-    if IsValidHandle(Player.camera) then camUUID = tostring(Player.camera.UUID) end
-    Log("[COLLISION] Vehicle hit! Actor: " .. tostring(otherActor.Name) .. " -> Death Sequence Start. CamUUID: " .. camUUID)
+    if State ~= nil then
+        State.IsDying = true
+    end
+
+    if World ~= nil and World.StartSlomo ~= nil then
+        World.StartSlomo(0.2, 3.0)
+    end
+
+    if IsValidHandle(Player.controller) then
+        -- 피격 시 즉각적인 붉은 Vignette 효과 (0.3초 동안 intensity 0.4로)
+        if Player.controller.StartVignette ~= nil then
+            Player.controller:StartVignette(0.4, Vec(0.8, 0, 0), 0.3, 0.6)
+        end
+        
+        -- 강한 셰이크
+        if Player.controller.StartCameraShake ~= nil then
+            Player.controller:StartCameraShake(0.4, 0.15, 2.0, 30.0)
+        end
+    end
+
+    Log("[COLLISION] Vehicle hit! Actor: " .. tostring(otherActor.Name))
 end
 
 function BeginPlay()
@@ -1022,57 +1016,18 @@ function OnInput(deltaTime)
 
     local dt = SafeDeltaTime(deltaTime)
 
-         -- [수정] 게임이 진행 중이 아닐 때는 사망 연출 플래그를 강제로 리셋합니다.
-         if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
-             if Player.isDeadTriggered then
-                 Log("[DEATH_ABORT] Game is no longer playing. Resetting death FX.")
-                 ResetPostProcessEffect()
-             end
-             return
-        end
-
-    -- 사망 연출 처리
-    if Player.isDeadTriggered then
-        if Player.deathTimer > 0 then
-            Player.deathTimer = Player.deathTimer - dt
-            
-            -- Phase 1: Vignette 연출 (남은 시간 2.0s ~ 1.5s 구간, 총 0.5초)
-            if Player.deathTimer > 1.5 then
-                if not Player.vignetteStarted then
-                    if IsValidHandle(Player.controller) then
-                        -- 0.5초 동안 VignetteIntensity를 1.0(Off)에서 0.1(Strong)으로 보간
-                        -- 붉은색, 보충 시간 0.5초, 부드러움 0.6
-                        Player.controller:StartVignette(0.1, Vec(0.8, 0, 0), 0.5, 0.6)
-                    end
-                    Player.vignetteStarted = true
-                end
-            else
-                -- Phase 2: Fade Out 연출 시작 (1.5s 시점 일회성 호출)
-                if not Player.fadeStarted then
-                    if IsValidHandle(Player.controller) then
-                        -- 나머지 1.5초 동안 화면을 검게 덮음
-                        Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
-                    end
-                    Player.fadeStarted = true
-                end
-            end
-
-            if Player.deathTimer <= 0 then
-                Log("[DEATH] Sequence Finished -> Triggering GameOver")
-                if State.GameOver ~= nil then
-                    State.GameOver("Hit by vehicle")
-                elseif Game ~= nil and Game.DispatchEvent ~= nil then
-                    Game.DispatchEvent("Defeat", Player.ownerObject)
-                end
-            end
-        end
-        return -- 연출 중에는 모든 게임플레이 입력(이동, 회전 등)을 무시
+    -- 셰이크 쿨다운 차감
+    if Player.cameraShakeCooldown > 0.0 then
+        Player.cameraShakeCooldown = Player.cameraShakeCooldown - dt
     end
 
+    -- 게임 중이 아닐 때 처리
     if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
-        Player.prevMouse1 = GetKey("MOUSE1")
-        Player.prevMouse2 = GetKey("MOUSE2")
-
+        if Player.isDeadTriggered then
+            Log("[DEATH_ABORT] Game stopped. Resetting death FX.")
+            ResetPostProcessEffect()
+        end
+        
         if IsValidHandle(Player.hopMovement) then
             Player.hopMovement:ClearMovementInput()
         end
@@ -1080,11 +1035,44 @@ function OnInput(deltaTime)
         if Input ~= nil and Input.SetMouseCaptured ~= nil then
             Input.SetMouseCaptured(false)
         end
-
         return
     end
 
-    local dt = SafeDeltaTime(deltaTime)
+    -- 사망 연출 처리
+    if Player.isDeadTriggered then
+        if Player.deathTimer > 0 then
+            Player.deathTimer = Player.deathTimer - dt
+            
+            -- Phase 1: Vignette 연출 (남은 시간 2.0s ~ 1.5s 구간)
+            if Player.deathTimer > 1.5 then
+                if not Player.vignetteStarted then
+                    if IsValidHandle(Player.controller) and Player.controller.StartVignette ~= nil then
+                        -- 0.5초 동안 더 강한 Vignette(0.1)로 보간
+                        Player.controller:StartVignette(0.1, Vec(0.8, 0, 0), 0.5, 0.6)
+                    end
+                    Player.vignetteStarted = true
+                end
+            else
+                -- Phase 2: Fade Out 시작
+                if not Player.fadeStarted then
+                    if IsValidHandle(Player.controller) then
+                        Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
+                    end
+                    Player.fadeStarted = true
+                end
+            end
+
+            if Player.deathTimer <= 0 then
+                Log("[DEATH] Sequence Finished")
+                if State.GameOver ~= nil then
+                    State.GameOver("Hit by vehicle")
+                elseif Game ~= nil and Game.DispatchEvent ~= nil then
+                    Game.DispatchEvent("Defeat", Player.ownerObject)
+                end
+            end
+        end
+        return 
+    end
 
     if Input ~= nil and Input.SetMouseCaptured ~= nil then
         Input.SetMouseCaptured(true)

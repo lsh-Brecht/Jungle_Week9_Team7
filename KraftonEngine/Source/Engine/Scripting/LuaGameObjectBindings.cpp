@@ -19,6 +19,7 @@
 #include "Component/StaticMeshComponent.h"
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
+#include "Component/SpringArmComponent.h"
 #include "Component/Script/LuaScriptComponent.h"
 #include "Component/PawnOrientationComponent.h"
 
@@ -319,6 +320,24 @@ void RegisterGameObjectBinding(sol::state& Lua)
 		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
 			"RemoveCamera",
 			UCameraComponent
+		),
+
+
+		LUA_GAMEOBJECT_COMPONENT_PROPERTY(
+			"SpringArm",
+			FLuaSpringArmComponentHandle,
+			USpringArmComponent
+		),
+
+		LUA_GAMEOBJECT_GET_OR_ADD_COMPONENT_METHOD(
+			"GetOrAddSpringArm",
+			FLuaSpringArmComponentHandle,
+			USpringArmComponent
+		),
+
+		LUA_GAMEOBJECT_REMOVE_COMPONENT_METHOD(
+			"RemoveSpringArm",
+			USpringArmComponent
 		),
 
 		LUA_GAMEOBJECT_COMPONENT_PROPERTY(

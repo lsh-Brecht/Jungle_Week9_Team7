@@ -135,6 +135,8 @@ void UEditorEngine::OnWindowResized(uint32 Width, uint32 Height)
 
 void UEditorEngine::Tick(float DeltaTime)
 {
+	const float RawDeltaTime = DeltaTime;
+
 	// --- PIE 요청 처리 (프레임 경계에서 처리되도록 Tick 선두에서 소비) ---
 	if (bRequestEndPlayMapQueued)
 	{
@@ -146,22 +148,30 @@ void UEditorEngine::Tick(float DeltaTime)
 		StartQueuedPlaySessionRequest();
 	}
 
+	float WorldDeltaTime = RawDeltaTime;
+	if (IsPlayingInEditor() || (GetWorld() && GetWorld()->HasBegunPlay()))
+	{
+		GetTimeManager().Update(RawDeltaTime);
+		WorldDeltaTime = GetTimeManager().GetGameDeltaTime();
+	}
+
 	ApplyTransformSettingsToGizmo();
 	FDirectoryWatcher::Get().ProcessChanges();
-	FNotificationManager::Get().Tick(DeltaTime);
+	FNotificationManager::Get().Tick(RawDeltaTime);
 	InputSystem::Get().Tick();
-	TaskScheduler.Tick(DeltaTime);
+	// 추후 게임 전용 Task 분리 시 WorldDeltaTime 적용 여부 검토
+	TaskScheduler.Tick(RawDeltaTime);
 	MainPanel.Update();
 	InputSystem::Get().RefreshSnapshot();
 
 
 	for (FEditorViewportClient* VC : ViewportLayout.GetAllViewportClients())
 	{
-		VC->Tick(DeltaTime);
+		VC->Tick(RawDeltaTime);
 	}
 
-	WorldTick(DeltaTime);
-	Render(DeltaTime);
+	WorldTick(WorldDeltaTime, RawDeltaTime);
+	Render(RawDeltaTime);
 	SelectionManager.Tick();
 }
 

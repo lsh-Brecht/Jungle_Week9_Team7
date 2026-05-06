@@ -10,6 +10,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/World.h"
 #include "Serialization/Archive.h"
+#include "Camera\CameraShakeModifier.h"
 
 IMPLEMENT_CLASS(APlayerController, AActor)
 
@@ -330,6 +331,92 @@ void APlayerController::ClearCameraReferencesForActor(const AActor* Actor)
 void APlayerController::ClearCameraReferencesForComponent(const UActorComponent* Component)
 {
 	EnsureCameraManager()->ClearCameraReferencesForComponent(Component);
+}
+
+void APlayerController::StartCameraShake(
+	float Duration,
+	float LocationAmplitude,
+	float RotationAmplitude,
+	float Frequency,
+	float FOVAmplitude,
+	bool bSingleInstance)
+{
+	if (Duration <= 0.0f)
+	{
+		return;
+	}
+
+	const float SafeLocAmp = LocationAmplitude < 0.0f ? -LocationAmplitude : LocationAmplitude;
+	const float SafeRotAmp = RotationAmplitude < 0.0f ? -RotationAmplitude : RotationAmplitude;
+	const float SafeFreq = Frequency < 0.0f ? 0.0f : Frequency;
+
+	FCameraShakeParams Params;
+	Params.Duration = Duration;
+	Params.LocationAmplitude = FVector(SafeLocAmp, SafeLocAmp, SafeLocAmp);
+	Params.RotationAmplitude = FRotator(SafeRotAmp, SafeRotAmp, SafeRotAmp);
+	Params.Frequency = SafeFreq;
+	Params.FOVAmplitude = FOVAmplitude;
+	Params.bSingleInstance = bSingleInstance;
+
+	GetCameraManager().StartCameraShake(Params);
+}
+
+void APlayerController::SetCameraVignette(float Intensity, float Smoothness, const FVector& Color)
+{
+	UCameraComponent* TargetCamera = GetActiveCamera();
+	if (!TargetCamera)
+	{
+		return;
+	}
+
+	FCameraPostProcess& PP = TargetCamera->GetMutablePostProcess();
+	PP.VignetteIntensity = Intensity < 0.0f ? 0.0f : Intensity;
+	PP.VignetteSmoothness = Smoothness < 0.0f ? 0.0f : Smoothness;
+	PP.VignetteColor = Color;
+
+	if (UCameraComponent* OutputCamera = GetCameraManagerPtr() ? GetCameraManagerPtr()->GetOutputCameraIfValid() : nullptr)
+	{
+		FCameraPostProcess& OutputPP = OutputCamera->GetMutablePostProcess();
+		OutputPP.VignetteIntensity = PP.VignetteIntensity;
+		OutputPP.VignetteSmoothness = PP.VignetteSmoothness;
+		OutputPP.VignetteColor = PP.VignetteColor;
+	}
+}
+
+void APlayerController::SetCameraFade(float Alpha, const FVector& Color)
+{
+	UCameraComponent* TargetCamera = GetActiveCamera();
+	if (!TargetCamera)
+	{
+		return;
+	}
+
+	FCameraPostProcess& PP = TargetCamera->GetMutablePostProcess();
+	PP.FadeAlpha = Alpha < 0.0f ? 0.0f : (Alpha > 1.0f ? 1.0f : Alpha);
+	PP.FadeColor = Color;
+
+	if (UCameraComponent* OutputCamera = GetCameraManagerPtr() ? GetCameraManagerPtr()->GetOutputCameraIfValid() : nullptr)
+	{
+		FCameraPostProcess& OutputPP = OutputCamera->GetMutablePostProcess();
+		OutputPP.FadeAlpha = PP.FadeAlpha;
+		OutputPP.FadeColor = PP.FadeColor;
+	}
+}
+
+void APlayerController::ResetCameraPostProcess()
+{
+	UCameraComponent* TargetCamera = GetActiveCamera();
+	if (!TargetCamera)
+	{
+		return;
+	}
+
+	TargetCamera->SetPostProcess(FCameraPostProcess());
+
+	if (UCameraComponent* OutputCamera = GetCameraManagerPtr() ? GetCameraManagerPtr()->GetOutputCameraIfValid() : nullptr)
+	{
+		OutputCamera->SetPostProcess(FCameraPostProcess());
+	}
 }
 
 void APlayerController::SetControlRotation(const FRotator& InRotation)

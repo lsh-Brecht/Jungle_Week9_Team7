@@ -82,7 +82,7 @@ protected:
 	void Render(float DeltaTime);
 	void SetRenderPipeline(std::unique_ptr<IRenderPipeline> InPipeline);
 	IRenderPipeline* GetRenderPipeline() const { return RenderPipeline.get(); }
-	void WorldTick(float DeltaTime);
+	void WorldTick(float GameDeltaTime, float RawDeltaTime);
 
 protected:
 	FWindowsWindow* Window = nullptr;

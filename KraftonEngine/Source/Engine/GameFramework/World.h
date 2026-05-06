@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Object/Object.h"
 #include "Core/RayTypes.h"
 #include "Core/CollisionTypes.h"
@@ -78,7 +78,7 @@ public:
 
 	void InitWorld();      // Set up the world before gameplay begins
 	void BeginPlay();      // Triggers BeginPlay on all actors
-	void Tick(float DeltaTime, ELevelTick TickType);  // Drives the game loop every frame
+	void Tick(float GameDeltaTime, float RawDeltaTime, ELevelTick TickType);  // Drives the game loop every frame
 	void EndPlay();        // Cleanup before world is destroyed
 
 	bool HasBegunPlay() const { return bHasBegunPlay; }
@@ -122,7 +122,7 @@ public:
 	void UpdateCollision();
 	bool HasBlockingOverlapForActor(AActor* MovingActor, FHitResult* OutHit = nullptr);
 	void ApplyCollisionDebugVisualization();
-	void UpdatePlayerCameraManagers(float DeltaTime);
+	void UpdatePlayerCameraManagers(float GameDeltaTime, float RawDeltaTime);
 
 private:
 	//TArray<AActor*> Actors;

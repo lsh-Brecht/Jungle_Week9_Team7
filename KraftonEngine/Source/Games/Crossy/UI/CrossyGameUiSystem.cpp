@@ -401,6 +401,22 @@ void FCrossyGameUiSystem::Render()
 
 void FCrossyGameUiSystem::SetIntroVisible(bool bVisible)
 {
+	if (!bVisible && bStartTransitionActive)
+	{
+		bIntroVisible = true;
+		bShowingIntroOptions = false;
+
+#if WITH_RMLUI
+		if (IntroDocument)
+		{
+			IntroDocument->Show();
+		}
+		SetElementDisplay(IntroDocument, "intro-options-panel", false);
+		ClearDocumentFocus(IntroDocument);
+#endif
+		return;
+	}
+
 	bIntroVisible = bVisible;
 	if (bVisible)
 	{
@@ -439,7 +455,21 @@ void FCrossyGameUiSystem::SetIntroVisible(bool bVisible)
 
 void FCrossyGameUiSystem::SetHudVisible(bool bVisible)
 {
+	if (bVisible && bStartTransitionActive)
+	{
+		bHudVisible = false;
+
+#if WITH_RMLUI
+		if (HudDocument)
+		{
+			HudDocument->Hide();
+		}
+#endif
+		return;
+	}
+
 	bHudVisible = bVisible;
+
 #if WITH_RMLUI
 	if (HudDocument)
 	{
@@ -610,13 +640,35 @@ void FCrossyGameUiSystem::HideGameOver()
 
 void FCrossyGameUiSystem::ResetRunUi()
 {
+	const bool bPreserveStartTransition = bStartTransitionActive;
+
 	SetScore(0);
 	SetCoins(0);
 	SetLane(1);
 	SetCombo(1);
 	SetStatusText("READY");
 	SetIntroOptionsVisible(false);
-	SetIntroVisible(false);
+
+	if (bPreserveStartTransition)
+	{
+		bIntroVisible = true;
+		bShowingIntroOptions = false;
+
+#if WITH_RMLUI
+		if (IntroDocument)
+		{
+			IntroDocument->Show();
+		}
+		SetElementDisplay(IntroDocument, "intro-options-panel", false);
+		SetElementDisplay(IntroDocument, "intro-soft-top", true);
+		SetElementDisplay(IntroDocument, "intro-soft-bottom", true);
+#endif
+	}
+	else
+	{
+		SetIntroVisible(false);
+	}
+
 	SetPauseMenuVisible(false);
 	SetGameOverVisible(false);
 	SetHudVisible(true);
@@ -982,14 +1034,13 @@ void FCrossyGameUiSystem::UpdateStartTransition(float DeltaTime)
 		Height = 720.0f;
 	}
 
-	const float BaseTop = std::max(96.0f, std::min(180.0f, Height * 0.22f));
-	const float BaseBottom = std::max(112.0f, std::min(220.0f, Height * 0.27f));
-	const float OpenTop = std::max(52.0f, BaseTop - 58.0f);
-	const float OpenBottom = std::max(58.0f, BaseBottom - 66.0f);
+	const float BaseTop = std::max(40.0f, std::min(56.0f, Height * 0.075f));
+	const float BaseBottom = std::max(64.0f, std::min(88.0f, Height * 0.12f));
+	const float OpenTop = std::max(20.0f, BaseTop - 24.0f);
+	const float OpenBottom = std::max(32.0f, BaseBottom - 32.0f);
 	const float CoveredTop = Height * 0.54f;
 	const float CoveredBottom = Height * 0.54f;
 
-	// 멈춤 구간 없이 "가운데가 넓어짐 -> 바로 닫힘"으로 이어지는 타이밍.
 	const float GapWideTime = 0.24f;
 	const float CoveredTime = 0.88f;
 	const float FinishTime = 1.64f;
@@ -1000,7 +1051,6 @@ void FCrossyGameUiSystem::UpdateStartTransition(float DeltaTime)
 
 	if (StartTransitionTime < GapWideTime)
 	{
-		// 원래 위치에서 중앙 틈이 한 번 넓어지는 구간. 정지 없이 다음 닫힘으로 이어진다.
 		const float T = EaseInOutCubic(StartTransitionTime / GapWideTime);
 		TopHeight = LerpFloat(BaseTop, OpenTop, T);
 		BottomHeight = LerpFloat(BaseBottom, OpenBottom, T);
@@ -1008,7 +1058,6 @@ void FCrossyGameUiSystem::UpdateStartTransition(float DeltaTime)
 	}
 	else if (StartTransitionTime < CoveredTime)
 	{
-		// 넓어진 순간 곧바로 닫힌다. 중간에 base 위치에서 멈추거나 눌리는 구간을 두지 않는다.
 		const float T = EaseInOutCubic((StartTransitionTime - GapWideTime) / (CoveredTime - GapWideTime));
 		TopHeight = LerpFloat(OpenTop, CoveredTop, T);
 		BottomHeight = LerpFloat(OpenBottom, CoveredBottom, T);
@@ -1033,7 +1082,6 @@ void FCrossyGameUiSystem::UpdateStartTransition(float DeltaTime)
 			QueueScriptEvent("start");
 		}
 
-		// 초기화 후에는 카메라 전환이 보이도록 바로 열린다.
 		const float T = EaseInOutCubic(std::min(1.0f, (StartTransitionTime - CoveredTime) / (FinishTime - CoveredTime)));
 		TopHeight = LerpFloat(CoveredTop, 0.0f, T);
 		BottomHeight = LerpFloat(CoveredBottom, 0.0f, T);
@@ -1095,8 +1143,9 @@ void FCrossyGameUiSystem::ApplyIntroIdleBoxVisual()
 		Height = 720.0f;
 	}
 
-	const float BaseTop = std::max(96.0f, std::min(180.0f, Height * 0.22f));
-	const float BaseBottom = std::max(112.0f, std::min(220.0f, Height * 0.27f));
+	const float BaseTop = std::max(40.0f, std::min(56.0f, Height * 0.075f));
+	const float BaseBottom = std::max(64.0f, std::min(88.0f, Height * 0.12f));
+
 	ApplyStartTransitionVisual(BaseTop, BaseBottom, 72);
 }
 

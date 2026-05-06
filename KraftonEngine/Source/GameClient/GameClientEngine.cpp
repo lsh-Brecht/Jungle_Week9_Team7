@@ -1,4 +1,4 @@
-#include "GameClient/GameClientEngine.h"
+﻿#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "GameClient/GameClientPackageValidator.h"
@@ -129,14 +129,18 @@ void UGameClientEngine::BeginPlay()
 
 void UGameClientEngine::Tick(float DeltaTime)
 {
-	TickAlways(DeltaTime);
+	const float RawDeltaTime = DeltaTime;
+	GetTimeManager().Update(RawDeltaTime);
+
+	TickAlways(RawDeltaTime);
 
 	if (!bPauseMenuOpen)
 	{
-		TickInGame(DeltaTime);
+		const float GameDeltaTime = GetTimeManager().GetGameDeltaTime();
+		TickInGame(GameDeltaTime, RawDeltaTime);
 	}
 
-	Render(DeltaTime);
+	Render(RawDeltaTime);
 }
 
 void UGameClientEngine::OnWindowResized(uint32 Width, uint32 Height)
@@ -184,10 +188,10 @@ void UGameClientEngine::RequestExit()
 	::PostQuitMessage(0);
 }
 
-void UGameClientEngine::TickAlways(float DeltaTime)
+void UGameClientEngine::TickAlways(float RawDeltaTime)
 {
 	FDirectoryWatcher::Get().ProcessChanges();
-	FNotificationManager::Get().Tick(DeltaTime);
+	FNotificationManager::Get().Tick(RawDeltaTime);
 
 	ProcessPendingCommands();
 
@@ -200,24 +204,24 @@ void UGameClientEngine::TickAlways(float DeltaTime)
 		GlobalInputFrame.ConsumeKey(VK_ESCAPE, "GameClientGlobalShortcut", "Toggle pause menu");
 	}
 
-	Overlay.Update(DeltaTime);
+	Overlay.Update(RawDeltaTime);
 	GameViewport.SetInputEnabled(!bPauseMenuOpen);
 }
 
-void UGameClientEngine::TickInGame(float DeltaTime)
+void UGameClientEngine::TickInGame(float GameDeltaTime, float RawDeltaTime)
 {
     FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
     FGameplayInputRouteContext InputContext;
     InputContext.World = GetWorld();
     InputContext.ViewportClient = GameViewport.GetViewportClient();
-    InputContext.DeltaTime = DeltaTime;
+    InputContext.DeltaTime = GameDeltaTime;
 	
     FGameplayInputRouter::Route(InputFrame, InputContext);
 
-    TaskScheduler.Tick(DeltaTime);
-    WorldTick(DeltaTime);
-	GetRuntimeModules().OnTick(DeltaTime);
+    TaskScheduler.Tick(GameDeltaTime);
+    WorldTick(GameDeltaTime, RawDeltaTime);
+	GetRuntimeModules().OnTick(GameDeltaTime);
 
     CameraManager.SyncWorldViewCamera();
 }

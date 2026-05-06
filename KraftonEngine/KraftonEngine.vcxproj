@@ -517,6 +517,7 @@
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaSpringArmComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />

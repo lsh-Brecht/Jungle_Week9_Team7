@@ -29,6 +29,7 @@ private:
 	{
 		AActor* Actor = nullptr;
 		UProjectileMovementComponent* Movement = nullptr;
+		FVector FlyVelocity = FVector::ZeroVector;
 		float ElapsedTime = 0.0f;
 	};
 

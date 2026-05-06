@@ -1,4 +1,4 @@
-#include "LuaBindings.h"
+﻿#include "LuaBindings.h"
 #include "SolInclude.h"
 #include "LuaHandles.h"
 #include "LuaBindingHelper.h"
@@ -610,6 +610,67 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
 			{
 				Mgr->StartFadeOut(Duration);
+			}
+		},
+
+		"StartCameraShake",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency);
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency, float FOVAmplitude)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency, FOVAmplitude);
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency, float FOVAmplitude, bool bSingleInstance)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency, FOVAmplitude, bSingleInstance);
+			}
+		),
+
+		"SetCameraVignette",
+		[](const FLuaPlayerControllerHandle& Self, float Intensity, float Smoothness, const FVector& Color)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->SetCameraVignette(Intensity, Smoothness, Color);
+			}
+		},
+
+		"SetCameraFade",
+		[](const FLuaPlayerControllerHandle& Self, float Alpha, const FVector& Color)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->SetCameraFade(Alpha, Color);
+			}
+		},
+
+		"ResetCameraPostProcess",
+		[](const FLuaPlayerControllerHandle& Self)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->ResetCameraPostProcess();
 			}
 		},
 

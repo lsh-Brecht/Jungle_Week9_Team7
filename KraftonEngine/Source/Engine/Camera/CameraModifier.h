@@ -30,10 +30,10 @@ public:
 	void MarkPendingRemove();
 
 	// --- Get , Set ---
-	void SetAlpha(float InAlpha) { Alpha = InAlpha; }
-	void SetAlphaInTime(float InTime) { AlphaInTime = InTime; }
-	void SetAlphaOutTime(float InTime) { AlphaOutTime = InTime; }
-	void SetDisabled(bool bInDisabled) { bDisabled = bInDisabled; }
+	void SetAlpha(float InAlpha) { Alpha = InAlpha < 0.0f ? 0.0f : (InAlpha > 1.0f ? 1.0f : InAlpha); }
+	void SetAlphaInTime(float InTime) { AlphaInTime = InTime < 0.0f ? 0.0f : InTime; }
+	void SetAlphaOutTime(float InTime) { AlphaOutTime = InTime < 0.0f ? 0.0f : InTime; }
+	void SetDisabled(bool bInDisabled) { bDisabled = bInDisabled ? 1 : 0; }
 	void SetPriority(uint8 InPriority) { Priority = InPriority; }
 
 	float GetAlpha() const { return Alpha; }
@@ -45,12 +45,12 @@ public:
 	bool IsPendingRemove() const { return bPendingRemove != 0; }
 	bool IsShouldDestroy() const { return IsPendingRemove() && Alpha <= 0.0f; }
 
-public:
+protected:
 	APlayerCameraManager* CameraOwner = nullptr;
 	float Alpha = 0.0f;
 	float AlphaInTime = 0.0f;	//alpha 값이 올라가는 시간
 	float AlphaOutTime = 0.0f;	//alpha 값이 내려가는 시간
 	uint32 bDisabled = 0;
 	uint32 bPendingRemove = 0;	//true라면 효과가 완전히 꺼졌을 때 순회 리스트에서 제거
-	uint8 Priority = 0.;		//적용 순서
+	uint8 Priority = 0;		//적용 순서
 };
