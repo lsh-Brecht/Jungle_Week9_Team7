@@ -126,7 +126,7 @@ void UEngine::Tick(float DeltaTime)
 	FNotificationManager::Get().Tick(RawDeltaTime);
 	InputSystem::Get().Tick();
 	TaskScheduler.Tick(RawDeltaTime);
-	WorldTick(GameDeltaTime, RawDeltaTime);
+	WorldTick(GameDeltaTime);
 	Render(RawDeltaTime);
 }
 

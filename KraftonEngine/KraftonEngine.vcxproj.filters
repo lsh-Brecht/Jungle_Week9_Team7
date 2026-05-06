@@ -424,9 +424,6 @@
     <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp">
       <Filter>Source\Engine\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Camera\CameraShakeModifier.cpp">
-      <Filter>Source\Engine\Camera</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp">
       <Filter>Source\Engine\Camera</Filter>
     </ClCompile>
@@ -550,9 +547,6 @@
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp">
       <Filter>Source\Engine\Component\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Engine\Component\SpringArmComponent.cpp">
-      <Filter>Source\Engine\Component</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp">
       <Filter>Source\Engine\Component</Filter>
     </ClCompile>
@@ -638,9 +632,6 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\Materials\MaterialManager.cpp">
       <Filter>Source\Engine\Materials</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Engine\Math\MathUtils.cpp">
-      <Filter>Source\Engine\Math</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Math\Matrix.cpp">
       <Filter>Source\Engine\Math</Filter>
@@ -1167,9 +1158,6 @@
     <ClInclude Include="Source\Engine\Camera\CameraModifier.h">
       <Filter>Source\Engine\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Engine\Camera\CameraShakeModifier.h">
-      <Filter>Source\Engine\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h">
       <Filter>Source\Engine\Camera</Filter>
     </ClInclude>
@@ -1304,9 +1292,6 @@
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h">
       <Filter>Source\Engine\Component\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Engine\Component\SpringArmComponent.h">
-      <Filter>Source\Engine\Component</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h">
       <Filter>Source\Engine\Component</Filter>

@@ -43,8 +43,8 @@ public:
 	void RequestExit() override;
 
 private:
-	void TickAlways(float RawDeltaTime);
-	void TickInGame(float GameDeltaTime, float RawDeltaTime);
+	void TickAlways(float DeltaTime);
+	void TickInGame(float DeltaTime);
 	void ProcessPendingCommands();
 	bool RestartGame();
 	void InitCameraManager();

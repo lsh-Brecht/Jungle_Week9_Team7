@@ -129,18 +129,14 @@ void UGameClientEngine::BeginPlay()
 
 void UGameClientEngine::Tick(float DeltaTime)
 {
-	const float RawDeltaTime = DeltaTime;
-	GetTimeManager().Update(RawDeltaTime);
-
-	TickAlways(RawDeltaTime);
+	TickAlways(DeltaTime);
 
 	if (!bPauseMenuOpen)
 	{
-		const float GameDeltaTime = GetTimeManager().GetGameDeltaTime();
-		TickInGame(GameDeltaTime);
+		TickInGame(DeltaTime);
 	}
 
-	Render(RawDeltaTime);
+	Render(DeltaTime);
 }
 
 void UGameClientEngine::OnWindowResized(uint32 Width, uint32 Height)
@@ -188,10 +184,10 @@ void UGameClientEngine::RequestExit()
 	::PostQuitMessage(0);
 }
 
-void UGameClientEngine::TickAlways(float RawDeltaTime)
+void UGameClientEngine::TickAlways(float DeltaTime)
 {
 	FDirectoryWatcher::Get().ProcessChanges();
-	FNotificationManager::Get().Tick(RawDeltaTime);
+	FNotificationManager::Get().Tick(DeltaTime);
 
 	ProcessPendingCommands();
 
@@ -204,24 +200,24 @@ void UGameClientEngine::TickAlways(float RawDeltaTime)
 		GlobalInputFrame.ConsumeKey(VK_ESCAPE, "GameClientGlobalShortcut", "Toggle pause menu");
 	}
 
-	Overlay.Update(RawDeltaTime);
+	Overlay.Update(DeltaTime);
 	GameViewport.SetInputEnabled(!bPauseMenuOpen);
 }
 
-void UGameClientEngine::TickInGame(float GameDeltaTime, float RawDeltaTime)
+void UGameClientEngine::TickInGame(float DeltaTime)
 {
     FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
     FGameplayInputRouteContext InputContext;
     InputContext.World = GetWorld();
     InputContext.ViewportClient = GameViewport.GetViewportClient();
-    InputContext.DeltaTime = GameDeltaTime;
+    InputContext.DeltaTime = DeltaTime;
 	
     FGameplayInputRouter::Route(InputFrame, InputContext);
 
-    TaskScheduler.Tick(GameDeltaTime);
-    WorldTick(GameDeltaTime, RawDeltaTime);
-	GetRuntimeModules().OnTick(GameDeltaTime);
+    TaskScheduler.Tick(DeltaTime);
+    WorldTick(DeltaTime);
+	GetRuntimeModules().OnTick(DeltaTime);
 
     CameraManager.SyncWorldViewCamera();
 }

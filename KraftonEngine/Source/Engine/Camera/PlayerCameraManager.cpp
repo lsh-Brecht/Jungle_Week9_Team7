@@ -1,6 +1,5 @@
 #include "Camera/PlayerCameraManager.h"
 
-#include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
 #include "Component/ComponentReferenceUtils.h"
@@ -71,6 +70,8 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
+	//UE_LOG("[CameraManager] Initialize");
+	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
@@ -174,6 +175,15 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	//if (!bDebugModifierAdded)
+	//{
+	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//	AddCameraModifier(TestModifier);
+	//	bDebugModifierAdded = true;
+
+	//	UE_LOG("[CameraManager] Debug modifier added");
+	//}
+
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -184,6 +194,12 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 	{
 		return;
 	}
+
+	//테스트
+	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//AddCameraModifier(TestModifier);
+
+	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -226,7 +242,6 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 		FCameraView FinalView = CurrentView;
 		ApplyCameraModifiers(DeltaTime, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
-		UpdateVignetteCenter(TargetCamera);
 
 		return;
 	}
@@ -280,7 +295,6 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 	FCameraView FinalView = CurrentView;
 	ApplyCameraModifiers(DeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
-	UpdateVignetteCenter(TargetCamera);
 }
 
 void APlayerCameraManager::SnapToActiveCamera()
@@ -304,7 +318,6 @@ void APlayerCameraManager::SnapToActiveCamera()
 		FCameraView FinalView = CurrentView;
 		ApplyCameraModifiers(0.0f, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
-		UpdateVignetteCenter(ActiveCamera);
 	}
 }
 
@@ -522,15 +535,6 @@ FCameraView APlayerCameraManager::BlendViews(
 		break;
 	}
 
-	// PostProcess 보간 — 카메라 자체 baseline. modifier가 ApplyCameraModifiers에서 추가로 덮어씀.
-	Out.PostProcess.VignetteCenter.X = LerpFloat(From.PostProcess.VignetteCenter.X, To.PostProcess.VignetteCenter.X, Alpha);
-	Out.PostProcess.VignetteCenter.Y = LerpFloat(From.PostProcess.VignetteCenter.Y, To.PostProcess.VignetteCenter.Y, Alpha);
-	Out.PostProcess.VignetteIntensity = LerpFloat(From.PostProcess.VignetteIntensity, To.PostProcess.VignetteIntensity, Alpha);
-	Out.PostProcess.VignetteSmoothness = LerpFloat(From.PostProcess.VignetteSmoothness, To.PostProcess.VignetteSmoothness, Alpha);
-	Out.PostProcess.VignetteColor = LerpVector(From.PostProcess.VignetteColor, To.PostProcess.VignetteColor, Alpha);
-	Out.PostProcess.FadeColor = LerpVector(From.PostProcess.FadeColor, To.PostProcess.FadeColor, Alpha);
-	Out.PostProcess.FadeAlpha = LerpFloat(From.PostProcess.FadeAlpha, To.PostProcess.FadeAlpha, Alpha);
-
 	return Out;
 }
 
@@ -569,6 +573,7 @@ void APlayerCameraManager::EnsureOutputCamera()
 
 void APlayerCameraManager::AddCameraModifier(UCameraModifier* Modifier)
 {
+	UE_LOG("[CameraManager] AddCameraModifier: %p", Modifier);
 	if (!Modifier || !IsAliveObject(Modifier))
 	{
 		return;
@@ -629,47 +634,16 @@ void APlayerCameraManager::ClearCameraModifiers()
 	}
 
 	ModifierList.clear();
-	FadeModifier = nullptr;
 }
 
-UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
-{
-	if (FadeModifier && IsAliveObject(FadeModifier)
-		&& std::find(ModifierList.begin(), ModifierList.end(), FadeModifier) != ModifierList.end())
-	{
-		return FadeModifier;
-	}
-
-	FadeModifier = UObjectManager::Get().CreateObject<UCameraFadeModifier>(this);
-	if (FadeModifier)
-	{
-		AddCameraModifier(FadeModifier);
-	}
-	return FadeModifier;
-}
-
-void APlayerCameraManager::StartFadeIn(float Duration, float TargetAlpha, const FVector& Color)
-{
-	if (UCameraFadeModifier* Mod = EnsureFadeModifier())
-	{
-		Mod->StartFadeIn(Duration, TargetAlpha, Color);
-	}
-}
-
-void APlayerCameraManager::StartFadeOut(float Duration)
-{
-	if (FadeModifier && IsAliveObject(FadeModifier))
-	{
-		FadeModifier->StartFadeOut(Duration);
-	}
-}
-
-void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView& InOutView)
+void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
 {
 	if (!InOutView.bValid || ModifierList.empty())
 	{
 		return;
 	}
+
+	//UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
 
 	CleanupCameraModifiers();
 	SortCameraModifiers();
@@ -682,7 +656,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView&
 			continue;
 		}
 
-		const bool bContinueChain = Modifier->UpdateCameraModifier(RawDeltaTime, InOutView);
+		const bool bContinueChain = Modifier->UpdateCameraModifier(DeltaTime, InOutView);
 		if (!bContinueChain)
 		{
 			break;
@@ -730,37 +704,4 @@ void APlayerCameraManager::SortCameraModifiers()
 			return PriorityA > PriorityB;
 		}
 	);
-}
-
-void APlayerCameraManager::UpdateVignetteCenter(UCameraComponent* TargetCamera)
-{
-	if (!OutputCameraComponent || !TargetCamera)
-	{
-		return;
-	}
-
-	FCameraPostProcess& PP = OutputCameraComponent->GetMutablePostProcess();
-
-	AActor* Subject = TargetCamera->GetSubjectActor(OwnerController);
-	if (!Subject || !IsAliveObject(Subject))
-	{
-		PP.VignetteCenter = FVector2(0.5f, 0.5f);
-		return;
-	}
-
-	const FMatrix VP = OutputCameraComponent->GetViewProjectionMatrix();
-	const FVector NDC = VP.TransformPositionWithW(Subject->GetActorLocation());
-
-	// D3D Reverse-Z: NDC.Z 범위는 [0, 1] (1=near, 0=far). 카메라 뒤면 W 부호 반전으로 NDC가 깨짐.
-	if (NDC.Z < 0.0f || NDC.Z > 1.0f || NDC.X < -1.0f || NDC.X > 1.0f || NDC.Y < -1.0f || NDC.Y > 1.0f)
-	{
-		PP.VignetteCenter = FVector2(0.5f, 0.5f);
-		return;
-	}
-
-	const float U = NDC.X * 0.5f + 0.5f;
-	const float V = -NDC.Y * 0.5f + 0.5f;
-	PP.VignetteCenter = FVector2(U, V);
-}+ 0.5f;
-	PP.VignetteCenter = FVector2(U, V);
 }

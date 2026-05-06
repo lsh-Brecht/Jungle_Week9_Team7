@@ -2,7 +2,7 @@
 #include "Camera/CameraModifier.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Core/Log.h"
-
+//class APlayerCameraManager;
 IMPLEMENT_CLASS(UCameraModifier, UObject)
 
 void UCameraModifier::Initialize(APlayerCameraManager* Owner)
@@ -47,8 +47,8 @@ bool UCameraModifier::UpdateCameraModifier(float DeltaTime, FCameraView& InOutVi
 
 bool UCameraModifier::ModifyCamera(float DeltaTime, FCameraView& InOutView)
 {
-	(void)DeltaTime;
-	(void)InOutView;
+	//UE_LOG("[CameraModifier] ModifyCamera Alpha=%f", Alpha);
+	//InOutView.Location.Z += 1.0f * Alpha;
 	return true;
 }
 
