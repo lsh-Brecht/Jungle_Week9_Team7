@@ -997,6 +997,11 @@ function OnOverlap(otherActor)
     Player.deathTimer = 3.5
     Log("[COLLISION] Vehicle overlap -> Death Sequence Start")
 
+    -- 점수 카운팅 중단
+    if State ~= nil then
+        State.IsDying = true
+    end
+
     -- 사망 시 슬로모션 효과 (배율 0.2, 지속시간 3.0초)
     if World ~= nil and World.StartSlomo ~= nil then
         World.StartSlomo(0.2, 3.0)
