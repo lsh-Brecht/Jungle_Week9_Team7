@@ -10,6 +10,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/World.h"
 #include "Serialization/Archive.h"
+#include "Camera\CameraShakeModifier.h"
 
 IMPLEMENT_CLASS(APlayerController, AActor)
 
@@ -330,6 +331,34 @@ void APlayerController::ClearCameraReferencesForActor(const AActor* Actor)
 void APlayerController::ClearCameraReferencesForComponent(const UActorComponent* Component)
 {
 	EnsureCameraManager()->ClearCameraReferencesForComponent(Component);
+}
+
+void APlayerController::StartCameraShake(
+	float Duration,
+	float LocationAmplitude,
+	float RotationAmplitude,
+	float Frequency,
+	float FOVAmplitude,
+	bool bSingleInstance)
+{
+	if (Duration <= 0.0f)
+	{
+		return;
+	}
+
+	const float SafeLocAmp = LocationAmplitude < 0.0f ? -LocationAmplitude : LocationAmplitude;
+	const float SafeRotAmp = RotationAmplitude < 0.0f ? -RotationAmplitude : RotationAmplitude;
+	const float SafeFreq = Frequency < 0.0f ? 0.0f : Frequency;
+
+	FCameraShakeParams Params;
+	Params.Duration = Duration;
+	Params.LocationAmplitude = FVector(SafeLocAmp, SafeLocAmp, SafeLocAmp);
+	Params.RotationAmplitude = FRotator(SafeRotAmp, SafeRotAmp, SafeRotAmp);
+	Params.Frequency = SafeFreq;
+	Params.FOVAmplitude = FOVAmplitude;
+	Params.bSingleInstance = bSingleInstance;
+
+	GetCameraManager().StartCameraShake(Params);
 }
 
 void APlayerController::SetControlRotation(const FRotator& InRotation)

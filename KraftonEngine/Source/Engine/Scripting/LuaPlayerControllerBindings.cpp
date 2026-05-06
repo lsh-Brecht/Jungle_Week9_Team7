@@ -611,6 +611,40 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			{
 				Mgr->StartFadeOut(Duration);
 			}
-		}
+		},
+
+		"StartCameraShake",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency);
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency, float FOVAmplitude)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency, FOVAmplitude);
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float LocationAmplitude, float RotationAmplitude, float Frequency, float FOVAmplitude, bool bSingleInstance)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartCameraShake Call.");
+					return;
+				}
+				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency, FOVAmplitude, bSingleInstance);
+			}
+		)
 	);
 }
