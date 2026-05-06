@@ -413,6 +413,9 @@
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp">
       <Filter>Source\Editor\Viewport</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp">
+      <Filter>Source\Engine\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp">
       <Filter>Source\Engine\Camera</Filter>
     </ClCompile>
@@ -1135,6 +1138,9 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h">
       <Filter>Source\Editor\Viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Camera\CameraModifier.h">
+      <Filter>Source\Engine\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h">
       <Filter>Source\Engine\Camera</Filter>
