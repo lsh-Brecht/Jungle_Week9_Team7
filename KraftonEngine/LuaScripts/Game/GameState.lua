@@ -769,9 +769,6 @@ function State.GameOver(reason)
     State.Mode = "GameOver"
 
     local player = State.GetPlayer()
-    if is_valid(player) and State.Config.GameOverLocation ~= nil then
-        player.Location = clone_vector(State.Config.GameOverLocation)
-    end
 
     State.SetPlayerMovementEnabled(false)
     State.SetMenuObjectsVisible(true)

@@ -462,14 +462,14 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 	const FDrawCommandRenderState PPRS = PassRenderStateTable->ToDrawCommandState(ERenderPass::PostProcess, ViewMode);
 
 	// [DEBUG LOG] 매 프레임 플래그와 강도를 출력하여 렌더러가 인식하는 상태를 확인합니다.
-	static uint32 GlobalPPLogCounter = 0;
-	if (GlobalPPLogCounter++ % 60 == 0)
-	{
-		UE_LOG("[DrawCommandBuilder] CamUUID=%u | ShowFlags: Vig=%d, Fade=%d | Values: Intensity=%.2f, Alpha=%.2f",
-			Frame.CameraUUID,
-			Frame.RenderOptions.ShowFlags.bVignette, Frame.RenderOptions.ShowFlags.bFade,
-			Frame.PostProcess.VignetteIntensity, Frame.PostProcess.FadeAlpha);
-	}
+	// static uint32 GlobalPPLogCounter = 0;
+	// if (GlobalPPLogCounter++ % 60 == 0)
+	// {
+	// 	UE_LOG("[DrawCommandBuilder] CamUUID=%u | ShowFlags: Vig=%d, Fade=%d | Values: Intensity=%.2f, Alpha=%.2f",
+	// 		Frame.CameraUUID,
+	// 		Frame.RenderOptions.ShowFlags.bVignette, Frame.RenderOptions.ShowFlags.bFade,
+	// 		Frame.PostProcess.VignetteIntensity, Frame.PostProcess.FadeAlpha);
+	// }
 
 	// HeightFog (UserBits=0 → Outline보다 먼저)
 	if (Frame.RenderOptions.ShowFlags.bFog && CollectScene && CollectScene->GetEnvironment().HasFog())

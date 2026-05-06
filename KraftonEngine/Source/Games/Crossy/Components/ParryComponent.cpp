@@ -10,6 +10,7 @@
 #include "Sound/SoundManager.h"
 #include "Games/Crossy/Audio/CrossyAudioIds.h"
 #include "GameFramework/World.h"
+#include "GameFramework/PlayerController.h"
 #include "Math/Vector.h"
 #include "Runtime/Engine.h"
 
@@ -225,6 +226,16 @@ void UParryComponent::DeflectNearbyProjectiles()
 		if (GEngine)
 		{
 			GEngine->GetTimeManager().StartSlomo(0.2f, 0.5f);
+		}
+
+		// 패링 성공 시 카메라 흔들림 효과 (묵직한 흔들림)
+		if (World)
+		{
+			if (APlayerController* PC = World->GetPlayerController(0))
+			{
+				// 파라미터: Duration(0.2s), LocationAmp(0.12), RotationAmp(1.2), Frequency(40Hz)
+				PC->StartCameraShake(0.2f, 0.12f, 1.2f, 40.0f);
+			}
 		}
 	}
 }

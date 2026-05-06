@@ -283,21 +283,21 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 	ApplyCameraModifiers(RawDeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
 
-	static uint32 ChainLogCounter = 0;
-	if (ChainLogCounter++ % 30 == 0)
-	{
-		UE_LOG("[CameraMgr] Tgt=%u TgtPP=%.2f Desired=%.2f Current=%.2f Final=%.2f Blend=%d Smooth=%d Out=%u OutPP=%.2f",
-			TargetCamera ? TargetCamera->GetUUID() : 0,
-			TargetCamera ? TargetCamera->GetPostProcess().VignetteIntensity : -1.0f,
-			DesiredView.PostProcess.VignetteIntensity,
-			CurrentView.PostProcess.VignetteIntensity,
-			FinalView.PostProcess.VignetteIntensity,
-			bIsBlending ? 1 : 0,
-			Smoothing.bEnableSmoothing ? 1 : 0,
-			OutputCameraComponent ? OutputCameraComponent->GetUUID() : 0,
-			OutputCameraComponent ? OutputCameraComponent->GetPostProcess().VignetteIntensity : -1.0f);
-	}
-
+	// static uint32 ChainLogCounter = 0;
+	// if (ChainLogCounter++ % 30 == 0)
+	// {
+	// 	UE_LOG("[CameraMgr] Tgt=%u TgtPP=%.2f Desired=%.2f Current=%.2f Final=%.2f Blend=%d Smooth=%d Out=%u OutPP=%.2f",
+	// 		TargetCamera ? TargetCamera->GetUUID() : 0,
+	// 		TargetCamera ? TargetCamera->GetPostProcess().VignetteIntensity : -1.0f,
+	// 		DesiredView.PostProcess.VignetteIntensity,
+	// 		CurrentView.PostProcess.VignetteIntensity,
+	// 		FinalView.PostProcess.VignetteIntensity,
+	// 		bIsBlending ? 1 : 0,
+	// 		Smoothing.bEnableSmoothing ? 1 : 0,
+	// 		OutputCameraComponent ? OutputCameraComponent->GetUUID() : 0,
+	// 		OutputCameraComponent ? OutputCameraComponent->GetPostProcess().VignetteIntensity : -1.0f);
+	// }
+	//
 	UpdateVignetteCenter(TargetCamera);
 }
 
