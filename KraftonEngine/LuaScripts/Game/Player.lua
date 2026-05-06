@@ -1015,6 +1015,11 @@ function OnOverlap(otherActor)
         Player.cameraShakeCooldown = 0.25
     end
 
+    if Player.ownerObject ~= nil and Player.ownerObject.SetStaticMesh ~= nil then
+        local success = Player.ownerObject:SetStaticMesh("Data/Chicken/KFC.obj")
+        Log("[DEATH] SetStaticMesh(KFC) result: " .. tostring(success))
+    end
+
     if IsValidHandle(Player.controller) then
         -- 1. 전역 Fade Out 시작 (1.5초 동안 검은색으로)
         Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
@@ -1042,6 +1047,14 @@ function OnInput(deltaTime)
 
          -- [수정] 게임이 진행 중이 아닐 때는 사망 연출 플래그를 강제로 리셋합니다.
          if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
+             if Player.isDeadTriggered then
+                 Player.isDeadTriggered = false
+                 Player.deathTimer = 0.0
+                 
+                 if Player.ownerObject ~= nil and Player.ownerObject.SetStaticMesh ~= nil then
+                     Player.ownerObject:SetStaticMesh("Data/Chicken/Chicken.obj")
+                 end
+             end
              Player.isDeadTriggered = false
              Player.deathTimer = 0.0
     

@@ -180,7 +180,7 @@ local function get_spin_camera_location_for_target(targetX, targetY, targetZ, ya
     yaw = yaw or VIEW_YAW
     local pitch = 10.0
     local f = get_forward_from_angles(pitch, yaw)
-    local distance = 5.0
+    local distance = 2.0
     return V(
         targetX - f.x * distance,
         targetY - f.y * distance,
