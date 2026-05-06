@@ -176,7 +176,10 @@ local Player = {
     vignetteStarted = false,
 
     -- [테스트] 카메라 셰이크 쿨다운
-    cameraShakeCooldown = 0.0
+    cameraShakeCooldown = 0.0,
+
+    -- 게임 상태 트래킹
+    wasPlayingLastFrame = false
 }
 
 local function Log(msg)
@@ -313,6 +316,17 @@ local function ResetPostProcessEffect()
     Player.fadeStarted = false
     Player.vignetteStarted = false
     
+    -- 렌더러가 사용하는 최신 카메라로 동기화 후 프로퍼티 리셋
+    if IsValidHandle(Player.controller) and Player.controller.GetActiveCamera ~= nil then
+        Player.camera = Player.controller:GetActiveCamera()
+    end
+
+    if IsValidHandle(Player.camera) then
+        -- [중요] 카메라 컴포넌트의 프로퍼티를 기본값으로 명시적 복구
+        Player.camera.VignetteIntensity = 1.0
+        Player.camera.FadeAlpha = 0.0
+    end
+    
     if IsValidHandle(Player.controller) then
         if Player.controller.StopVignette ~= nil then
             Player.controller:StopVignette(0.0)
@@ -322,7 +336,7 @@ local function ResetPostProcessEffect()
         end
     end
     
-    Log("[FX] PostProcess Effects Reset")
+    Log("[FX] PostProcess Effects Reset (Vignette=1.0, Fade=0.0)")
 end
 
 local function GetKey(name)
@@ -395,7 +409,6 @@ local function BuildInputState()
     end
     
     if IsGuiUsingKeyboard() then
-        -- Log("!!! GUI IS CONSUMING KEYBOARD")
         return {
             W = false,
             A = false,
@@ -1021,8 +1034,16 @@ function OnInput(deltaTime)
         Player.cameraShakeCooldown = Player.cameraShakeCooldown - dt
     end
 
+    -- 게임 재시작/시작 감지 (상태 전이 체크)
+    local isPlayingNow = (State ~= nil and State.IsPlaying ~= nil and State.IsPlaying())
+    if isPlayingNow and not Player.wasPlayingLastFrame then
+        Log("[GAME] Playing State Entered. Resetting effects.")
+        ResetPostProcessEffect()
+    end
+    Player.wasPlayingLastFrame = isPlayingNow
+
     -- 게임 중이 아닐 때 처리
-    if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
+    if not isPlayingNow then
         if Player.isDeadTriggered then
             Log("[DEATH_ABORT] Game stopped. Resetting death FX.")
             ResetPostProcessEffect()
@@ -1040,6 +1061,11 @@ function OnInput(deltaTime)
 
     -- 사망 연출 처리
     if Player.isDeadTriggered then
+        -- 매 프레임 최신 카메라 동기화
+        if IsValidHandle(Player.controller) and Player.controller.GetActiveCamera ~= nil then
+            Player.camera = Player.controller:GetActiveCamera()
+        end
+
         if Player.deathTimer > 0 then
             Player.deathTimer = Player.deathTimer - dt
             
