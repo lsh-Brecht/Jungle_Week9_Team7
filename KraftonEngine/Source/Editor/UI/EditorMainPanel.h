@@ -7,6 +7,7 @@
 #include "Editor/UI/EditorSceneWidget.h"
 #include "Editor/UI/EditorStatWidget.h"
 #include "Editor/UI/EditorShadowMapDebugWidget.h"
+#include "Editor/UI/EditorBezierWidget.h"
 #include "Editor/UI/EditorProjectSettingsWidget.h"
 #include "Editor/Packaging/EditorPackageSettings.h"
 #include "Editor/UI/ContentBrowser/ContentBrowser.h"
@@ -65,6 +66,7 @@ private:
 	FEditorStatWidget StatWidget;
 	FEditorContentBrowserWidget ContentBrowserWidget;
 	EditorShadowMapDebugWidget ShadowMapDebugWidget;
+	FEditorBezierWidget BezierWidget;
 	EditorProjectSettingsWidget ProjectSettingsWidget;
 	FEditorPackageSettings PackageSettings;
 	bool bPackageSettingsOpen = false;

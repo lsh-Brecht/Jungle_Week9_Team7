@@ -1,6 +1,7 @@
-#define IMGUI_DEFINE_MATH_OPERATORS
+﻿#define IMGUI_DEFINE_MATH_OPERATORS
 #include "Editor/UI/EditorBezierWidget.h"
 
+#include "Editor/Settings/EditorSettings.h"
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
 
@@ -45,6 +46,19 @@ namespace
 	}
 }
 
+void FEditorBezierWidget::Render(float DeltaTime)
+{
+	(void)DeltaTime;
+
+	FEditorSettings& Settings = FEditorSettings::Get();
+	ImGui::SetNextWindowSize(ImVec2(360.0f, 640.0f), ImGuiCond_FirstUseEver);
+	if (ImGui::Begin("Bezier", &Settings.UI.bBezier))
+	{
+		ImGui::ShowBezierDemo();
+	}
+	ImGui::End();
+}
+
 namespace ImGui
 {
 	float BezierValue(float Dt01, const float P[4])
@@ -58,156 +72,242 @@ namespace ImGui
 		return Results[static_cast<int>(ClampedDt * static_cast<float>(Steps))].y;
 	}
 
-	int Bezier(const char* Label, float P[4])
-	{
-		static constexpr int Smoothness = 64;
-		static constexpr float CurveWidth = 4.0f;
-		static constexpr float LineWidth = 1.0f;
-		static constexpr float GrabRadius = 6.0f;
-		static constexpr float GrabBorder = 2.0f;
+	int Bezier(const char* label, float P[5]) {
+		// visuals
+		enum { SMOOTHNESS = 64 }; // curve smoothness: the higher number of segments, the smoother curve
+		enum { CURVE_WIDTH = 4 }; // main curved line width
+		enum { LINE_WIDTH = 1 }; // handlers: small lines width
+		enum { GRAB_RADIUS = 8 }; // handlers: circle radius
+		enum { GRAB_BORDER = 2 }; // handlers: circle border width
+		enum { AREA_CONSTRAINED = true }; // should grabbers be constrained to grid area?
+		enum { AREA_WIDTH = 128 }; // area width in pixels. 0 for adaptive size (will use max avail width)
+
+		// curve presets
+		static struct { const char* name; float points[4]; } presets[] = {
+			{ "Linear", 0.000f, 0.000f, 1.000f, 1.000f },
+
+			{ "In Sine", 0.470f, 0.000f, 0.745f, 0.715f },
+			{ "In Quad", 0.550f, 0.085f, 0.680f, 0.530f },
+			{ "In Cubic", 0.550f, 0.055f, 0.675f, 0.190f },
+			{ "In Quart", 0.895f, 0.030f, 0.685f, 0.220f },
+			{ "In Quint", 0.755f, 0.050f, 0.855f, 0.060f },
+			{ "In Expo", 0.950f, 0.050f, 0.795f, 0.035f },
+			{ "In Circ", 0.600f, 0.040f, 0.980f, 0.335f },
+			{ "In Back", 0.600f, -0.28f, 0.735f, 0.045f },
+
+			{ "Out Sine", 0.390f, 0.575f, 0.565f, 1.000f },
+			{ "Out Quad", 0.250f, 0.460f, 0.450f, 0.940f },
+			{ "Out Cubic", 0.215f, 0.610f, 0.355f, 1.000f },
+			{ "Out Quart", 0.165f, 0.840f, 0.440f, 1.000f },
+			{ "Out Quint", 0.230f, 1.000f, 0.320f, 1.000f },
+			{ "Out Expo", 0.190f, 1.000f, 0.220f, 1.000f },
+			{ "Out Circ", 0.075f, 0.820f, 0.165f, 1.000f },
+			{ "Out Back", 0.175f, 0.885f, 0.320f, 1.275f },
+
+			{ "InOut Sine", 0.445f, 0.050f, 0.550f, 0.950f },
+			{ "InOut Quad", 0.455f, 0.030f, 0.515f, 0.955f },
+			{ "InOut Cubic", 0.645f, 0.045f, 0.355f, 1.000f },
+			{ "InOut Quart", 0.770f, 0.000f, 0.175f, 1.000f },
+			{ "InOut Quint", 0.860f, 0.000f, 0.070f, 1.000f },
+			{ "InOut Expo", 1.000f, 0.000f, 0.000f, 1.000f },
+			{ "InOut Circ", 0.785f, 0.135f, 0.150f, 0.860f },
+			{ "InOut Back", 0.680f, -0.55f, 0.265f, 1.550f },
+
+			// easeInElastic: not a bezier
+			// easeOutElastic: not a bezier
+			// easeInOutElastic: not a bezier
+			// easeInBounce: not a bezier
+			// easeOutBounce: not a bezier
+			// easeInOutBounce: not a bezier
+		};
+
+
+		// preset selector
+
+		bool reload = 0;
+		ImGui::PushID(label);
+		if (ImGui::ArrowButton("##lt", ImGuiDir_Left)) { // ImGui::ArrowButton(ImGui::GetCurrentWindow()->GetID("##lt"), ImGuiDir_Left, ImVec2(0, 0), 0)
+			if (--P[4] >= 0) reload = 1; else ++P[4];
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button("Presets")) {
+			ImGui::OpenPopup("!Presets");
+		}
+		if (ImGui::BeginPopup("!Presets")) {
+			for (int i = 0; i < IM_ARRAYSIZE(presets); ++i) {
+				if (i == 1 || i == 9 || i == 17) ImGui::Separator();
+				if (ImGui::MenuItem(presets[i].name, NULL, P[4] == i)) {
+					P[4] = i;
+					reload = 1;
+				}
+			}
+			ImGui::EndPopup();
+		}
+		ImGui::SameLine();
+
+		if (ImGui::ArrowButton("##rt", ImGuiDir_Right)) { // ImGui::ArrowButton(ImGui::GetCurrentWindow()->GetID("##rt"), ImGuiDir_Right, ImVec2(0, 0), 0)
+			if (++P[4] < IM_ARRAYSIZE(presets)) reload = 1; else --P[4];
+		}
+		ImGui::SameLine();
+		ImGui::PopID();
+
+		if (reload) {
+			memcpy(P, presets[(int)P[4]].points, sizeof(float) * 4);
+		}
+
+		// bezier widget
 
 		const ImGuiStyle& Style = GetStyle();
 		const ImGuiIO& IO = GetIO();
 		ImDrawList* DrawList = GetWindowDrawList();
 		ImGuiWindow* Window = GetCurrentWindow();
 		if (Window->SkipItems)
-		{
 			return false;
-		}
 
-		int Changed = SliderFloat4(Label, P, 0.0f, 1.0f, "%.3f") ? 1 : 0;
-		bool Hovered = IsItemActive() || IsItemHovered();
-		Dummy(ImVec2(0.0f, 3.0f));
+		// header and spacing
+		int changed = SliderFloat4(label, P, 0, 1, "%.3f", 1.0f);
+		int hovered = IsItemActive() || IsItemHovered(); // IsItemDragged() ?
+		Dummy(ImVec2(0, 3));
 
-		const float AvailableWidth = GetContentRegionAvail().x;
-		const float CanvasSize = ImMin(ImMax(AvailableWidth, 32.0f), 128.0f);
-		const ImVec2 Canvas(CanvasSize, CanvasSize);
+		// prepare canvas
+		const float avail = GetContentRegionAvail().x;
+		const float dim = AREA_WIDTH > 0 ? AREA_WIDTH : avail;
+		ImVec2 Canvas(dim, dim);
 
-		PushID(Label);
+		ImRect bb(Window->DC.CursorPos, Window->DC.CursorPos + Canvas);
+		ItemSize(bb);
+		if (!ItemAdd(bb, NULL))
+			return changed;
 
-		ImRect Bb(Window->DC.CursorPos, Window->DC.CursorPos + Canvas);
-		ItemSize(Bb);
-		const ImGuiID Id = Window->GetID("BezierCanvas");
-		if (!ItemAdd(Bb, Id))
-		{
-			PopID();
-			return Changed;
-		}
+		const ImGuiID id = Window->GetID(label);
+		hovered |= 0 != ItemHoverable(ImRect(bb.Min, bb.Min + ImVec2(avail, dim)), id, 0);
 
-		Hovered |= ItemHoverable(Bb, Id, ImGuiItemFlags_None);
-		RenderFrame(Bb.Min, Bb.Max, GetColorU32(ImGuiCol_FrameBg, 1.0f), true, Style.FrameRounding);
+		RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
 
-		for (int i = 0; i <= 4; ++i)
-		{
-			const float X = Bb.Min.x + Canvas.x * (static_cast<float>(i) / 4.0f);
+		// background grid
+		for (int i = 0; i <= Canvas.x; i += (Canvas.x / 4)) {
 			DrawList->AddLine(
-				ImVec2(X, Bb.Min.y),
-				ImVec2(X, Bb.Max.y),
+				ImVec2(bb.Min.x + i, bb.Min.y),
+				ImVec2(bb.Min.x + i, bb.Max.y),
+				GetColorU32(ImGuiCol_TextDisabled));
+		}
+		for (int i = 0; i <= Canvas.y; i += (Canvas.y / 4)) {
+			DrawList->AddLine(
+				ImVec2(bb.Min.x, bb.Min.y + i),
+				ImVec2(bb.Max.x, bb.Min.y + i),
 				GetColorU32(ImGuiCol_TextDisabled));
 		}
 
-		for (int i = 0; i <= 4; ++i)
-		{
-			const float Y = Bb.Min.y + Canvas.y * (static_cast<float>(i) / 4.0f);
-			DrawList->AddLine(
-				ImVec2(Bb.Min.x, Y),
-				ImVec2(Bb.Max.x, Y),
-				GetColorU32(ImGuiCol_TextDisabled));
-		}
-
+		// eval curve
 		ImVec2 Q[4] = { { 0, 0 }, { P[0], P[1] }, { P[2], P[3] }, { 1, 1 } };
-		ImVec2 Results[Smoothness + 1];
-		BuildBezierTable<Smoothness>(Q, Results);
+		ImVec2 results[SMOOTHNESS + 1];
+		BuildBezierTable<SMOOTHNESS>(Q, results);
 
-		for (int i = 0; i < 2; ++i)
+		// control points: 2 lines and 2 circles
 		{
-			const ImVec2 Pos = ImVec2(P[i * 2 + 0], 1.0f - P[i * 2 + 1]) * (Bb.Max - Bb.Min) + Bb.Min;
-			SetCursorScreenPos(Pos - ImVec2(GrabRadius, GrabRadius));
+			// handle grabbers
+			ImVec2 mouse = GetIO().MousePos, pos[2];
+			float distance[2];
 
-			char ButtonId[16];
-			std::snprintf(ButtonId, sizeof(ButtonId), "P%d", i);
-			InvisibleButton(ButtonId, ImVec2(2.0f * GrabRadius, 2.0f * GrabRadius));
-
-			if (IsItemActive() || IsItemHovered())
-			{
-				Hovered = true;
-				SetTooltip("(%4.3f, %4.3f)", P[i * 2 + 0], P[i * 2 + 1]);
+			for (int i = 0; i < 2; ++i) {
+				pos[i] = ImVec2(P[i * 2 + 0], 1 - P[i * 2 + 1]) * (bb.Max - bb.Min) + bb.Min;
+				distance[i] = (pos[i].x - mouse.x) * (pos[i].x - mouse.x) + (pos[i].y - mouse.y) * (pos[i].y - mouse.y);
 			}
 
-			if (IsItemActive() && IsMouseDragging(0))
+			int selected = distance[0] < distance[1] ? 0 : 1;
+			if (distance[selected] < (4 * GRAB_RADIUS * 4 * GRAB_RADIUS))
 			{
-				P[i * 2 + 0] += IO.MouseDelta.x / Canvas.x;
-				P[i * 2 + 1] -= IO.MouseDelta.y / Canvas.y;
-				Changed = true;
+				SetTooltip("(%4.3f, %4.3f)", P[selected * 2 + 0], P[selected * 2 + 1]);
+
+				if (/*hovered &&*/ (IsMouseClicked(0) || IsMouseDragging(0))) {
+					float& px = (P[selected * 2 + 0] += GetIO().MouseDelta.x / Canvas.x);
+					float& py = (P[selected * 2 + 1] -= GetIO().MouseDelta.y / Canvas.y);
+
+					if (AREA_CONSTRAINED) {
+						px = (px < 0 ? 0 : (px > 1 ? 1 : px));
+						py = (py < 0 ? 0 : (py > 1 ? 1 : py));
+					}
+
+					changed = true;
+				}
 			}
 		}
 
-		const bool bRelaxClip = Hovered || Changed != 0;
-		if (bRelaxClip)
+		// if (hovered || changed) DrawList->PushClipRectFullScreen();
+
+		// draw curve
 		{
-			DrawList->PushClipRectFullScreen();
+			ImColor color(GetStyle().Colors[ImGuiCol_PlotLines]);
+			for (int i = 0; i < SMOOTHNESS; ++i) {
+				ImVec2 p = { results[i + 0].x, 1 - results[i + 0].y };
+				ImVec2 q = { results[i + 1].x, 1 - results[i + 1].y };
+				ImVec2 r(p.x * (bb.Max.x - bb.Min.x) + bb.Min.x, p.y * (bb.Max.y - bb.Min.y) + bb.Min.y);
+				ImVec2 s(q.x * (bb.Max.x - bb.Min.x) + bb.Min.x, q.y * (bb.Max.y - bb.Min.y) + bb.Min.y);
+				DrawList->AddLine(r, s, color, CURVE_WIDTH);
+			}
 		}
 
-		ImColor CurveColor(GetStyle().Colors[ImGuiCol_PlotLines]);
-		for (int i = 0; i < Smoothness; ++i)
-		{
-			ImVec2 P0 = { Results[i + 0].x, 1.0f - Results[i + 0].y };
-			ImVec2 P1 = { Results[i + 1].x, 1.0f - Results[i + 1].y };
-			ImVec2 R(P0.x * (Bb.Max.x - Bb.Min.x) + Bb.Min.x, P0.y * (Bb.Max.y - Bb.Min.y) + Bb.Min.y);
-			ImVec2 S(P1.x * (Bb.Max.x - Bb.Min.x) + Bb.Min.x, P1.y * (Bb.Max.y - Bb.Min.y) + Bb.Min.y);
-			DrawList->AddLine(R, S, CurveColor, CurveWidth);
+		// draw preview (cycles every 1s)
+		static clock_t epoch = clock();
+		ImVec4 white(GetStyle().Colors[ImGuiCol_Text]);
+		for (int i = 0; i < 3; ++i) {
+			double now = ((clock() - epoch) / (double)CLOCKS_PER_SEC);
+			float delta = ((int)(now * 1000) % 1000) / 1000.f; delta += i / 3.f; if (delta > 1) delta -= 1;
+			int idx = (int)(delta * SMOOTHNESS);
+			float evalx = results[idx].x; // 
+			float evaly = results[idx].y; // ImGui::BezierValue( delta, P );
+			ImVec2 p0 = ImVec2(evalx, 1 - 0) * (bb.Max - bb.Min) + bb.Min;
+			ImVec2 p1 = ImVec2(0, 1 - evaly) * (bb.Max - bb.Min) + bb.Min;
+			ImVec2 p2 = ImVec2(evalx, 1 - evaly) * (bb.Max - bb.Min) + bb.Min;
+			DrawList->AddCircleFilled(p0, GRAB_RADIUS / 2, ImColor(white));
+			DrawList->AddCircleFilled(p1, GRAB_RADIUS / 2, ImColor(white));
+			DrawList->AddCircleFilled(p2, GRAB_RADIUS / 2, ImColor(white));
 		}
 
-		const float Luma = Hovered ? 0.5f : 1.0f;
-		ImVec4 Pink(1.00f, 0.00f, 0.75f, Luma);
-		ImVec4 Cyan(0.00f, 0.75f, 1.00f, Luma);
-		ImVec4 White(GetStyle().Colors[ImGuiCol_Text]);
-		ImVec2 P1 = ImVec2(P[0], 1.0f - P[1]) * (Bb.Max - Bb.Min) + Bb.Min;
-		ImVec2 P2 = ImVec2(P[2], 1.0f - P[3]) * (Bb.Max - Bb.Min) + Bb.Min;
-		DrawList->AddLine(ImVec2(Bb.Min.x, Bb.Max.y), P1, ImColor(White), LineWidth);
-		DrawList->AddLine(ImVec2(Bb.Max.x, Bb.Min.y), P2, ImColor(White), LineWidth);
-		DrawList->AddCircleFilled(P1, GrabRadius, ImColor(White));
-		DrawList->AddCircleFilled(P1, GrabRadius - GrabBorder, ImColor(Pink));
-		DrawList->AddCircleFilled(P2, GrabRadius, ImColor(White));
-		DrawList->AddCircleFilled(P2, GrabRadius - GrabBorder, ImColor(Cyan));
+		// draw lines and grabbers
+		float luma = IsItemActive() || IsItemHovered() ? 0.5f : 1.0f;
+		ImVec4 pink(1.00f, 0.00f, 0.75f, luma), cyan(0.00f, 0.75f, 1.00f, luma);
+		ImVec2 p1 = ImVec2(P[0], 1 - P[1]) * (bb.Max - bb.Min) + bb.Min;
+		ImVec2 p2 = ImVec2(P[2], 1 - P[3]) * (bb.Max - bb.Min) + bb.Min;
+		DrawList->AddLine(ImVec2(bb.Min.x, bb.Max.y), p1, ImColor(white), LINE_WIDTH);
+		DrawList->AddLine(ImVec2(bb.Max.x, bb.Min.y), p2, ImColor(white), LINE_WIDTH);
+		DrawList->AddCircleFilled(p1, GRAB_RADIUS, ImColor(white));
+		DrawList->AddCircleFilled(p1, GRAB_RADIUS - GRAB_BORDER, ImColor(pink));
+		DrawList->AddCircleFilled(p2, GRAB_RADIUS, ImColor(white));
+		DrawList->AddCircleFilled(p2, GRAB_RADIUS - GRAB_BORDER, ImColor(cyan));
 
-		if (bRelaxClip)
-		{
-			DrawList->PopClipRect();
-		}
+		// if (hovered || changed) DrawList->PopClipRect();
 
-		SetCursorScreenPos(ImVec2(Bb.Min.x, Bb.Max.y + GrabRadius));
-		PopID();
-
-		return Changed;
+		return changed;
 	}
 
 	void ShowBezierDemo()
 	{
 		{ static float V[] = { 0.000f, 0.000f, 1.000f, 1.000f }; Bezier("easeLinear", V); }
-		{ static float V[] = { 0.470f, 0.000f, 0.745f, 0.715f }; Bezier("easeInSine", V); }
-		{ static float V[] = { 0.390f, 0.575f, 0.565f, 1.000f }; Bezier("easeOutSine", V); }
-		{ static float V[] = { 0.445f, 0.050f, 0.550f, 0.950f }; Bezier("easeInOutSine", V); }
-		{ static float V[] = { 0.550f, 0.085f, 0.680f, 0.530f }; Bezier("easeInQuad", V); }
-		{ static float V[] = { 0.250f, 0.460f, 0.450f, 0.940f }; Bezier("easeOutQuad", V); }
-		{ static float V[] = { 0.455f, 0.030f, 0.515f, 0.955f }; Bezier("easeInOutQuad", V); }
-		{ static float V[] = { 0.550f, 0.055f, 0.675f, 0.190f }; Bezier("easeInCubic", V); }
-		{ static float V[] = { 0.215f, 0.610f, 0.355f, 1.000f }; Bezier("easeOutCubic", V); }
-		{ static float V[] = { 0.645f, 0.045f, 0.355f, 1.000f }; Bezier("easeInOutCubic", V); }
-		{ static float V[] = { 0.895f, 0.030f, 0.685f, 0.220f }; Bezier("easeInQuart", V); }
-		{ static float V[] = { 0.165f, 0.840f, 0.440f, 1.000f }; Bezier("easeOutQuart", V); }
-		{ static float V[] = { 0.770f, 0.000f, 0.175f, 1.000f }; Bezier("easeInOutQuart", V); }
-		{ static float V[] = { 0.755f, 0.050f, 0.855f, 0.060f }; Bezier("easeInQuint", V); }
-		{ static float V[] = { 0.230f, 1.000f, 0.320f, 1.000f }; Bezier("easeOutQuint", V); }
-		{ static float V[] = { 0.860f, 0.000f, 0.070f, 1.000f }; Bezier("easeInOutQuint", V); }
-		{ static float V[] = { 0.950f, 0.050f, 0.795f, 0.035f }; Bezier("easeInExpo", V); }
-		{ static float V[] = { 0.190f, 1.000f, 0.220f, 1.000f }; Bezier("easeOutExpo", V); }
-		{ static float V[] = { 1.000f, 0.000f, 0.000f, 1.000f }; Bezier("easeInOutExpo", V); }
-		{ static float V[] = { 0.600f, 0.040f, 0.980f, 0.335f }; Bezier("easeInCirc", V); }
-		{ static float V[] = { 0.075f, 0.820f, 0.165f, 1.000f }; Bezier("easeOutCirc", V); }
-		{ static float V[] = { 0.785f, 0.135f, 0.150f, 0.860f }; Bezier("easeInOutCirc", V); }
-		{ static float V[] = { 0.600f, -0.28f, 0.735f, 0.045f }; Bezier("easeInBack", V); }
-		{ static float V[] = { 0.175f, 0.885f, 0.320f, 1.275f }; Bezier("easeOutBack", V); }
-		{ static float V[] = { 0.680f, -0.55f, 0.265f, 1.550f }; Bezier("easeInOutBack", V); }
+		//{ static float V[] = { 0.470f, 0.000f, 0.745f, 0.715f }; Bezier("easeInSine", V); }
+		//{ static float V[] = { 0.390f, 0.575f, 0.565f, 1.000f }; Bezier("easeOutSine", V); }
+		//{ static float V[] = { 0.445f, 0.050f, 0.550f, 0.950f }; Bezier("easeInOutSine", V); }
+		//{ static float V[] = { 0.550f, 0.085f, 0.680f, 0.530f }; Bezier("easeInQuad", V); }
+		//{ static float V[] = { 0.250f, 0.460f, 0.450f, 0.940f }; Bezier("easeOutQuad", V); }
+		//{ static float V[] = { 0.455f, 0.030f, 0.515f, 0.955f }; Bezier("easeInOutQuad", V); }
+		//{ static float V[] = { 0.550f, 0.055f, 0.675f, 0.190f }; Bezier("easeInCubic", V); }
+		//{ static float V[] = { 0.215f, 0.610f, 0.355f, 1.000f }; Bezier("easeOutCubic", V); }
+		//{ static float V[] = { 0.645f, 0.045f, 0.355f, 1.000f }; Bezier("easeInOutCubic", V); }
+		//{ static float V[] = { 0.895f, 0.030f, 0.685f, 0.220f }; Bezier("easeInQuart", V); }
+		//{ static float V[] = { 0.165f, 0.840f, 0.440f, 1.000f }; Bezier("easeOutQuart", V); }
+		//{ static float V[] = { 0.770f, 0.000f, 0.175f, 1.000f }; Bezier("easeInOutQuart", V); }
+		//{ static float V[] = { 0.755f, 0.050f, 0.855f, 0.060f }; Bezier("easeInQuint", V); }
+		//{ static float V[] = { 0.230f, 1.000f, 0.320f, 1.000f }; Bezier("easeOutQuint", V); }
+		//{ static float V[] = { 0.860f, 0.000f, 0.070f, 1.000f }; Bezier("easeInOutQuint", V); }
+		//{ static float V[] = { 0.950f, 0.050f, 0.795f, 0.035f }; Bezier("easeInExpo", V); }
+		//{ static float V[] = { 0.190f, 1.000f, 0.220f, 1.000f }; Bezier("easeOutExpo", V); }
+		//{ static float V[] = { 1.000f, 0.000f, 0.000f, 1.000f }; Bezier("easeInOutExpo", V); }
+		//{ static float V[] = { 0.600f, 0.040f, 0.980f, 0.335f }; Bezier("easeInCirc", V); }
+		//{ static float V[] = { 0.075f, 0.820f, 0.165f, 1.000f }; Bezier("easeOutCirc", V); }
+		//{ static float V[] = { 0.785f, 0.135f, 0.150f, 0.860f }; Bezier("easeInOutCirc", V); }
+		//{ static float V[] = { 0.600f, -0.28f, 0.735f, 0.045f }; Bezier("easeInBack", V); }
+		//{ static float V[] = { 0.175f, 0.885f, 0.320f, 1.275f }; Bezier("easeOutBack", V); }
+		//{ static float V[] = { 0.680f, -0.55f, 0.265f, 1.550f }; Bezier("easeInOutBack", V); }
 	}
 }
