@@ -34,6 +34,7 @@ State.BestScore = State.BestScore or 0
 State.TopScores = State.TopScores or {}
 State.StartScoreRow = State.StartScoreRow or 0
 State.Elapsed = State.Elapsed or 0.0
+State.IsDying = false
 State.bInitialized = State.bInitialized or false
 State.bUIReady = State.bUIReady or false
 State.bBestScoreLoaded = State.bBestScoreLoaded or false
@@ -625,6 +626,7 @@ function State.StartGame(reason)
     State.Score = 0
     State.StartScoreRow = 0
     State.Elapsed = 0.0
+    State.IsDying = false
     State.bCreditsPrinted = false
 
     hide_game_over_ui()
@@ -805,6 +807,11 @@ function State.GameOver(reason)
 end
 
 function State.SetScore(value)
+    -- 사망 연출 중이거나 게임 오버 상태면 점수를 올리지 않습니다.
+    if State.Mode == "GameOver" or State.IsDying then
+        return
+    end
+
     local nextScore = math.max(0, math.floor(value or 0))
 
     if nextScore == State.Score then
@@ -904,6 +911,7 @@ function State.Tick(deltaTime)
         local location = player.Location
 
         if location ~= nil and vec_z(location) < State.Config.DefeatY then
+            State.IsDying = true
             State.GameOver("Fell out of stage")
             return
         end
