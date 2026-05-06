@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "CameraShakeModifier.h"
+
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
 APlayerCameraManager::APlayerCameraManager()
@@ -407,6 +409,38 @@ void APlayerCameraManager::ClearCameraReferencesForComponent(const UActorCompone
 	{
 		OutputCameraComponent = nullptr;
 	}
+}
+UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeParams& Params)
+{
+	if (Params.bSingleInstance)
+	{
+		for (UCameraModifier* Modifier : ModifierList)
+		{
+			UCameraShakeModifier* ExistingShake = Cast<UCameraShakeModifier>(Modifier);
+			if (!ExistingShake || !IsAliveObject(ExistingShake))
+			{
+				continue;
+			}
+			
+			if (!ExistingShake->IsPendingRemove())
+			{
+				ExistingShake->StartShake(Params);
+				return ExistingShake;
+			}
+		}
+	}
+	
+	UCameraShakeModifier* NewShake = UObjectManager::Get().CreateObject<UCameraShakeModifier>(this);
+	if (!NewShake)
+	{
+		return nullptr;
+	}
+	
+	NewShake->SetPriority(128);
+	NewShake->StartShake(Params);
+	
+	AddCameraModifier(NewShake);
+	return NewShake;
 }
 
 UCameraComponent* APlayerCameraManager::ResolveCameraReference(const FCameraComponentReference& Ref) const

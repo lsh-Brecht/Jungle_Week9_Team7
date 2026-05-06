@@ -11,6 +11,8 @@ class FArchive;
 class UActorComponent;
 class UCameraComponent;
 class UCameraModifier;
+class UCameraShakeModifier;
+struct FCameraShakeParams;
 
 struct FViewTarget
 {
@@ -58,6 +60,7 @@ public:
 	void ClearCameraReferencesForActor(const AActor* Actor);
 	void ClearCameraReferencesForComponent(const UActorComponent* Component);
 
+	UCameraShakeModifier* StartCameraShake(const FCameraShakeParams& Params);
 private:
 	UCameraComponent* ResolveCameraReference(const FCameraComponentReference& Ref) const;
 	FCameraComponentReference MakeCameraReference(UCameraComponent* Camera) const;
