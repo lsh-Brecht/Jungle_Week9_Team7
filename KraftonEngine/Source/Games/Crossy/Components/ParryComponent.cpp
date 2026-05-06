@@ -11,6 +11,7 @@
 #include "Games/Crossy/Audio/CrossyAudioIds.h"
 #include "GameFramework/World.h"
 #include "Math/Vector.h"
+#include "Runtime/Engine.h"
 
 IMPLEMENT_CLASS(UParryComponent, UActorComponent)
 
@@ -98,8 +99,12 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 		Spinning.ElapsedTime += DeltaTime;
 
+		// 회전 적용
 		if (USceneComponent* Root = Actor->GetRootComponent())
 			Root->AddLocalRotation(FRotator(DeltaDeg, 0.0f, 0.0f));
+
+		// 위치 이동 적용 (날아가기)
+		Actor->AddActorWorldOffset(Spinning.FlyVelocity * DeltaTime);
 
 		if (Spinning.ElapsedTime < SpinDuration)
 		{
@@ -201,6 +206,25 @@ void UParryComponent::DeflectNearbyProjectiles()
 
 		Projectile->StopSimulating();
 		ParryState->SetParried(true);
-		SpinningProjectiles.push_back({ OtherActor, Projectile, 0.0f });
+		OtherActor->SetActorEnableCollision(false); // 패링 즉시 충돌 비활성화
+
+		// 플레이어 -> 자동차 방향 벡터 계산 (수평 방향)
+		FVector FlyDir = (OtherActor->GetActorLocation() - OwnerPos);
+		FlyDir.Z = 0.0f;
+		if (FlyDir.IsNearlyZero()) {
+			FlyDir = FVector::ForwardVector;
+		}
+		FlyDir.Normalize();
+
+		// 더 멀리 보내기 위해 속도 80.0f 적용
+		FVector FlyVelocity = FlyDir * 80.0f;
+
+		SpinningProjectiles.push_back({ OtherActor, Projectile, FlyVelocity, 0.0f });
+
+		// 패링 성공 시 슬로모션 효과 (배율 0.2, 지속시간 0.5초)
+		if (GEngine)
+		{
+			GEngine->GetTimeManager().StartSlomo(0.2f, 0.5f);
+		}
 	}
 }
