@@ -359,6 +359,9 @@
     <ClCompile Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.cpp">
       <Filter>Source\Editor\UI\ContentBrowser</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Editor\UI\EditorBezierWidget.cpp">
+      <Filter>Source\Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Editor\UI\EditorConsoleWidget.cpp">
       <Filter>Source\Editor\UI</Filter>
     </ClCompile>
@@ -1081,6 +1084,9 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.h">
       <Filter>Source\Editor\UI\ContentBrowser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Editor\UI\EditorBezierWidget.h">
+      <Filter>Source\Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Source\Editor\UI\EditorConsoleWidget.h">
       <Filter>Source\Editor\UI</Filter>

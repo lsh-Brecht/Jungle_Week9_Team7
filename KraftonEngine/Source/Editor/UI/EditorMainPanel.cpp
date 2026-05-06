@@ -21,6 +21,7 @@
 #include "Engine/Input/InputFrame.h"
 
 #include "Editor/UI/ImGuiSetting.h"
+#include "Editor/UI/EditorBezierWidget.h"
 #include "Editor/UI/NotificationToast.h"
 #include "Core/Notification.h"
 
@@ -127,11 +128,21 @@ void FEditorMainPanel::Render(float DeltaTime)
 		}
 	}
 
-	const FEditorSettings& Settings = FEditorSettings::Get();
+	FEditorSettings& Settings = FEditorSettings::Get();
 
 	if (!bHideEditorWindows && Settings.UI.bImGUISettings)
 	{
 		ImGuiSetting::ShowSetting();
+	}
+
+	if (!bHideEditorWindows && Settings.UI.bBezier)
+	{
+		ImGui::SetNextWindowSize(ImVec2(360.0f, 640.0f), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("Bezier", &Settings.UI.bBezier))
+		{
+			ImGui::ShowBezierDemo();
+		}
+		ImGui::End();
 	}
 
 	if (!bHideEditorWindows && Settings.UI.bControl)
@@ -252,6 +263,7 @@ void FEditorMainPanel::RenderMainMenuBar()
 		ImGui::Checkbox("ContentBrowser", &Settings.UI.bContentBrowser);
 		ImGui::Checkbox("Editor Debug", &Settings.UI.bEditorDebug);
 		ImGui::Checkbox("Shadow Map Debug", &Settings.UI.bShadowMapDebug);
+		ImGui::Checkbox("Bezier", &Settings.UI.bBezier);
 		ImGui::Separator();
 		ImGui::Checkbox("IMGUI_Setting", &Settings.UI.bImGUISettings);
 		ImGui::EndPopup();
@@ -1254,6 +1266,7 @@ void FEditorMainPanel::HideEditorWindows()
 	Settings.UI.bImGUISettings = false;
 	Settings.UI.bEditorDebug = false;
 	Settings.UI.bShadowMapDebug = false;
+	Settings.UI.bBezier = false;
 }
 
 void FEditorMainPanel::ShowEditorWindows()

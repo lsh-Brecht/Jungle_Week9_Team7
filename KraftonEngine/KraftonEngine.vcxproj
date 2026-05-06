@@ -323,6 +323,7 @@
     <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowser.cpp" />
     <ClCompile Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.cpp" />
     <ClCompile Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.cpp" />
+    <ClCompile Include="Source\Editor\UI\EditorBezierWidget.cpp" />
     <ClCompile Include="Source\Editor\UI\EditorConsoleWidget.cpp" />
     <ClCompile Include="Source\Editor\UI\EditorControlWidget.cpp" />
     <ClCompile Include="Source\Editor\UI\EditorDragSource.cpp" />
@@ -569,6 +570,7 @@
     <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentBrowserElement.h" />
     <ClInclude Include="Source\Editor\UI\ContentBrowser\ContentItem.h" />
     <ClInclude Include="Source\Editor\UI\ContentBrowser\EditorPrefabWidget.h" />
+    <ClInclude Include="Source\Editor\UI\EditorBezierWidget.h" />
     <ClInclude Include="Source\Editor\UI\EditorConsoleWidget.h" />
     <ClInclude Include="Source\Editor\UI\EditorControlWidget.h" />
     <ClInclude Include="Source\Editor\UI\EditorDragSource.h" />
