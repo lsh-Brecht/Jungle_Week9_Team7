@@ -24,7 +24,7 @@ local CONFIG = {
     },
 
     ControllerInput = {
-        MoveSpeed = 10.0,
+        MoveSpeed = 0.0,
         SprintMultiplier = 2.5,
         LookSensitivity = 0.08,
         MinPitch = -89.0,
@@ -42,7 +42,7 @@ local CONFIG = {
     HopMovement = {
         ReceiveControllerInput = false,
         InitialSpeed = 8.0,
-        MaxSpeed = 18.0,
+        MaxSpeed = 16.0,
         HopCoefficient = 1.0,
         Acceleration = 2048.0,
         BrakingDeceleration = 4096.0,
