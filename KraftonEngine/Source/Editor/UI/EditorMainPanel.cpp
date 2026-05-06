@@ -84,6 +84,7 @@ void FEditorMainPanel::Create(FWindowsWindow* InWindow, FRenderer& InRenderer, U
 	PropertyWidget.Initialize(InEditorEngine);
 	SceneWidget.Initialize(InEditorEngine);
 	StatWidget.Initialize(InEditorEngine);
+	CurveWidget.Initialize(InEditorEngine);
 	ContentBrowserWidget.Initialize(InEditorEngine, InRenderer.GetFD3DDevice().GetDevice());
 	ShadowMapDebugWidget.Initialize(InEditorEngine);
 }
@@ -156,6 +157,12 @@ void FEditorMainPanel::Render(float DeltaTime)
 	{
 		SCOPE_STAT_CAT("StatWidget.Render", "5_UI");
 		StatWidget.Render(DeltaTime);
+	}
+
+	if (!bHideEditorWindows && Settings.UI.bCurve)
+	{
+		SCOPE_STAT_CAT("CurveWidget.Render", "5_UI");
+		CurveWidget.Render(DeltaTime);
 	}
 
 	if (!bHideEditorWindows && Settings.UI.bContentBrowser)
@@ -249,6 +256,7 @@ void FEditorMainPanel::RenderMainMenuBar()
 		ImGui::Checkbox("Property", &Settings.UI.bProperty);
 		ImGui::Checkbox("Scene", &Settings.UI.bScene);
 		ImGui::Checkbox("Stat", &Settings.UI.bStat);
+		ImGui::Checkbox("Curve", &Settings.UI.bCurve);
 		ImGui::Checkbox("ContentBrowser", &Settings.UI.bContentBrowser);
 		ImGui::Checkbox("Editor Debug", &Settings.UI.bEditorDebug);
 		ImGui::Checkbox("Shadow Map Debug", &Settings.UI.bShadowMapDebug);
@@ -1250,6 +1258,7 @@ void FEditorMainPanel::HideEditorWindows()
 	Settings.UI.bProperty = false;
 	Settings.UI.bScene = false;
 	Settings.UI.bStat = false;
+	Settings.UI.bCurve = false;
 	Settings.UI.bContentBrowser = false;
 	Settings.UI.bImGUISettings = false;
 	Settings.UI.bEditorDebug = false;
