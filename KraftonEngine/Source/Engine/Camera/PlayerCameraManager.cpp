@@ -172,8 +172,9 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 	return HasValidOutputCamera() ? OutputCameraComponent : nullptr;
 }
 
-void APlayerCameraManager::UpdateCamera(float DeltaTime)
+void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 {
+	(void)(RawDeltaTime);
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -760,7 +761,5 @@ void APlayerCameraManager::UpdateVignetteCenter(UCameraComponent* TargetCamera)
 
 	const float U = NDC.X * 0.5f + 0.5f;
 	const float V = -NDC.Y * 0.5f + 0.5f;
-	PP.VignetteCenter = FVector2(U, V);
-}+ 0.5f;
 	PP.VignetteCenter = FVector2(U, V);
 }

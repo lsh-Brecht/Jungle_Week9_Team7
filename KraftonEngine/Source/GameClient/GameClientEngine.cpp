@@ -137,7 +137,7 @@ void UGameClientEngine::Tick(float DeltaTime)
 	if (!bPauseMenuOpen)
 	{
 		const float GameDeltaTime = GetTimeManager().GetGameDeltaTime();
-		TickInGame(GameDeltaTime);
+		TickInGame(GameDeltaTime, RawDeltaTime);
 	}
 
 	Render(RawDeltaTime);
