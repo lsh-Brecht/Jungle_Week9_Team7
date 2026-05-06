@@ -103,4 +103,8 @@ private:
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;
+	
+	
+	//테스트
+	bool bDebugModifierAdded = false;
 };

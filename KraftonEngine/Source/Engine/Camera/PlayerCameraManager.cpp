@@ -173,6 +173,15 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	if (!bDebugModifierAdded)
+	{
+		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+		AddCameraModifier(TestModifier);
+		bDebugModifierAdded = true;
+
+		UE_LOG("[CameraManager] Debug modifier added");
+	}
+
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -184,10 +193,11 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 		return;
 	}
 
-		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-		AddCameraModifier(TestModifier);
+	//테스트
+	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//AddCameraModifier(TestModifier);
 
-		UE_LOG("[CameraManager] Debug modifier added");
+	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -599,7 +609,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 		return;
 	}
 
-	UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
+	//UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
 
 	CleanupCameraModifiers();
 	SortCameraModifiers();
