@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Object/Object.h"
 #include "GameFramework/World.h"
@@ -6,6 +6,7 @@
 #include "Render/Pipeline/Renderer.h"
 #include "Render/Pipeline/IRenderPipeline.h"
 #include "Runtime/TaskScheduler.h"
+#include "Runtime/RuntimeModuleManager.h"
 #include "Sound/SoundManager.h"
 #include <memory>
 
@@ -65,6 +66,8 @@ public:
 
 	FRenderer& GetRenderer() { return Renderer; }
 	FTaskScheduler& GetTaskScheduler() { return TaskScheduler; }
+	FRuntimeModuleManager& GetRuntimeModules() { return RuntimeModules; }
+	const FRuntimeModuleManager& GetRuntimeModules() const { return RuntimeModules; }
 
 	// Game Viewport Client — PIE/Standalone 용
 	void SetGameViewportClient(UGameViewportClient* InClient) { GameViewportClient = InClient; }
@@ -87,6 +90,7 @@ protected:
 	UGameViewportClient* GameViewportClient = nullptr;
 	FRenderer Renderer;
 	FTaskScheduler TaskScheduler;
+	FRuntimeModuleManager RuntimeModules;
 
 private:
 	std::unique_ptr<IRenderPipeline> RenderPipeline;

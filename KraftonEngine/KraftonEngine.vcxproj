@@ -168,7 +168,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -185,7 +185,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -200,7 +200,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -223,7 +223,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -246,7 +246,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=0;IS_OBJ_VIEWER=1;IS_GAME_CLIENT=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=0;IS_OBJ_VIEWER=1;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -269,7 +269,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;STATS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=1;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=0;WITH_CROSSY_GAME_MODULE=0;STATS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -292,7 +292,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=0;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=1;STATS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WITH_EDITOR=0;IS_OBJ_VIEWER=0;IS_GAME_CLIENT=1;WITH_CROSSY_GAME_MODULE=1;STATS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -341,6 +341,7 @@
     <ClCompile Include="Source\Editor\UI\NotificationToast.cpp" />
     <ClCompile Include="Source\Editor\Viewport\EditorViewportClient.cpp" />
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp" />
+    <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp" />
     <ClCompile Include="Source\Engine\Collision\MeshTriangleBVH.cpp" />
@@ -372,14 +373,12 @@
     <ClCompile Include="Source\Engine\Component\Light\PointLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Light\SpotLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\MeshComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\Movement\HopMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\InterpToMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\MovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\PawnMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\PendulumMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Movement\RotatingMovementComponent.cpp" />
-    <ClCompile Include="Source\Engine\Component\ParryComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PawnOrientationComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
@@ -486,13 +485,14 @@
     <ClCompile Include="Source\Engine\Render\Types\FrameContext.cpp" />
     <ClCompile Include="Source\Engine\Render\Viewport\D3D11ViewportPresenter.cpp" />
     <ClCompile Include="Source\Engine\Resource\ResourceManager.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\ActorPoolSystem.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Delegate.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Engine.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\EngineFactory.cpp" />
     <ClCompile Include="Source\Engine\Runtime\EngineLoop.cpp" />
     <ClCompile Include="Source\Engine\Runtime\Launch.cpp" />
     <ClCompile Include="Source\Engine\Runtime\LoadingScreen.cpp" />
-    <ClCompile Include="Source\Engine\Runtime\ObjectPoolSystem.cpp" />
-    <ClCompile Include="Source\Engine\Runtime\RowManager.cpp" />
+    <ClCompile Include="Source\Engine\Runtime\RuntimeModuleManager.cpp" />
     <ClCompile Include="Source\Engine\Runtime\TaskScheduler.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsApplication.cpp" />
     <ClCompile Include="Source\Engine\Runtime\WindowsWindow.cpp" />
@@ -505,24 +505,19 @@
     <ClCompile Include="Source\Engine\Scripting\LuaInputLibrary.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMathBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaMovementBindings.cpp" />
-    <ClCompile Include="Source\Engine\Scripting\LuaParryComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPawnOrientationBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPlayerControllerBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
-    <ClCompile Include="Source\Engine\Scripting\LuaRowManagerBindings.cpp" />
-    <ClCompile Include="Source\Engine\Scripting\LuaSaveGameBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
-    <ClCompile Include="Source\Engine\Scripting\LuaUiBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
     <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Serialization\SceneSaveManager.cpp" />
     <ClCompile Include="Source\Engine\Sound\SoundManager.cpp" />
     <ClCompile Include="Source\Engine\Texture\Texture2D.cpp" />
-    <ClCompile Include="Source\Engine\UI\Game\GameUiSystem.cpp" />
     <ClCompile Include="Source\Engine\UI\ImGui\ImGuiViewportPresenter.cpp" />
     <ClCompile Include="Source\Engine\UI\Rml\RmlD3D11RenderInterface.cpp" />
     <ClCompile Include="Source\Engine\UI\Rml\RmlWin32SystemInterface.cpp" />
@@ -539,6 +534,7 @@
     <ClCompile Include="Source\GameClient\GameClientSession.cpp" />
     <ClCompile Include="Source\GameClient\GameClientSettings.cpp" />
     <ClCompile Include="Source\GameClient\GameClientViewport.cpp" />
+    <ClCompile Include="Source\GameClient\LinkedRuntimeModules.cpp" />
     <ClCompile Include="Source\ObjViewer\ObjViewerEngine.cpp" />
     <ClCompile Include="Source\ObjViewer\ObjViewerPanel.cpp" />
     <ClCompile Include="Source\ObjViewer\ObjViewerRenderPipeline.cpp" />
@@ -589,6 +585,7 @@
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h" />
     <ClInclude Include="Source\Editor\Viewport\FLevelViewportLayout.h" />
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
+    <ClInclude Include="Source\Engine\Camera\CameraModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
     <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
@@ -624,14 +621,12 @@
     <ClInclude Include="Source\Engine\Component\Light\PointLightComponent.h" />
     <ClInclude Include="Source\Engine\Component\Light\SpotLightComponent.h" />
     <ClInclude Include="Source\Engine\Component\MeshComponent.h" />
-    <ClInclude Include="Source\Engine\Component\Movement\HopMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\InterpToMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\MovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\PawnMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\PendulumMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Component\Movement\RotatingMovementComponent.h" />
-    <ClInclude Include="Source\Engine\Component\ParryComponent.h" />
     <ClInclude Include="Source\Engine\Component\PawnOrientationComponent.h" />
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
@@ -771,15 +766,17 @@
     <ClInclude Include="Source\Engine\Render\Types\ViewTypes.h" />
     <ClInclude Include="Source\Engine\Render\Viewport\D3D11ViewportPresenter.h" />
     <ClInclude Include="Source\Engine\Resource\ResourceManager.h" />
+    <ClInclude Include="Source\Engine\Runtime\ActorPoolSystem.h" />
     <ClInclude Include="Source\Engine\Runtime\Delegate.h" />
     <ClInclude Include="Source\Engine\Runtime\DelegateSubscriptionBox.h" />
     <ClInclude Include="Source\Engine\Runtime\Engine.h" />
+    <ClInclude Include="Source\Engine\Runtime\EngineFactory.h" />
     <ClInclude Include="Source\Engine\Runtime\EngineLoop.h" />
+    <ClInclude Include="Source\Engine\Runtime\IRuntimeModule.h" />
     <ClInclude Include="Source\Engine\Runtime\Launch.h" />
     <ClInclude Include="Source\Engine\Runtime\LoadingScreen.h" />
-    <ClInclude Include="Source\Engine\Runtime\ObjectPoolSystem.h" />
     <ClInclude Include="Source\Engine\Runtime\PooledObjectInterface.h" />
-    <ClInclude Include="Source\Engine\Runtime\RowManager.h" />
+    <ClInclude Include="Source\Engine\Runtime\RuntimeModuleManager.h" />
     <ClInclude Include="Source\Engine\Runtime\TaskScheduler.h" />
     <ClInclude Include="Source\Engine\Runtime\WindowsApplication.h" />
     <ClInclude Include="Source\Engine\Runtime\WindowsWindow.h" />
@@ -799,7 +796,6 @@
     <ClInclude Include="Source\Engine\Serialization\WindowsArchive.h" />
     <ClInclude Include="Source\Engine\Sound\SoundManager.h" />
     <ClInclude Include="Source\Engine\Texture\Texture2D.h" />
-    <ClInclude Include="Source\Engine\UI\Game\GameUiSystem.h" />
     <ClInclude Include="Source\Engine\UI\ImGui\ImGuiViewportPresenter.h" />
     <ClInclude Include="Source\Engine\UI\Rml\RmlD3D11RenderInterface.h" />
     <ClInclude Include="Source\Engine\UI\Rml\RmlUiConfig.h" />
@@ -808,6 +804,7 @@
     <ClInclude Include="Source\Engine\UI\SSplitter.h" />
     <ClInclude Include="Source\Engine\UI\SWidget.h" />
     <ClInclude Include="Source\Engine\UI\SWindow.h" />
+    <ClInclude Include="Source\Engine\UI\ViewportUiLayer.h" />
     <ClInclude Include="Source\Engine\Viewport\GameViewportClient.h" />
     <ClInclude Include="Source\Engine\Viewport\Viewport.h" />
     <ClInclude Include="Source\Engine\Viewport\ViewportClient.h" />
@@ -820,6 +817,7 @@
     <ClInclude Include="Source\GameClient\GameClientSession.h" />
     <ClInclude Include="Source\GameClient\GameClientSettings.h" />
     <ClInclude Include="Source\GameClient\GameClientViewport.h" />
+    <ClInclude Include="Source\GameClient\LinkedRuntimeModules.h" />
     <ClInclude Include="Source\ObjViewer\ObjViewerEngine.h" />
     <ClInclude Include="Source\ObjViewer\ObjViewerPanel.h" />
     <ClInclude Include="Source\ObjViewer\ObjViewerRenderPipeline.h" />
@@ -1204,6 +1202,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="VcpkgLua.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="CrossyGame.vcxproj" Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='GameClient|x64' Or '$(Configuration)|$(Platform)'=='Release|x64'">
+      <Project>{a6df3d49-15ce-49c6-b594-d9b89de3c83b}</Project>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,4 @@
-#include "GameFramework/World.h"
+﻿#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -7,7 +7,7 @@
 #include "Engine/Component/CameraComponent.h"
 #include "Render/Types/LODContext.h"
 #include "Scripting/LuaScriptSubsystem.h"
-#include "Runtime/ObjectPoolSystem.h"
+#include "Runtime/ActorPoolSystem.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Component/ActorComponent.h"
@@ -16,6 +16,8 @@
 #include "Object/Object.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Core/Log.h"
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -119,10 +121,23 @@ UWorld* UWorld::DuplicateAs(EWorldType InWorldType) const
 void UWorld::DestroyActor(AActor* Actor)
 {
 	if (!Actor || !PersistentLevel) return;
+	TickManager.RemoveTickFunction(&Actor->PrimaryActorTick);
+	Actor->PrimaryActorTick.UnRegisterTickFunction();
+	
+	for (UActorComponent* Component : Actor->GetComponents())
+	{
+		if (!Component)
+		{
+			continue;
+		}
+
+		TickManager.RemoveTickFunction(&Component->PrimaryComponentTick);
+		Component->PrimaryComponentTick.UnRegisterTickFunction();
+	}
 
 	// 다른 시스템이 이 Actor/Pawn/Camera를 가리키고 있으면 파괴 전에 먼저 끊는다.
 	CleanupActorReferences(Actor);
-	FObjectPoolSystem::Get().ForgetActor(Actor);
+	FActorPoolSystem::Get().ForgetActor(Actor);
 	Actor->SetPooledActorState(false, false);
 	for (UPrimitiveComponent* Primitive : Actor->GetPrimitiveComponents())
 	{
@@ -151,22 +166,22 @@ void UWorld::DestroyActor(AActor* Actor)
 
 bool UWorld::ReleaseActor(AActor* Actor)
 {
-	return FObjectPoolSystem::Get().ReleaseActor(Actor);
+	return FActorPoolSystem::Get().ReleaseActor(Actor);
 }
 
 AActor* UWorld::AcquirePrefab(const FString& PrefabPath, const FVector& Location, const FRotator& Rotation)
 {
-	return FObjectPoolSystem::Get().AcquirePrefab(this, PrefabPath, Location, Rotation);
+	return FActorPoolSystem::Get().AcquirePrefab(this, PrefabPath, Location, Rotation);
 }
 
 int32 UWorld::WarmUpActorPool(UClass* Class, int32 Count)
 {
-	return FObjectPoolSystem::Get().WarmUp(this, Class, Count);
+	return FActorPoolSystem::Get().WarmUp(this, Class, Count);
 }
 
 int32 UWorld::WarmUpPrefabPool(const FString& PrefabPath, int32 Count)
 {
-	return FObjectPoolSystem::Get().WarmUpPrefab(this, PrefabPath, Count);
+	return FActorPoolSystem::Get().WarmUpPrefab(this, PrefabPath, Count);
 }
 
 void UWorld::AddActor(AActor* Actor)
@@ -482,7 +497,7 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 			continue;
 		}
 
-		FPlayerCameraManager& Manager = Controller->GetCameraManager();
+		APlayerCameraManager& Manager = Controller->GetCameraManager();
 		Manager.UpdateCamera(DeltaTime);
 
 		if (bCanDriveWorldView)
@@ -491,6 +506,7 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 			{
 				SetViewCamera(OutputCamera);
 				SetActiveCamera(OutputCamera);
+				UE_LOG("[World] OutputCamera=%p", OutputCamera);
 			}
 		}
 	}
@@ -865,7 +881,7 @@ void UWorld::EndPlay()
 	LastLODUpdateCamera = nullptr;
 	bHasLastFullLODUpdateCameraPos = false;
 
-	FObjectPoolSystem::Get().ClearWorld(this);
+	FActorPoolSystem::Get().ClearWorld(this);
 
 	// 1. 모든 Actor가 아직 World에 살아 있는 상태에서 EndPlay만 먼저 호출
 	PersistentLevel->EndPlay();

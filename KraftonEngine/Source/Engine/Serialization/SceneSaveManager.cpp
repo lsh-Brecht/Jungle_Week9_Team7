@@ -1,4 +1,4 @@
-﻿#include "SceneSaveManager.h"
+#include "SceneSaveManager.h"
 
 #include <iostream>
 #include <fstream>
@@ -41,13 +41,7 @@ namespace
 			return false;
 		}
 
-		// 혹시 태그 방식도 같이 쓸 경우
-		if (Actor->HasTag("__RuntimeSpawned"))
-		{
-			return false;
-		}
-
-		return true;
+		return Actor->ShouldSerializeToScene();
 	}
 }
 

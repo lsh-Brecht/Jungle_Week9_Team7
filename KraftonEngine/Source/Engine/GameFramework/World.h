@@ -11,7 +11,7 @@
 #include "GameFramework/WorldContext.h"
 #include "Render/Scene/FScene.h"
 #include "Render/Types/LODContext.h"
-#include "Runtime/ObjectPoolSystem.h"
+#include "Runtime/ActorPoolSystem.h"
 #include <Collision/Octree.h>
 #include <Collision/SpatialPartition.h>
 
@@ -160,11 +160,11 @@ inline T* UWorld::SpawnActor()
 template<typename T>
 inline T* UWorld::AcquireActor(const FVector& Location, const FRotator& Rotation)
 {
-	return FObjectPoolSystem::Get().AcquireActor<T>(this, T::StaticClass(), Location, Rotation);
+	return FActorPoolSystem::Get().AcquireActor<T>(this, T::StaticClass(), Location, Rotation);
 }
 
 template<typename T>
 inline T* UWorld::AcquireActor(UClass* Class, const FVector& Location, const FRotator& Rotation)
 {
-	return FObjectPoolSystem::Get().AcquireActor<T>(this, Class, Location, Rotation);
+	return FActorPoolSystem::Get().AcquireActor<T>(this, Class, Location, Rotation);
 }

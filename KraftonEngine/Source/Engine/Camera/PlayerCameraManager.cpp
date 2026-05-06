@@ -1,5 +1,6 @@
-#include "Camera/PlayerCameraManager.h"
+﻿#include "Camera/PlayerCameraManager.h"
 
+#include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
 #include "Component/ComponentReferenceUtils.h"
 #include "GameFramework/AActor.h"
@@ -7,10 +8,41 @@
 #include "GameFramework/World.h"
 #include "Math/MathUtils.h"
 #include "Object/FName.h"
+#include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
+#include "Core/Log.h"
 
 #include <algorithm>
 #include <cmath>
+
+IMPLEMENT_CLASS(APlayerCameraManager, AActor)
+
+APlayerCameraManager::APlayerCameraManager()
+{
+	SetSerializeToScene(false);
+	bNeedsTick = false;
+	SetActorTickEnabled(false);
+}
+
+APlayerCameraManager::~APlayerCameraManager()
+{
+	ClearCameraModifiers();
+}
+
+void APlayerCameraManager::InitDefaultComponents()
+{
+	EnsureOutputCamera();
+}
+
+void APlayerCameraManager::EndPlay()
+{
+	ClearCameraModifiers();
+	ClearActiveCamera();
+	OwnerController = nullptr;
+	ViewTarget = FViewTarget();
+
+	AActor::EndPlay();
+}
 
 namespace
 {
@@ -34,13 +66,24 @@ namespace
 	}
 }
 
-void FPlayerCameraManager::Initialize(APlayerController* InOwner)
+void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
+	UE_LOG("[CameraManager] Initialize");
 	OwnerController = InOwner;
+	SetSerializeToScene(false);
+	bNeedsTick = false;
+	SetActorTickEnabled(false);
+
+	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
 	EnsureOutputCamera();
 }
+void APlayerCameraManager::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+	SerializeCameraState(Ar);
+}
 
-void FPlayerCameraManager::Serialize(FArchive& Ar)
+void APlayerCameraManager::SerializeCameraState(FArchive& Ar)
 {
 	Ar << ActiveCameraRef.OwnerActorUUID;
 	Ar << ActiveCameraRef.ComponentPath;
@@ -56,10 +99,13 @@ void FPlayerCameraManager::Serialize(FArchive& Ar)
 		BlendFromView = FCameraView();
 		BlendElapsedTime = 0.0f;
 		bIsBlending = false;
+
+		ViewTarget = FViewTarget();
+		ClearCameraModifiers();
 	}
 }
 
-void FPlayerCameraManager::SetActiveCamera(UCameraComponent* Camera, bool bBlend)
+void APlayerCameraManager::SetActiveCamera(UCameraComponent* Camera, bool bBlend)
 {
 	if (!Camera)
 	{
@@ -88,19 +134,22 @@ void FPlayerCameraManager::SetActiveCamera(UCameraComponent* Camera, bool bBlend
 	BlendElapsedTime = 0.0f;
 }
 
-void FPlayerCameraManager::ClearActiveCamera()
+void APlayerCameraManager::ClearActiveCamera()
 {
 	ActiveCameraRef.Reset();
 	PendingCameraRef.Reset();
 	ActiveCameraCached = nullptr;
 	PendingCameraCached = nullptr;
+
 	CurrentView = FCameraView();
 	BlendFromView = FCameraView();
+	ViewTarget = FViewTarget();
+
 	bIsBlending = false;
 	BlendElapsedTime = 0.0f;
 }
 
-UCameraComponent* FPlayerCameraManager::GetActiveCamera() const
+UCameraComponent* APlayerCameraManager::GetActiveCamera() const
 {
 	if (ActiveCameraCached && IsAliveObject(ActiveCameraCached))
 	{
@@ -109,7 +158,7 @@ UCameraComponent* FPlayerCameraManager::GetActiveCamera() const
 	return ResolveCameraReference(ActiveCameraRef);
 }
 
-bool FPlayerCameraManager::HasValidOutputCamera() const
+bool APlayerCameraManager::HasValidOutputCamera() const
 {
 	return OutputCameraComponent
 		&& IsAliveObject(OutputCameraComponent)
@@ -117,18 +166,38 @@ bool FPlayerCameraManager::HasValidOutputCamera() const
 		&& (ActiveCameraRef.IsSet() || PendingCameraRef.IsSet());
 }
 
-UCameraComponent* FPlayerCameraManager::GetOutputCameraIfValid() const
+UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 {
 	return HasValidOutputCamera() ? OutputCameraComponent : nullptr;
 }
 
-void FPlayerCameraManager::UpdateCamera(float DeltaTime)
+void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	if (!bDebugModifierAdded)
+	{
+		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+		AddCameraModifier(TestModifier);
+		bDebugModifierAdded = true;
+
+		UE_LOG("[CameraManager] Debug modifier added");
+	}
+
+	if (!OwnerController || !IsAliveObject(OwnerController))
+	{
+		return;
+	}
+
 	EnsureOutputCamera();
 	if (!OutputCameraComponent)
 	{
 		return;
 	}
+
+	//테스트
+	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//AddCameraModifier(TestModifier);
+
+	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -163,7 +232,15 @@ void FPlayerCameraManager::UpdateCamera(float DeltaTime)
 	if (!CurrentView.bValid)
 	{
 		CurrentView = DesiredView;
-		OutputCameraComponent->ApplyCameraView(CurrentView);
+
+		ViewTarget.Target = TargetCamera ? TargetCamera->GetOwner() : nullptr;
+		ViewTarget.Camera = TargetCamera;
+		ViewTarget.POV = CurrentView;
+
+		FCameraView FinalView = CurrentView;
+		ApplyCameraModifiers(DeltaTime, FinalView);
+		OutputCameraComponent->ApplyCameraView(FinalView);
+
 		return;
 	}
 
@@ -209,10 +286,16 @@ void FPlayerCameraManager::UpdateCamera(float DeltaTime)
 		CurrentView = DesiredView;
 	}
 
-	OutputCameraComponent->ApplyCameraView(CurrentView);
+	ViewTarget.Target = TargetCamera ? TargetCamera->GetOwner() : nullptr;
+	ViewTarget.Camera = TargetCamera;
+	ViewTarget.POV = CurrentView;
+
+	FCameraView FinalView = CurrentView;
+	ApplyCameraModifiers(DeltaTime, FinalView);
+	OutputCameraComponent->ApplyCameraView(FinalView);
 }
 
-void FPlayerCameraManager::SnapToActiveCamera()
+void APlayerCameraManager::SnapToActiveCamera()
 {
 	EnsureOutputCamera();
 	UCameraComponent* ActiveCamera = GetActiveCamera();
@@ -225,11 +308,18 @@ void FPlayerCameraManager::SnapToActiveCamera()
 	if (ActiveCamera->CalcCameraView(OwnerController, 0.0f, DesiredView))
 	{
 		CurrentView = DesiredView;
-		OutputCameraComponent->ApplyCameraView(CurrentView);
+
+		ViewTarget.Target = ActiveCamera->GetOwner();
+		ViewTarget.Camera = ActiveCamera;
+		ViewTarget.POV = CurrentView;
+
+		FCameraView FinalView = CurrentView;
+		ApplyCameraModifiers(0.0f, FinalView);
+		OutputCameraComponent->ApplyCameraView(FinalView);
 	}
 }
 
-void FPlayerCameraManager::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
+void APlayerCameraManager::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
 {
 	auto RemapRef = [&ActorUUIDRemap](FCameraComponentReference& Ref)
 	{
@@ -257,7 +347,7 @@ void FPlayerCameraManager::RemapActorReferences(const TMap<uint32, uint32>& Acto
 	BlendElapsedTime = 0.0f;
 }
 
-void FPlayerCameraManager::ClearCameraReferencesForActor(const AActor* Actor)
+void APlayerCameraManager::ClearCameraReferencesForActor(const AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -284,7 +374,7 @@ void FPlayerCameraManager::ClearCameraReferencesForActor(const AActor* Actor)
 	}
 }
 
-void FPlayerCameraManager::ClearCameraReferencesForComponent(const UActorComponent* Component)
+void APlayerCameraManager::ClearCameraReferencesForComponent(const UActorComponent* Component)
 {
 	const UCameraComponent* Camera = Cast<UCameraComponent>(Component);
 	if (!Camera)
@@ -319,7 +409,7 @@ void FPlayerCameraManager::ClearCameraReferencesForComponent(const UActorCompone
 	}
 }
 
-UCameraComponent* FPlayerCameraManager::ResolveCameraReference(const FCameraComponentReference& Ref) const
+UCameraComponent* APlayerCameraManager::ResolveCameraReference(const FCameraComponentReference& Ref) const
 {
 	if (!Ref.IsSet() || !OwnerController)
 	{
@@ -341,7 +431,7 @@ UCameraComponent* FPlayerCameraManager::ResolveCameraReference(const FCameraComp
 	return Cast<UCameraComponent>(ComponentReferenceUtils::ResolveComponentPath(OwnerActor, Ref.ComponentPath));
 }
 
-FCameraComponentReference FPlayerCameraManager::MakeCameraReference(UCameraComponent* Camera) const
+FCameraComponentReference APlayerCameraManager::MakeCameraReference(UCameraComponent* Camera) const
 {
 	FCameraComponentReference Ref;
 	if (!Camera || !Camera->GetOwner())
@@ -354,7 +444,7 @@ FCameraComponentReference FPlayerCameraManager::MakeCameraReference(UCameraCompo
 	return Ref;
 }
 
-FCameraView FPlayerCameraManager::BlendViews(
+FCameraView APlayerCameraManager::BlendViews(
 	const FCameraView& From,
 	const FCameraView& To,
 	float Alpha,
@@ -414,7 +504,7 @@ FCameraView FPlayerCameraManager::BlendViews(
 	return Out;
 }
 
-float FPlayerCameraManager::EvaluateBlendAlpha(float RawAlpha, ECameraBlendFunction Function) const
+float APlayerCameraManager::EvaluateBlendAlpha(float RawAlpha, ECameraBlendFunction Function) const
 {
 	const float A = Clamp(RawAlpha, 0.0f, 1.0f);
 	switch (Function)
@@ -431,23 +521,152 @@ float FPlayerCameraManager::EvaluateBlendAlpha(float RawAlpha, ECameraBlendFunct
 	}
 }
 
-void FPlayerCameraManager::EnsureOutputCamera()
+void APlayerCameraManager::EnsureOutputCamera()
 {
 	if (OutputCameraComponent && IsAliveObject(OutputCameraComponent))
 	{
 		return;
 	}
 
-	if (!OwnerController)
-	{
-		return;
-	}
-
-	OutputCameraComponent = OwnerController->AddComponent<UCameraComponent>();
+	OutputCameraComponent = AddComponent<UCameraComponent>();
 	if (OutputCameraComponent)
 	{
 		OutputCameraComponent->SetFName(FName("PlayerOutputCamera"));
 		OutputCameraComponent->SetHiddenInComponentTree(true);
 		OutputCameraComponent->SetAutoActivate(false);
 	}
+}
+
+void APlayerCameraManager::AddCameraModifier(UCameraModifier* Modifier)
+{
+	UE_LOG("[CameraManager] AddCameraModifier: %p", Modifier);
+	if (!Modifier || !IsAliveObject(Modifier))
+	{
+		return;
+	}
+
+	if (std::find(ModifierList.begin(), ModifierList.end(), Modifier) != ModifierList.end())
+	{
+		return;
+	}
+
+	Modifier->Initialize(this);
+	Modifier->OnAddedToCameraManager();
+
+	ModifierList.push_back(Modifier);
+	SortCameraModifiers();
+}
+
+void APlayerCameraManager::RemoveCameraModifier(UCameraModifier* Modifier, bool bImmediate)
+{
+	if (!Modifier)
+	{
+		return;
+	}
+
+	auto It = std::find(ModifierList.begin(), ModifierList.end(), Modifier);
+	if (It == ModifierList.end())
+	{
+		return;
+	}
+
+	if (!bImmediate)
+	{
+		if (IsAliveObject(Modifier))
+		{
+			Modifier->MarkPendingRemove();
+		}
+		return;
+	}
+
+	if (IsAliveObject(Modifier))
+	{
+		Modifier->OnRemovedFromCameraManager();
+		UObjectManager::Get().DestroyObject(Modifier);
+	}
+
+	ModifierList.erase(It);
+}
+
+void APlayerCameraManager::ClearCameraModifiers()
+{
+	for (UCameraModifier* Modifier : ModifierList)
+	{
+		if (Modifier && IsAliveObject(Modifier))
+		{
+			Modifier->OnRemovedFromCameraManager();
+			UObjectManager::Get().DestroyObject(Modifier);
+		}
+	}
+
+	ModifierList.clear();
+}
+
+void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
+{
+	if (!InOutView.bValid || ModifierList.empty())
+	{
+		return;
+	}
+
+	//UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
+
+	CleanupCameraModifiers();
+	SortCameraModifiers();
+
+	for (UCameraModifier* Modifier : ModifierList)
+	{
+		if (!Modifier || !IsAliveObject(Modifier))
+		{
+			continue;
+		}
+
+		const bool bContinueChain = Modifier->UpdateCameraModifier(DeltaTime, InOutView);
+		if (!bContinueChain)
+		{
+			break;
+		}
+	}
+
+	CleanupCameraModifiers();
+}
+
+void APlayerCameraManager::CleanupCameraModifiers()
+{
+	for (auto It = ModifierList.begin(); It != ModifierList.end(); )
+	{
+		UCameraModifier* Modifier = *It;
+
+		if (!Modifier || !IsAliveObject(Modifier))
+		{
+			It = ModifierList.erase(It);
+			continue;
+		}
+
+		if (Modifier->IsShouldDestroy())
+		{
+			Modifier->OnRemovedFromCameraManager();
+			UObjectManager::Get().DestroyObject(Modifier);
+
+			It = ModifierList.erase(It);
+			continue;
+		}
+
+		++It;
+	}
+}
+
+void APlayerCameraManager::SortCameraModifiers()
+{
+	std::stable_sort(
+		ModifierList.begin(),
+		ModifierList.end(),
+		[](const UCameraModifier* A, const UCameraModifier* B)
+		{
+			const uint8 PriorityA = A && IsAliveObject(A) ? A->GetPriority() : 0;
+			const uint8 PriorityB = B && IsAliveObject(B) ? B->GetPriority() : 0;
+
+			return PriorityA > PriorityB;
+		}
+	);
 }

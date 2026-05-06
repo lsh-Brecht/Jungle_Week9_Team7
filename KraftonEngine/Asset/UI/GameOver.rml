@@ -21,6 +21,11 @@
                 <div id="final-best-value" class="stat-value">0</div>
             </div>
 
+            <div class="rank-block">
+                <div class="stat-label">상위 기록</div>
+                <div id="top-scores-value" class="rank-value">기록 없음</div>
+            </div>
+
             <div class="button-row">
                 <div id="ui-restart" class="row-button-left">재시작</div>
                 <div id="ui-gameover-exit" class="row-button-right">종료</div>

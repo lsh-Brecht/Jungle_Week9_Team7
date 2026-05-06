@@ -1,4 +1,4 @@
-﻿#include "Editor/EditorEngine.h"
+#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -21,10 +21,22 @@
 #include "GameFramework/PlayerController.h"
 #include "Materials/MaterialManager.h"
 #include "Engine/Platform/Paths.h"
-#include "Runtime/RowManager.h"
+#include "Runtime/ActorPoolSystem.h"
+#include "Runtime/EngineFactory.h"
+#include "GameClient/LinkedRuntimeModules.h"
 #include <filesystem>
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
+
+namespace
+{
+	UEngine* CreateEditorEngine()
+	{
+		return UObjectManager::Get().CreateObject<UEditorEngine>();
+	}
+
+	FEngineFactoryRegistrar GEditorEngineRegistrar("Editor", &CreateEditorEngine);
+}
 
 namespace
 {
@@ -44,6 +56,11 @@ FString GetFileStem(const FString& InPath)
 
 void UEditorEngine::Init(FWindowsWindow* InWindow)
 {
+	RegisterLinkedRuntimeModules();
+	
+	FProjectSettings::Get().LoadFromFile(FProjectSettings::GetDefaultPath());
+	GetRuntimeModules().LoadModules(FProjectSettings::Get().RuntimeModules);
+
 	// 엔진 공통 초기화 (Renderer, D3D, 싱글턴 등)
 	UEngine::Init(InWindow);
 
@@ -59,7 +76,6 @@ void UEditorEngine::Init(FWindowsWindow* InWindow)
 
 	// 에디터 전용 초기화
 	FEditorSettings::Get().LoadFromFile(FEditorSettings::GetDefaultSettingsPath());
-	FProjectSettings::Get().LoadFromFile(FProjectSettings::GetDefaultPath());
 
 	{
 		SCOPE_STARTUP_STAT("EditorMainPanel::Create");
@@ -168,10 +184,12 @@ void UEditorEngine::RenderUI(float DeltaTime)
 	{
 		if (UGameViewportClient* GameViewportClient = GetGameViewportClient())
 		{
-			FGameUiSystem& GameUi = GameViewportClient->GetGameUiSystem();
-			GameUi.SetPauseMenuVisible(false);
-			GameUi.Update(DeltaTime);
-			GameUi.Render();
+			if (IViewportUiLayer* UiLayer = GameViewportClient->GetUiLayer())
+			{
+				UiLayer->SetLayerVisible("PauseMenu", false);
+				UiLayer->Update(DeltaTime);
+				UiLayer->Render();
+			}
 		}
 	}
 }
@@ -256,9 +274,7 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 {
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
-
-	FRowManager::Get().Shutdown();
-	FRowManager::Get().Initialize();
+	InputSystem::Get().ClearGuiCapture();
 
 	// 1) 현재 에디터 월드를 복제해 PIE 월드 생성 (UE의 CreatePIEWorldByDuplication 대응).
 	UWorld* EditorWorld = GetWorld();
@@ -301,6 +317,9 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 
 	// 4) ActiveWorldHandle을 PIE로 전환 — 이후 GetWorld()는 PIE 월드를 반환.
 	SetActiveWorld(FName("PIE"));
+
+	TaskScheduler.Clear();
+	GetRuntimeModules().OnWorldCreated(PIEWorld);
 
 	// GPU Occlusion readback은 ProxyId 기반이라 월드가 갈리면 stale.
 	// 이전 프레임 결과를 무효화해야 wrong-proxy hit 방지.
@@ -364,20 +383,25 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		PIEViewportClient->SetPlayerController(PIEController);
 		PIEViewportClient->OnBeginPIE(InitialTargetCamera, InitialViewport);
 
-		FGameUiCallbacks UiCallbacks;
-		UiCallbacks.OnContinue = [this]()
+		FViewportModuleContext ModuleContext;
+		ModuleContext.Engine = this;
+		ModuleContext.Window = Window;
+		ModuleContext.Renderer = &Renderer;
+		ModuleContext.ViewportClient = PIEViewportClient;
+		ModuleContext.UiCommands.ExecuteCommand = [this](const FString& CommandName)
 		{
-			RequestEndPlayMap();
+			if (CommandName == "Viewport.Resume" || CommandName == "Viewport.ClosePauseMenu" || CommandName == "Application.Exit")
+			{
+				RequestEndPlayMap();
+			}
+			else if (CommandName == "Application.RestartSession")
+			{
+				FRequestPlaySessionParams Params;
+				RequestPlaySession(Params);
+			}
 		};
-		FGameUiSystem& GameUi = PIEViewportClient->GetGameUiSystem();
+		GetRuntimeModules().OnViewportCreated(ModuleContext);
 
-		if (!GameUi.Initialize(Window, Renderer, PIEViewportClient))
-		{
-			UE_LOG("[PIE] Failed to initialize Game UI.");
-			return;
-		}
-
-		GameUi.SetCallbacks(std::move(UiCallbacks));
 	}
 	EnterPIEPossessedMode();
 	
@@ -398,8 +422,25 @@ void UEditorEngine::EndPlayMap()
 	{
 		return;
 	}
-	FRowManager::Get().Shutdown(true);
+
+	UWorld* PIEWorld = nullptr;
+	if (FWorldContext* PIEContext = GetWorldContextFromHandle(FName("PIE")))
+	{
+		PIEWorld = PIEContext->World;
+	}
+
 	TaskScheduler.Clear();
+
+	// PIE 런타임 Row 액터는 실제 삭제합니다.
+	GetRuntimeModules().OnPreWorldReset(PIEWorld);
+
+	// 풀에 들어가 있던 PIE 액터 참조는 이 월드 기준으로만 끊습니다.
+	// FActorPoolSystem::Shutdown()은 전체 풀을 지우므로 PIE에서는 ClearWorld가 더 안전합니다.
+	if (PIEWorld)
+	{
+		FActorPoolSystem::Get().ClearWorld(PIEWorld);
+	}
+
 	// 활성 월드를 PIE 시작 전 핸들로 복원.
 	const FName PrevHandle = PlayInEditorSessionInfo->PreviousActiveWorldHandle;
 	SetActiveWorld(PrevHandle);
@@ -494,6 +535,7 @@ bool UEditorEngine::EnterPIEPossessedMode()
 	InputSystem::Get().SetUseRawMouse(true);
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
+	InputSystem::Get().ClearGuiCapture();
 	return true;
 }
 
@@ -509,6 +551,7 @@ bool UEditorEngine::EnterPIEEjectedMode()
 	InputSystem::Get().SetUseRawMouse(false);
 	InputSystem::Get().ResetAllKeyStates();
 	InputSystem::Get().ResetTransientState();
+	InputSystem::Get().ClearGuiCapture();
 	return true;
 }
 

@@ -1,4 +1,4 @@
-﻿#include "Runtime/ObjectPoolSystem.h"
+#include "Runtime/ActorPoolSystem.h"
 
 #include "Component/ActorComponent.h"
 #include "GameFramework/World.h"
@@ -45,7 +45,7 @@ namespace
 	}
 }
 
-void FObjectPoolSystem::Shutdown()
+void FActorPoolSystem::Shutdown()
 {
 	TArray<AActor*> ActorsToDestroy;
 	for (auto& Pair : PoolMap)
@@ -66,7 +66,7 @@ void FObjectPoolSystem::Shutdown()
 	}
 }
 
-AActor* FObjectPoolSystem::AcquireActor(UWorld* World, UClass* Class, const FVector& Location, const FRotator& Rotation)
+AActor* FActorPoolSystem::AcquireActor(UWorld* World, UClass* Class, const FVector& Location, const FRotator& Rotation)
 {
 	if (!World || !Class || !Class->IsA(AActor::StaticClass()))
 	{
@@ -76,7 +76,7 @@ AActor* FObjectPoolSystem::AcquireActor(UWorld* World, UClass* Class, const FVec
 	return AcquireActorByKey(World, FPoolKey::FromClass(Class), Location, Rotation);
 }
 
-AActor* FObjectPoolSystem::AcquirePrefab(UWorld* World, const FString& PrefabPath, const FVector& Location, const FRotator& Rotation)
+AActor* FActorPoolSystem::AcquirePrefab(UWorld* World, const FString& PrefabPath, const FVector& Location, const FRotator& Rotation)
 {
 	const FString NormalizedPath = NormalizePrefabPoolPath(PrefabPath);
 	if (!World || NormalizedPath.empty())
@@ -87,7 +87,7 @@ AActor* FObjectPoolSystem::AcquirePrefab(UWorld* World, const FString& PrefabPat
 	return AcquireActorByKey(World, FPoolKey::FromPrefab(NormalizedPath), Location, Rotation);
 }
 
-AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key, const FVector& Location, const FRotator& Rotation)
+AActor* FActorPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key, const FVector& Location, const FRotator& Rotation)
 {
 	if (!World || !IsValidPoolKey(Key))
 	{
@@ -96,7 +96,6 @@ AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key,
 
 	FPooledClassBucket& Bucket = GetOrCreateBucket(Key);
 	AActor* Actor = nullptr;
-	bool bReusedActor = false;
 	TArray<AActor*> SkippedActors;
 
 	while (!Bucket.InactiveActors.empty())
@@ -107,7 +106,6 @@ AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key,
 		if (IsReusablePooledActor(Candidate, World))
 		{
 			Actor = Candidate;
-			bReusedActor = true;
 			break;
 		}
 
@@ -133,7 +131,7 @@ AActor* FObjectPoolSystem::AcquireActorByKey(UWorld* World, const FPoolKey& Key,
 	return Actor;
 }
 
-bool FObjectPoolSystem::ReleaseActor(AActor* Actor)
+bool FActorPoolSystem::ReleaseActor(AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -166,7 +164,7 @@ bool FObjectPoolSystem::ReleaseActor(AActor* Actor)
 	return true;
 }
 
-int32 FObjectPoolSystem::WarmUp(UWorld* World, UClass* Class, int32 Count)
+int32 FActorPoolSystem::WarmUp(UWorld* World, UClass* Class, int32 Count)
 {
 	if (!World || !Class || !Class->IsA(AActor::StaticClass()) || Count <= 0)
 	{
@@ -176,7 +174,7 @@ int32 FObjectPoolSystem::WarmUp(UWorld* World, UClass* Class, int32 Count)
 	return WarmUpKey(World, FPoolKey::FromClass(Class), Count);
 }
 
-int32 FObjectPoolSystem::WarmUpPrefab(UWorld* World, const FString& PrefabPath, int32 Count)
+int32 FActorPoolSystem::WarmUpPrefab(UWorld* World, const FString& PrefabPath, int32 Count)
 {
 	const FString NormalizedPath = NormalizePrefabPoolPath(PrefabPath);
 	if (!World || NormalizedPath.empty() || Count <= 0)
@@ -187,7 +185,7 @@ int32 FObjectPoolSystem::WarmUpPrefab(UWorld* World, const FString& PrefabPath, 
 	return WarmUpKey(World, FPoolKey::FromPrefab(NormalizedPath), Count);
 }
 
-int32 FObjectPoolSystem::WarmUpKey(UWorld* World, const FPoolKey& Key, int32 Count)
+int32 FActorPoolSystem::WarmUpKey(UWorld* World, const FPoolKey& Key, int32 Count)
 {
 	if (!World || !IsValidPoolKey(Key) || Count <= 0)
 	{
@@ -226,7 +224,7 @@ int32 FObjectPoolSystem::WarmUpKey(UWorld* World, const FPoolKey& Key, int32 Cou
 	return CreatedCount;
 }
 
-void FObjectPoolSystem::SetMaxPoolSize(UClass* Class, int32 MaxPoolSize)
+void FActorPoolSystem::SetMaxPoolSize(UClass* Class, int32 MaxPoolSize)
 {
 	if (!Class)
 	{
@@ -250,7 +248,7 @@ void FObjectPoolSystem::SetMaxPoolSize(UClass* Class, int32 MaxPoolSize)
 	}
 }
 
-void FObjectPoolSystem::SetMaxPoolSize(const FString& PrefabPath, int32 MaxPoolSize)
+void FActorPoolSystem::SetMaxPoolSize(const FString& PrefabPath, int32 MaxPoolSize)
 {
 	const FString NormalizedPath = NormalizePrefabPoolPath(PrefabPath);
 	if (NormalizedPath.empty())
@@ -269,31 +267,31 @@ void FObjectPoolSystem::SetMaxPoolSize(const FString& PrefabPath, int32 MaxPoolS
 	}
 }
 
-int32 FObjectPoolSystem::GetMaxPoolSize(UClass* Class) const
+int32 FActorPoolSystem::GetMaxPoolSize(UClass* Class) const
 {
 	const FPooledClassBucket* Bucket = FindBucket(FPoolKey::FromClass(Class));
 	return Bucket ? Bucket->MaxPoolSize : 0;
 }
 
-int32 FObjectPoolSystem::GetMaxPoolSize(const FString& PrefabPath) const
+int32 FActorPoolSystem::GetMaxPoolSize(const FString& PrefabPath) const
 {
 	const FPooledClassBucket* Bucket = FindBucket(FPoolKey::FromPrefab(NormalizePrefabPoolPath(PrefabPath)));
 	return Bucket ? Bucket->MaxPoolSize : 0;
 }
 
-int32 FObjectPoolSystem::GetInactiveCount(UClass* Class) const
+int32 FActorPoolSystem::GetInactiveCount(UClass* Class) const
 {
 	const FPooledClassBucket* Bucket = FindBucket(FPoolKey::FromClass(Class));
 	return Bucket ? static_cast<int32>(Bucket->InactiveActors.size()) : 0;
 }
 
-int32 FObjectPoolSystem::GetInactiveCount(const FString& PrefabPath) const
+int32 FActorPoolSystem::GetInactiveCount(const FString& PrefabPath) const
 {
 	const FPooledClassBucket* Bucket = FindBucket(FPoolKey::FromPrefab(NormalizePrefabPoolPath(PrefabPath)));
 	return Bucket ? static_cast<int32>(Bucket->InactiveActors.size()) : 0;
 }
 
-void FObjectPoolSystem::ClearWorld(UWorld* World)
+void FActorPoolSystem::ClearWorld(UWorld* World)
 {
 	if (!World)
 	{
@@ -336,7 +334,7 @@ void FObjectPoolSystem::ClearWorld(UWorld* World)
 	}
 }
 
-void FObjectPoolSystem::ForgetActor(AActor* Actor)
+void FActorPoolSystem::ForgetActor(AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -355,7 +353,7 @@ void FObjectPoolSystem::ForgetActor(AActor* Actor)
 	ActorPoolKeys.erase(Actor);
 }
 
-AActor* FObjectPoolSystem::SpawnActorForPool(UWorld* World, const FPoolKey& Key, bool bStartInactive)
+AActor* FActorPoolSystem::SpawnActorForPool(UWorld* World, const FPoolKey& Key, bool bStartInactive)
 {
 	if (!World || !IsValidPoolKey(Key))
 	{
@@ -399,17 +397,7 @@ AActor* FObjectPoolSystem::SpawnActorForPool(UWorld* World, const FPoolKey& Key,
 	return Actor;
 }
 
-void FObjectPoolSystem::ResetActorFromPrefab(AActor* Actor, const FPoolKey& Key)
-{
-	if (!Actor || !Key.IsPrefab())
-	{
-		return;
-	}
-
-	FPrefabSaveManager::ApplyPrefabToActor(Actor, Key.PrefabKey);
-}
-
-void FObjectPoolSystem::ActivateActor(AActor* Actor, const FVector& Location, const FRotator& Rotation)
+void FActorPoolSystem::ActivateActor(AActor* Actor, const FVector& Location, const FRotator& Rotation)
 {
 	if (!Actor)
 	{
@@ -442,7 +430,7 @@ void FObjectPoolSystem::ActivateActor(AActor* Actor, const FVector& Location, co
 	DispatchSpawnCallbacks(Actor);
 }
 
-void FObjectPoolSystem::DeactivateActor(AActor* Actor)
+void FActorPoolSystem::DeactivateActor(AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -456,14 +444,16 @@ void FObjectPoolSystem::DeactivateActor(AActor* Actor)
 
 	for (UActorComponent* Component : Actor->GetComponents())
 	{
-		if (Component)
+		if (!Component)
 		{
-			Component->Deactivate();
+			continue;
 		}
+
+		Component->Deactivate();
 	}
 }
 
-void FObjectPoolSystem::DispatchSpawnCallbacks(AActor* Actor)
+void FActorPoolSystem::DispatchSpawnCallbacks(AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -484,7 +474,7 @@ void FObjectPoolSystem::DispatchSpawnCallbacks(AActor* Actor)
 	}
 }
 
-void FObjectPoolSystem::DispatchReturnCallbacks(AActor* Actor)
+void FActorPoolSystem::DispatchReturnCallbacks(AActor* Actor)
 {
 	if (!Actor)
 	{
@@ -505,7 +495,7 @@ void FObjectPoolSystem::DispatchReturnCallbacks(AActor* Actor)
 	}
 }
 
-void FObjectPoolSystem::DestroyActor(AActor* Actor)
+void FActorPoolSystem::DestroyActor(AActor* Actor)
 {
 	if (!Actor || !IsAliveObject(Actor))
 	{
@@ -525,24 +515,24 @@ void FObjectPoolSystem::DestroyActor(AActor* Actor)
 	}
 }
 
-FPooledClassBucket* FObjectPoolSystem::FindBucket(const FPoolKey& Key)
+FPooledClassBucket* FActorPoolSystem::FindBucket(const FPoolKey& Key)
 {
 	auto It = PoolMap.find(Key);
 	return It != PoolMap.end() ? &It->second : nullptr;
 }
 
-const FPooledClassBucket* FObjectPoolSystem::FindBucket(const FPoolKey& Key) const
+const FPooledClassBucket* FActorPoolSystem::FindBucket(const FPoolKey& Key) const
 {
 	auto It = PoolMap.find(Key);
 	return It != PoolMap.end() ? &It->second : nullptr;
 }
 
-FPooledClassBucket& FObjectPoolSystem::GetOrCreateBucket(const FPoolKey& Key)
+FPooledClassBucket& FActorPoolSystem::GetOrCreateBucket(const FPoolKey& Key)
 {
 	return PoolMap[Key];
 }
 
-FPoolKey FObjectPoolSystem::ResolveActorKey(AActor* Actor) const
+FPoolKey FActorPoolSystem::ResolveActorKey(AActor* Actor) const
 {
 	auto It = ActorPoolKeys.find(Actor);
 	if (It != ActorPoolKeys.end())

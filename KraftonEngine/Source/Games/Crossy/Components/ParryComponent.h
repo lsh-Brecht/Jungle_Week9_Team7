@@ -1,7 +1,7 @@
-﻿#pragma once
+#pragma once
 #include "Math/Vector.h"
 #include "Runtime/Delegate.h"
-#include "ActorComponent.h"
+#include "Component/ActorComponent.h"
 #include "Core/CoreTypes.h"
 
 class USceneComponent;
@@ -23,7 +23,8 @@ public:
 
 private:
 	void DeflectNearbyProjectiles();
-
+	void ResolveScaleTarget();
+	
 	struct FSpinningProjectile
 	{
 		AActor* Actor = nullptr;
@@ -37,6 +38,7 @@ private:
 	float ParryDuration = 0.3f;
 	float CurrentParryTime = 0.0f;
 	float ParryRadius = 2.0f;
+	float ParryScaleMultiplier = 1.8f;
 	FVector OriginalScale = { 1.0f , 1.0f , 1.0f };
 	USceneComponent* ScaleTarget = nullptr;
 	TArray<FSpinningProjectile> SpinningProjectiles;

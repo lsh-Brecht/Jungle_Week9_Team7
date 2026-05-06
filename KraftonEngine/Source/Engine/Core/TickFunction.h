@@ -62,6 +62,8 @@ public:
 
 	virtual void ExecuteTick(float DeltaTime, ELevelTick TickType) = 0;
 	virtual const char* GetDebugName() const = 0;
+	
+	virtual bool IsTargetValid() const = 0;
 
 	void RegisterTickFunction();
 	void UnRegisterTickFunction();
@@ -114,6 +116,7 @@ class FTickManager
 public:
 	void Tick(UWorld* World, float DeltaTime, ELevelTick TickType);
 	void Reset();
+	void RemoveTickFunction(FTickFunction* TickFunction);
 
 private:
 	void GatherTickFunctions(UWorld* World, ELevelTick TickType);
@@ -136,6 +139,7 @@ public:
 
 	// FTickFunction을(를) 통해 상속됨
 	const char* GetDebugName() const override;
+    bool IsTargetValid() const;
 };
 
 struct FActorComponentTickFunction : public FTickFunction {
@@ -147,4 +151,5 @@ public:
 
 	// FTickFunction을(를) 통해 상속됨
 	const char* GetDebugName() const override;
+	bool IsTargetValid() const;
 };

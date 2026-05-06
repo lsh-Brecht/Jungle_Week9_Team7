@@ -19,8 +19,8 @@ struct FRowRuntimeConfig
     float SlotSize = 100.0f;
     float RowDepth = 100.0f;
 
-    int32 KeepRowsBehind = 6;
-    int32 KeepRowsAhead = 12;
+    int32 KeepRowsBehind = 25;
+    int32 KeepRowsAhead = 25;
 };
 
 struct FStaticObstacleData
@@ -40,6 +40,8 @@ struct FRowData
 	void ClearActors(bool bDestroyActors = false);
 };
 
+class UWorld;
+
 class FRowManager : public TSingleton<FRowManager>
 {
     friend class TSingleton<FRowManager>;
@@ -47,12 +49,14 @@ class FRowManager : public TSingleton<FRowManager>
 private:
     std::deque<FRowData> ActiveRows;
     FRowRuntimeConfig Config;
+    UWorld* ActiveWorld = nullptr;
 
     FRowManager() = default;
 
 public:
-    void Initialize();
+    void Initialize(UWorld* World);
     void Shutdown(bool bDestroyActors = false);
+    void WarmUpDefaultPools();
 
     FRowData* GetRowData(int32 RowIndex);
     FRowData& PushEmptyRow(int32 RowIndex);
@@ -60,8 +64,9 @@ public:
     void SetRowSize(int32 SlotCount, float SlotSize, float RowDepth);
     void SetRowBufferCounts(int32 KeepRowsBehind, int32 KeepRowsAhead);
     void SetRowBiome(int32 RowIndex, int32 BiomeType);
-    void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath);
+    void SpawnStaticObstacle(int32 RowIndex, int32 SlotIndex, const FString& PrefabPath, float OffsetX = 0.0f, float OffsetY = 0.0f, float YawDegrees = 0.0f);
     AActor* SpawnDynamicVehicle(int32 RowIndex, const FString& PrefabPath, float Speed, int32 DirectionX);
+    bool ReleaseRuntimeActor(AActor* Actor);
 
     void MoveForward(int32 NewCurrentRowIndex);
     void PopOldRows(int32 ThresholdRowIndex);

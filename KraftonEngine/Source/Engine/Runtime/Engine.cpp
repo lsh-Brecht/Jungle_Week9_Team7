@@ -1,4 +1,4 @@
-﻿#include "Engine/Runtime/Engine.h"
+#include "Engine/Runtime/Engine.h"
 
 #include "Platform/Paths.h"
 #include "Core/Log.h"
@@ -81,11 +81,17 @@ void UEngine::Init(FWindowsWindow* InWindow)
 	FDirectoryWatcher::Get().Initialize();
 	FLuaScriptSubsystem::Get().Initialize();
 	FSoundManager::Get().initialize();
+
+	FEngineModuleContext ModuleContext;
+	ModuleContext.Engine = this;
+	ModuleContext.Window = Window;
+	RuntimeModules.OnEngineInit(ModuleContext);
 }
 
 void UEngine::Shutdown()
 {
 	TaskScheduler.Clear();
+	RuntimeModules.UnloadModules();
 	FLuaScriptSubsystem::Get().Shutdown();
 	FDirectoryWatcher::Get().Shutdown();
 	FLogManager::Get().Shutdown();
@@ -105,6 +111,7 @@ void UEngine::BeginPlay()
 		if (Context->WorldType == EWorldType::Game || Context->WorldType == EWorldType::PIE)
 		{
 			Context->World->BeginPlay();
+			RuntimeModules.OnBeginPlay(Context->World);
 		}
 	}
 }
@@ -138,7 +145,10 @@ bool UEngine::HandleWindowMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPa
 {
 	if (GameViewportClient)
 	{
-		return GameViewportClient->GetGameUiSystem().ProcessWin32Message(hWnd, Msg, wParam, lParam);
+		if (IViewportUiLayer* UiLayer = GameViewportClient->GetUiLayer())
+		{
+			return UiLayer->ProcessWin32Message(hWnd, Msg, wParam, lParam);
+		}
 	}
 	return false;
 }
@@ -210,6 +220,7 @@ FWorldContext& UEngine::CreateWorldContext(EWorldType Type, const FName& Handle,
 		Context.World->SetWorldType(Type);
 	}
 	WorldList.push_back(Context);
+	RuntimeModules.OnWorldCreated(WorldList.back().World);
 	return WorldList.back();
 }
 

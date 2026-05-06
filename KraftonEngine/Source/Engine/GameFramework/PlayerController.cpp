@@ -1,5 +1,6 @@
-#include "GameFramework/PlayerController.h"
+﻿#include "GameFramework/PlayerController.h"
 
+#include "Object/ObjectFactory.h"
 #include "Component/ActorComponent.h"
 #include "Component/CameraComponent.h"
 #include "Component/ControllerInputComponent.h"
@@ -63,17 +64,22 @@ namespace
 	}
 }
 
+APlayerController::~APlayerController()
+{
+	DestroyCameraManager();
+}
+
 void APlayerController::Serialize(FArchive& Ar)
 {
 	AActor::Serialize(Ar);
 	Ar << ControlRotation;
 	Ar << PossessedActorUUID;
-	CameraManager.Serialize(Ar);
+	EnsureCameraManager()->SerializeCameraState(Ar);
 
 	if (Ar.IsLoading())
 	{
 		PossessedActor = nullptr;
-		CameraManager.Initialize(this);
+		EnsureCameraManager()->Initialize(this);
 	}
 }
 
@@ -100,7 +106,7 @@ void APlayerController::RemapActorReferences(const TMap<uint32, uint32>& ActorUU
 	};
 
 	RemapUUID(PossessedActorUUID);
-	CameraManager.RemapActorReferences(ActorUUIDRemap);
+	EnsureCameraManager()->RemapActorReferences(ActorUUIDRemap);
 	PossessedActor = nullptr;
 }
 
@@ -117,13 +123,17 @@ void APlayerController::InitDefaultComponents()
 	{
 		AddComponent<UControllerInputComponent>();
 	}
-	CameraManager.Initialize(this);
+	EnsureCameraManager();
 }
 
 void APlayerController::EndPlay()
 {
 	UnPossess();
-	CameraManager.ClearActiveCamera();
+	if (CameraManager && IsAliveObject(CameraManager))
+	{
+		CameraManager->ClearActiveCamera();
+	}
+	DestroyCameraManager();
 	AActor::EndPlay();
 }
 
@@ -237,8 +247,7 @@ void APlayerController::SetActiveCamera(UCameraComponent* Camera)
 		}
 	}
 
-	CameraManager.Initialize(this);
-	CameraManager.SetActiveCamera(Camera, false);
+	EnsureCameraManager()->SetActiveCamera(Camera, false);
 	ControlRotation = MakeControlRotationFromCamera(Camera);
 }
 
@@ -258,8 +267,7 @@ void APlayerController::SetActiveCameraWithBlend(UCameraComponent* Camera)
 		}
 	}
 
-	CameraManager.Initialize(this);
-	CameraManager.SetActiveCamera(Camera, true);
+	EnsureCameraManager()->SetActiveCamera(Camera, true);
 }
 
 bool APlayerController::SetActiveCameraFromPossessedPawn()
@@ -275,21 +283,26 @@ bool APlayerController::SetActiveCameraFromPossessedPawn()
 
 void APlayerController::ClearActiveCamera()
 {
-	CameraManager.ClearActiveCamera();
+	if (CameraManager && IsAliveObject(CameraManager))
+	{
+		CameraManager->ClearActiveCamera();
+	}
 }
 
 UCameraComponent* APlayerController::GetActiveCamera() const
 {
-	return CameraManager.GetActiveCamera();
+	return const_cast<APlayerController*>(this)->EnsureCameraManager()->GetActiveCamera();
 }
 
 UCameraComponent* APlayerController::ResolveViewCamera() const
 {
-	if (UCameraComponent* OutputCamera = CameraManager.GetOutputCameraIfValid())
+	APlayerCameraManager* Manager = const_cast<APlayerController*>(this)->EnsureCameraManager();
+
+	if (UCameraComponent* OutputCamera = Manager->GetOutputCameraIfValid())
 	{
 		return OutputCamera;
 	}
-	if (UCameraComponent* ActiveCamera = CameraManager.GetActiveCamera())
+	if (UCameraComponent* ActiveCamera = Manager->GetActiveCamera())
 	{
 		return ActiveCamera;
 	}
@@ -307,7 +320,7 @@ void APlayerController::ClearCameraReferencesForActor(const AActor* Actor)
 		return;
 	}
 
-	CameraManager.ClearCameraReferencesForActor(Actor);
+	EnsureCameraManager()->ClearCameraReferencesForActor(Actor);
 	if (PossessedActor == Actor || PossessedActorUUID == Actor->GetUUID())
 	{
 		UnPossess();
@@ -316,7 +329,7 @@ void APlayerController::ClearCameraReferencesForActor(const AActor* Actor)
 
 void APlayerController::ClearCameraReferencesForComponent(const UActorComponent* Component)
 {
-	CameraManager.ClearCameraReferencesForComponent(Component);
+	EnsureCameraManager()->ClearCameraReferencesForComponent(Component);
 }
 
 void APlayerController::SetControlRotation(const FRotator& InRotation)
@@ -422,4 +435,47 @@ AActor* APlayerController::ResolveActorUUID(uint32 ActorUUID) const
 	}
 	UWorld* World = GetWorld();
 	return World ? World->FindActorByUUIDInWorld(ActorUUID) : nullptr;
+}
+
+APlayerCameraManager* APlayerController::EnsureCameraManager()
+{
+	if (CameraManager && IsAliveObject(CameraManager))
+	{
+		return CameraManager;
+	}
+
+	CameraManager = UObjectManager::Get().CreateObject<APlayerCameraManager>(this);
+	if (CameraManager)
+	{
+		CameraManager->SetFName(FName("PlayerCameraManager"));
+		CameraManager->Initialize(this);
+	}
+
+	return CameraManager;
+}
+
+void APlayerController::DestroyCameraManager()
+{
+	if (CameraManager && IsAliveObject(CameraManager))
+	{
+		CameraManager->EndPlay();
+		UObjectManager::Get().DestroyObject(CameraManager);
+	}
+
+	CameraManager = nullptr;
+}
+
+APlayerCameraManager& APlayerController::GetCameraManager()
+{
+	return *EnsureCameraManager();
+}
+
+const APlayerCameraManager& APlayerController::GetCameraManager() const
+{
+	return *const_cast<APlayerController*>(this)->EnsureCameraManager();
+}
+
+APlayerCameraManager* APlayerController::GetCameraManagerPtr() const
+{
+	return CameraManager && IsAliveObject(CameraManager) ? CameraManager : nullptr;
 }

@@ -1,4 +1,4 @@
-local MODULE_NAME = "Game.GameState"
+﻿local MODULE_NAME = "Game.GameState"
 local Vec = FVector.new
 
 local State = package.loaded[MODULE_NAME]
@@ -14,6 +14,7 @@ local DEFAULT_CONFIG = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
+    GameOverLocation = Vec(0.0, 0.501545, -2000.0),
     StartLocation = nil,
 
     -- X축으로 ScoreUnit만큼 전진할 때마다 1점
@@ -30,6 +31,7 @@ State.Config = State.Config or {}
 State.Mode = State.Mode or "Boot"
 State.Score = State.Score or 0
 State.BestScore = State.BestScore or 0
+State.TopScores = State.TopScores or {}
 State.StartScoreRow = State.StartScoreRow or 0
 State.Elapsed = State.Elapsed or 0.0
 State.bInitialized = State.bInitialized or false
@@ -54,6 +56,25 @@ local function copy_defaults(target, defaults)
             end
         end
     end
+end
+
+
+local function resolve_member(value, owner)
+    if type(value) ~= "function" then
+        return value
+    end
+
+    local ok, result = pcall(value, owner)
+    if ok then
+        return result
+    end
+
+    ok, result = pcall(value)
+    if ok then
+        return result
+    end
+
+    return nil
 end
 
 local function is_valid(handle)
@@ -263,47 +284,116 @@ local function get_score_row_from_location(location)
 end
 
 local function hide_game_over_ui()
-    if UI ~= nil and UI.HideGameOver ~= nil then
-        UI.HideGameOver()
+    if Game ~= nil and Game.UI ~= nil and Game.UI.HideGameOver ~= nil then
+        Game.UI.HideGameOver()
     end
 end
 
-local function load_best_score()
+local function normalize_top_scores(scores)
+    local normalized = {}
+
+    if type(scores) == "table" then
+        for _, value in ipairs(scores) do
+            local score = math.max(0, math.floor(value or 0))
+            if score > 0 then
+                normalized[#normalized + 1] = score
+            end
+        end
+    end
+
+    table.sort(normalized, function(a, b)
+        return a > b
+    end)
+
+    while #normalized > 5 do
+        table.remove(normalized)
+    end
+
+    return normalized
+end
+
+local function sync_best_score_from_top_scores()
+    State.BestScore = math.max(State.BestScore or 0, State.TopScores[1] or 0)
+end
+
+local function format_top_scores()
+    if #State.TopScores == 0 then
+        return "기록 없음"
+    end
+
+    local lines = {}
+    for i = 1, 5 do
+        local score = State.TopScores[i]
+        if score ~= nil then
+            lines[#lines + 1] = tostring(i) .. ". " .. tostring(score)
+        else
+            lines[#lines + 1] = tostring(i) .. ". -"
+        end
+    end
+    return table.concat(lines, "<br/>")
+end
+
+local function load_top_scores()
     if State.bBestScoreLoaded then
         return
     end
 
     State.bBestScoreLoaded = true
 
-    if SaveGame ~= nil and SaveGame.LoadBestScore ~= nil then
-        local loaded = SaveGame.LoadBestScore()
-        loaded = math.max(0, math.floor(loaded or 0))
-        if loaded > (State.BestScore or 0) then
-            State.BestScore = loaded
+    if SaveGame ~= nil and SaveGame.LoadTopScores ~= nil then
+        State.TopScores = normalize_top_scores(SaveGame.LoadTopScores())
+        sync_best_score_from_top_scores()
+        print("[Score] Loaded top scores. Best = " .. tostring(State.BestScore or 0))
+    elseif SaveGame ~= nil and SaveGame.LoadBestScore ~= nil then
+        local loaded = math.max(0, math.floor(SaveGame.LoadBestScore() or 0))
+        if loaded > 0 then
+            State.TopScores = { loaded }
         end
-        print("[Score] Loaded best score = " .. tostring(State.BestScore or 0))
+        sync_best_score_from_top_scores()
+        print("[Score] Loaded legacy best score = " .. tostring(State.BestScore or 0))
     else
-        print("[Score] SaveGame binding is not available. Best score will not persist.")
+        print("[Score] SaveGame binding is not available. Scores will not persist.")
     end
 end
 
-local function save_best_score()
-    if SaveGame ~= nil and SaveGame.SaveBestScore ~= nil then
+local function save_top_scores()
+    if SaveGame ~= nil and SaveGame.SaveTopScores ~= nil then
+        SaveGame.SaveTopScores(State.TopScores or {})
+    elseif SaveGame ~= nil and SaveGame.SaveBestScore ~= nil then
         SaveGame.SaveBestScore(State.BestScore or 0)
     end
 end
 
+local function has_game_ui()
+    return Game ~= nil and Game.UI ~= nil
+end
+
+local function record_final_score(score)
+    local finalScore = math.max(0, math.floor(score or 0))
+    if finalScore > 0 then
+        State.TopScores[#State.TopScores + 1] = finalScore
+    end
+
+    State.TopScores = normalize_top_scores(State.TopScores)
+    sync_best_score_from_top_scores()
+    save_top_scores()
+end
+
 local function push_score_to_ui()
-    if UI == nil then
+    if not has_game_ui() then
         return
     end
 
-    if UI.SetScore ~= nil then
-        UI.SetScore(State.Score or 0)
+    if Game.UI.SetScore ~= nil then
+        Game.UI.SetScore(State.Score or 0)
     end
 
-    if UI.SetBestScore ~= nil then
-        UI.SetBestScore(State.BestScore or 0)
+    if Game.UI.SetBestScore ~= nil then
+        Game.UI.SetBestScore(State.BestScore or 0)
+    end
+
+    if Game.UI.SetTopScoresText ~= nil then
+        Game.UI.SetTopScoresText(format_top_scores())
     end
 end
 
@@ -316,6 +406,15 @@ local function build_credit_text(reason)
     lines[#lines + 1] = "Score: " .. tostring(State.Score or 0)
     lines[#lines + 1] = "Best: " .. tostring(State.BestScore or 0)
     lines[#lines + 1] = "Time: " .. format_time(State.Elapsed or 0.0)
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Top 5"
+    if #State.TopScores == 0 then
+        lines[#lines + 1] = "- 기록 없음"
+    else
+        for i = 1, math.min(5, #State.TopScores) do
+            lines[#lines + 1] = tostring(i) .. ". " .. tostring(State.TopScores[i])
+        end
+    end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "Credits"
 
@@ -388,15 +487,9 @@ function State.SetPlayerMovementEnabled(enabled)
         return
     end
 
-    local hop = player.HopMovement
-    if hop ~= nil and hop.IsValid ~= nil and hop:IsValid() then
+    local hop = resolve_member(player.HopMovement, player)
+    if hop ~= nil and type(hop) ~= "function" and hop.IsValid ~= nil and hop:IsValid() then
         hop.Simulating = enabled
-
-        if not enabled then
-            hop:ClearMovementInput()
-            hop:StopMovementImmediately()
-        end
-
         return
     end
 
@@ -473,13 +566,17 @@ function State.ResetToIntro()
     set_visible(State.CachedHUDText, false)
     set_visible(State.CachedCreditsText, false)
 
-    if UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(false)
+    if has_game_ui() then
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(false)
         end
 
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(true)
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(true)
+        end
+
+        if Game.UI.HideGameOver ~= nil then
+            Game.UI.HideGameOver()
         end
     end
 
@@ -490,6 +587,7 @@ function State.BeginPlay()
     State.bUIReady = false
     State.Configure(State.Config)
     State.RefreshReferences()
+    load_top_scores()
 
     if State.Config.StartLocation == nil then
         local player = State.GetPlayer()
@@ -531,13 +629,21 @@ function State.StartGame(reason)
 
     hide_game_over_ui()
 
-    if UI ~= nil then
-        if UI.ResetRun ~= nil then
-            UI.ResetRun()
+    if has_game_ui() then
+        if Game.UI.ResetRun ~= nil then
+            Game.UI.ResetRun()
         end
 
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(true)
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(false)
+        end
+
+        if Game.UI.HideGameOver ~= nil then
+            Game.UI.HideGameOver()
+        end
+
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(true)
         end
     end
 
@@ -590,16 +696,58 @@ function State.ReturnToStartScreen(reason)
     end
 end
 
-function State.RestartRun()
-    if MapManager_Reset ~= nil then
-        MapManager_Reset()
+function State.StartFreshRun(reason)
+    local resetReason = reason or "FreshRun"
+
+    if State.Mode == "Resetting" then
+        print("[GameState] StartFreshRun ignored: reset already in progress")
+        return
     end
-    State.StartGame()
+
+    State.Mode = "Resetting"
+    State.SetPlayerMovementEnabled(false)
+
+    local asyncResetFunc = nil
+    local resetFunc = nil
+
+    if _G ~= nil and _G.MapManager_ResetAsync ~= nil then
+        asyncResetFunc = _G.MapManager_ResetAsync
+    elseif MapManager_ResetAsync ~= nil then
+        asyncResetFunc = MapManager_ResetAsync
+    end
+
+    if _G ~= nil and _G.MapManager_Reset ~= nil then
+        resetFunc = _G.MapManager_Reset
+    elseif MapManager_Reset ~= nil then
+        resetFunc = MapManager_Reset
+    end
+
+    local function start_after_reset(doneReason)
+        State.Mode = "Ready"
+        State.StartGame(doneReason or resetReason)
+    end
+
+    if asyncResetFunc ~= nil then
+        asyncResetFunc(resetReason, start_after_reset)
+        return
+    end
+
+    if resetFunc ~= nil then
+        resetFunc(resetReason)
+    else
+        print("[GameState] StartFreshRun: MapManager reset function is nil")
+    end
+
+    start_after_reset(resetReason)
+end
+
+function State.RestartRun()
+    State.StartFreshRun("Restart")
 end
 
 function State.RestartLevel()
-    if Game ~= nil and Game.Restart ~= nil then
-        Game.Restart()
+    if Application ~= nil and Application.RestartSession ~= nil then
+        Application.RestartSession()
         return
     end
     State.RestartRun()
@@ -611,9 +759,15 @@ function State.GameOver(reason)
     end
 
     State.Mode = "GameOver"
+
+    local player = State.GetPlayer()
+    if is_valid(player) and State.Config.GameOverLocation ~= nil then
+        player.Location = clone_vector(State.Config.GameOverLocation)
+    end
+
     State.SetPlayerMovementEnabled(false)
     State.SetMenuObjectsVisible(true)
-    save_best_score()
+    record_final_score(State.Score or 0)
 
     local credits = build_credit_text(reason or "Defeat")
     if not set_text(State.CachedCreditsText, credits, true) then
@@ -623,8 +777,19 @@ function State.GameOver(reason)
     State.UpdateHUD()
     push_score_to_ui()
 
-    if UI ~= nil and UI.ShowGameOver ~= nil then
-        UI.ShowGameOver(State.Score or 0, State.BestScore or State.Score or 0)
+    if has_game_ui() then
+        if Game.UI.SetTopScoresText ~= nil then
+            Game.UI.SetTopScoresText(format_top_scores())
+        end
+
+        if Game.UI.ShowGameOver ~= nil then
+            Game.UI.ShowGameOver(State.Score or 0, State.BestScore or State.Score or 0)
+        end
+
+        -- GameOver 문서가 Show된 뒤 다시 한 번 넣어줍니다.
+        if Game.UI.SetTopScoresText ~= nil then
+            Game.UI.SetTopScoresText(format_top_scores())
+        end
     end
 
     if not State.bCreditsPrinted then
@@ -644,7 +809,6 @@ function State.SetScore(value)
 
     if State.Score > (State.BestScore or 0) then
         State.BestScore = State.Score
-        save_best_score()
     end
 
     push_score_to_ui()
@@ -689,13 +853,19 @@ function State.Tick(deltaTime)
         return
     end
 
-    if not State.bUIReady and UI ~= nil then
-        if UI.ShowHUD ~= nil then
-            UI.ShowHUD(State.Mode == "Playing")
+    if not State.bUIReady and has_game_ui() then
+        if Game.UI.ShowHUD ~= nil then
+            Game.UI.ShowHUD(State.Mode == "Playing")
         end
-        if UI.ShowIntro ~= nil then
-            UI.ShowIntro(State.Mode ~= "Playing")
+
+        if Game.UI.ShowIntro ~= nil then
+            Game.UI.ShowIntro(State.Mode ~= "Playing")
         end
+
+        if Game.UI.HideGameOver ~= nil and State.Mode ~= "GameOver" then
+            Game.UI.HideGameOver()
+        end
+
         push_score_to_ui()
         State.bUIReady = true
     end

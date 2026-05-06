@@ -13,6 +13,7 @@
 
 local Vec = FVector.new
 local Rot = FRotator.new
+local State = require("Game.GameState")
 
 local DEBUG = true
 
@@ -23,7 +24,7 @@ local CONFIG = {
     },
 
     ControllerInput = {
-        MoveSpeed = 10.0,
+        MoveSpeed = 0.0,
         SprintMultiplier = 2.5,
         LookSensitivity = 0.08,
         MinPitch = -89.0,
@@ -39,8 +40,9 @@ local CONFIG = {
     },
 
     HopMovement = {
-        InitialSpeed = 10.0,
-        MaxSpeed = 15.0,
+        ReceiveControllerInput = false,
+        InitialSpeed = 8.0,
+        MaxSpeed = 16.0,
         HopCoefficient = 1.0,
         Acceleration = 2048.0,
         BrakingDeceleration = 4096.0,
@@ -226,8 +228,28 @@ local function SafeDeltaTime(dt)
     return dt
 end
 
+
+local function ResolveCallableMember(value, owner)
+    if type(value) ~= "function" then
+        return value
+    end
+
+    local ok, result = pcall(value, owner)
+    if ok then
+        return result
+    end
+
+    ok, result = pcall(value)
+    if ok then
+        return result
+    end
+
+    return nil
+end
+
 local function IsValidHandle(handle)
-    if handle == nil then
+    handle = ResolveCallableMember(handle, Player.ownerObject)
+    if handle == nil or type(handle) == "function" then
         return false
     end
 
@@ -437,12 +459,12 @@ end
 
 local function SetupPawnMovementComponents()
     if Player.ownerObject.GetOrAddHopMovement ~= nil then
-        Player.hopMovement = Player.ownerObject:GetOrAddHopMovement()
+        Player.hopMovement = ResolveCallableMember(Player.ownerObject:GetOrAddHopMovement(), Player.ownerObject)
     end
 
     local hopGeneric = nil
     if Player.ownerObject.GetComponent ~= nil then
-        hopGeneric = Player.ownerObject:GetComponent("hopmovement")
+        hopGeneric = ResolveCallableMember(Player.ownerObject:GetComponent("hopmovement"), Player.ownerObject)
     end
 
     if IsValidHandle(Player.hopMovement) then
@@ -469,12 +491,12 @@ local function SetupPawnMovementComponents()
         SafeSetProperty(hopGeneric, "Auto Register Updated", true)
         SafeSetProperty(hopGeneric, "Updated Component", CONFIG.HopMovement.UpdatedComponent)
         SafeSetProperty(hopGeneric, "Visual Hop Component", CONFIG.HopMovement.VisualHopComponent)
-        SafeSetProperty(hopGeneric, "Receive Controller Input", true)
+        SafeSetProperty(hopGeneric, "Receive Controller Input", CONFIG.HopMovement.ReceiveControllerInput)
         SafeSetProperty(hopGeneric, "Controller Input Priority", CONFIG.HopMovement.ControllerInputPriority)
     end
 
     if Player.ownerObject.GetOrAddComponent ~= nil then
-        Player.pawnMovementComponent = Player.ownerObject:GetOrAddComponent("pawnmovement")
+        Player.pawnMovementComponent = ResolveCallableMember(Player.ownerObject:GetOrAddComponent("pawnmovement"), Player.ownerObject)
     end
 
     if IsValidHandle(Player.pawnMovementComponent) then
@@ -491,7 +513,7 @@ local function SetupPawnMovementComponents()
     end
 
     if Player.ownerObject.GetOrAddPawnOrientation ~= nil then
-        Player.orientation = Player.ownerObject:GetOrAddPawnOrientation()
+        Player.orientation = ResolveCallableMember(Player.ownerObject:GetOrAddPawnOrientation(), Player.ownerObject)
     end
 
     if IsValidHandle(Player.orientation) then
@@ -507,15 +529,64 @@ local function SetupPawnMovementComponents()
 end
 
 local function SetupCombatComponents()
+    Player.parryComp = nil
+
+    -- 먼저 이미 붙어 있는 ParryComponent를 찾습니다.
     if Player.ownerObject.Parry ~= nil then
-        Player.parryComp = Player.ownerObject.Parry
+        Player.parryComp = ResolveCallableMember(Player.ownerObject.Parry, Player.ownerObject)
+    end
+
+    -- 플레이어 기본 능력으로 Parry가 필요한 게임에서는 런타임 보정으로 붙입니다.
+    -- 에디터에서 수동으로 붙인 경우에는 위 경로가 우선 사용됩니다.
+    if not IsValidHandle(Player.parryComp) and Player.ownerObject.GetOrAddParry ~= nil then
+        Player.parryComp = ResolveCallableMember(Player.ownerObject:GetOrAddParry(), Player.ownerObject)
+    end
+
+    -- 범용 컴포넌트 API가 있는 빌드와의 호환 경로입니다.
+    if not IsValidHandle(Player.parryComp) and Player.ownerObject.GetOrAddComponent ~= nil then
+        Player.parryComp = ResolveCallableMember(Player.ownerObject:GetOrAddComponent("parry"), Player.ownerObject)
     end
 
     if IsValidHandle(Player.parryComp) then
-        Log("[PAWN] ParryComponent 획득 성공")
+        Log("[PAWN] ParryComponent 획득/생성 성공")
     else
         Log("[PAWN_WARN] ParryComponent를 얻지 못했습니다. (패링 불가)")
     end
+end
+
+
+local function ActorHasTag(actor, tag)
+    if actor == nil then
+        return false
+    end
+
+    if actor.HasTag ~= nil then
+        local ok, result = pcall(function()
+            return actor:HasTag(tag)
+        end)
+        if ok and result == true then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function IsVehicleActor(actor)
+    if actor == nil then
+        return false
+    end
+
+    if Game ~= nil and Game.Map ~= nil and Game.Map.IsVehicle ~= nil then
+        local ok, result = pcall(function()
+            return Game.Map.IsVehicle(actor)
+        end)
+        if ok and result == true then
+            return true
+        end
+    end
+
+    return ActorHasTag(actor, "Vehicle") or ActorHasTag(actor, "__RuntimeVehicle")
 end
 
 local function SetupController()
@@ -875,6 +946,34 @@ local function UpdateCombat(inputState)
     end
 end
 
+function OnOverlap(otherActor)
+    if not IsVehicleActor(otherActor) then
+        return
+    end
+
+    if State == nil or State.IsPlaying == nil or not State.IsPlaying() then
+        return
+    end
+
+    -- 패링 중이면 차량 충돌 패배를 무시합니다. 실제 투사체 반사/밀어내기는 ParryComponent가 처리합니다.
+    if IsValidHandle(Player.parryComp) and Player.parryComp.IsParrying ~= nil then
+        local ok, isParrying = pcall(function()
+            return Player.parryComp:IsParrying()
+        end)
+        if ok and isParrying == true then
+            Log("[COLLISION] Vehicle overlap ignored while parrying")
+            return
+        end
+    end
+
+    Log("[COLLISION] Vehicle overlap -> GameOver")
+    if State.GameOver ~= nil then
+        State.GameOver("Hit by vehicle")
+    elseif Game ~= nil and Game.DispatchEvent ~= nil then
+        Game.DispatchEvent("Defeat", otherActor)
+    end
+end
+
 function BeginPlay()
     Bootstrap()
 end
@@ -883,6 +982,21 @@ function OnInput(deltaTime)
     Player.frame = Player.frame + 1
 
     if not Bootstrap() then
+        return
+    end
+
+    if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
+        Player.prevMouse1 = GetKey("MOUSE1")
+        Player.prevMouse2 = GetKey("MOUSE2")
+
+        if IsValidHandle(Player.hopMovement) then
+            Player.hopMovement:ClearMovementInput()
+        end
+
+        if Input ~= nil and Input.SetMouseCaptured ~= nil then
+            Input.SetMouseCaptured(false)
+        end
+
         return
     end
 

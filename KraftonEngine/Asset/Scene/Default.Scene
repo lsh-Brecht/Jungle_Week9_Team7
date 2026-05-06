@@ -35,7 +35,7 @@
           "Location" : [-1.694910, 2.075576, 2.000000],
           "Rotation" : [44.776337, -50.970627, 138.220215],
           "Scale" : [1.000000, 1.000000, 1.000000],
-          "Shadow Bias" : 0.000100,
+          "Shadow Bias" : 0.000000,
           "Shadow Normal Bias" : -0.002000,
           "Shadow Resolution Scale" : 1.000000,
           "Shadow Sharpen" : 0.670000,
@@ -300,11 +300,11 @@
     "AspectRatio" : 2.031696,
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-25.467922, 12.793254, 25.054523],
+    "Location" : [-4.495878, 6.486424, 9.583252],
     "NearClip" : 0.100000,
     "OrthoWidth" : 10.000000,
     "Orthographic" : false,
-    "Rotation" : [0.000000, 39.528309, 1.000082]
+    "Rotation" : [0.000000, 46.878017, -34.249676]
   },
   "Version" : 2,
   "WorldType" : "Editor"

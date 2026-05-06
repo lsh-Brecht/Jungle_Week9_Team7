@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Core/CoreTypes.h"
 #include "Core/Singleton.h"
@@ -56,9 +56,9 @@ namespace std
 	};
 }
 
-class FObjectPoolSystem : public TSingleton<FObjectPoolSystem>
+class FActorPoolSystem : public TSingleton<FActorPoolSystem>
 {
-	friend class TSingleton<FObjectPoolSystem>;
+	friend class TSingleton<FActorPoolSystem>;
 
 public:
 	void Initialize() {}
@@ -94,12 +94,11 @@ public:
 	void ForgetActor(AActor* Actor);
 
 private:
-	FObjectPoolSystem() = default;
+	FActorPoolSystem() = default;
 
 	AActor* AcquireActorByKey(UWorld* World, const FPoolKey& Key, const FVector& Location, const FRotator& Rotation);
 	int32 WarmUpKey(UWorld* World, const FPoolKey& Key, int32 Count);
 	AActor* SpawnActorForPool(UWorld* World, const FPoolKey& Key, bool bStartInactive);
-	void ResetActorFromPrefab(AActor* Actor, const FPoolKey& Key);
 	void ActivateActor(AActor* Actor, const FVector& Location, const FRotator& Rotation);
 	void DeactivateActor(AActor* Actor);
 	void DispatchSpawnCallbacks(AActor* Actor);

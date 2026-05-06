@@ -1,4 +1,4 @@
-#include "Engine/UI/Game/GameUiSystem.h"
+#include "Games/Crossy/UI/CrossyGameUiSystem.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -140,10 +140,10 @@ namespace
 }
 
 #if WITH_RMLUI
-class FGameUiEventListener final : public Rml::EventListener
+class FCrossyGameUiEventListener final : public Rml::EventListener
 {
 public:
-	explicit FGameUiEventListener(FGameUiSystem* InOwner)
+	explicit FCrossyGameUiEventListener(FCrossyGameUiSystem* InOwner)
 		: Owner(InOwner)
 	{
 	}
@@ -169,26 +169,26 @@ public:
 	}
 
 private:
-	FGameUiSystem* Owner = nullptr;
+	FCrossyGameUiSystem* Owner = nullptr;
 };
 #else
-// WITH_RMLUI=0 빌드에서도 FGameUiSystem.h의
-// std::unique_ptr<FGameUiEventListener>가 안전하게 소멸될 수 있도록
+// WITH_RMLUI=0 빌드에서도 FCrossyGameUiSystem.h의
+// std::unique_ptr<FCrossyGameUiEventListener>가 안전하게 소멸될 수 있도록
 // 같은 번역 단위에서 완전한 타입을 제공한다.
-class FGameUiEventListener final
+class FCrossyGameUiEventListener final
 {
 public:
-	explicit FGameUiEventListener(FGameUiSystem*) {}
+	explicit FCrossyGameUiEventListener(FCrossyGameUiSystem*) {}
 };
 #endif
 
-FGameUiSystem::FGameUiSystem() = default;
-FGameUiSystem::~FGameUiSystem()
+FCrossyGameUiSystem::FCrossyGameUiSystem() = default;
+FCrossyGameUiSystem::~FCrossyGameUiSystem()
 {
 	Shutdown();
 }
 
-bool FGameUiSystem::Initialize(FWindowsWindow* Window, FRenderer& Renderer, UGameViewportClient* InViewportClient)
+bool FCrossyGameUiSystem::Initialize(FWindowsWindow* Window, FRenderer& Renderer, UGameViewportClient* InViewportClient)
 {
 	Shutdown();
 
@@ -258,7 +258,7 @@ bool FGameUiSystem::Initialize(FWindowsWindow* Window, FRenderer& Renderer, UGam
 	return true;
 }
 
-void FGameUiSystem::Shutdown()
+void FCrossyGameUiSystem::Shutdown()
 {
 #if WITH_RMLUI
 	UnbindPauseMenuEvents();
@@ -313,25 +313,25 @@ void FGameUiSystem::Shutdown()
 	bShowingIntroOptions = false;
 }
 
-void FGameUiSystem::SetCallbacks(FGameUiCallbacks InCallbacks)
+void FCrossyGameUiSystem::SetCallbacks(FCrossyGameUiCallbacks InCallbacks)
 {
 	Callbacks = std::move(InCallbacks);
 	RefreshOptionLabels();
 }
 
-void FGameUiSystem::SetScriptEventHandler(std::function<void(const FString&)> InHandler)
+void FCrossyGameUiSystem::SetScriptEventHandler(std::function<void(const FString&)> InHandler)
 {
 	ScriptEventHandler = std::move(InHandler);
 }
 
-void FGameUiSystem::ClearScriptEventHandler()
+void FCrossyGameUiSystem::ClearScriptEventHandler()
 {
 	ScriptEventHandler = nullptr;
 	PendingScriptEvents.clear();
 	bFlushingScriptEvents = false;
 }
 
-void FGameUiSystem::SetPresentationRect(const FViewportPresentationRect& InRect)
+void FCrossyGameUiSystem::SetPresentationRect(const FViewportPresentationRect& InRect)
 {
 	if (!InRect.IsValid())
 	{
@@ -341,7 +341,7 @@ void FGameUiSystem::SetPresentationRect(const FViewportPresentationRect& InRect)
 	SyncContextDimensions();
 }
 
-void FGameUiSystem::SyncContextDimensions()
+void FCrossyGameUiSystem::SyncContextDimensions()
 {
 #if WITH_RMLUI
 	if (Context)
@@ -361,7 +361,7 @@ void FGameUiSystem::SyncContextDimensions()
 #endif
 }
 
-void FGameUiSystem::Update(float DeltaTime)
+void FCrossyGameUiSystem::Update(float DeltaTime)
 {
 	if (!bInitialized)
 	{
@@ -386,7 +386,7 @@ void FGameUiSystem::Update(float DeltaTime)
 	FlushQueuedScriptEvents();
 }
 
-void FGameUiSystem::Render()
+void FCrossyGameUiSystem::Render()
 {
 #if WITH_RMLUI
 	if (!bInitialized || !Context || !RenderInterface)
@@ -399,7 +399,7 @@ void FGameUiSystem::Render()
 #endif
 }
 
-void FGameUiSystem::SetIntroVisible(bool bVisible)
+void FCrossyGameUiSystem::SetIntroVisible(bool bVisible)
 {
 	bIntroVisible = bVisible;
 	if (bVisible)
@@ -419,6 +419,10 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 	{
 		bVisible ? IntroDocument->Show() : IntroDocument->Hide();
 	}
+	if (!bVisible)
+	{
+		ClearDocumentFocus(IntroDocument);
+	}
 	if (bVisible)
 	{
 		SetElementDisplay(IntroDocument, "intro-panel", true);
@@ -433,7 +437,7 @@ void FGameUiSystem::SetIntroVisible(bool bVisible)
 #endif
 }
 
-void FGameUiSystem::SetHudVisible(bool bVisible)
+void FCrossyGameUiSystem::SetHudVisible(bool bVisible)
 {
 	bHudVisible = bVisible;
 #if WITH_RMLUI
@@ -444,13 +448,14 @@ void FGameUiSystem::SetHudVisible(bool bVisible)
 #endif
 }
 
-void FGameUiSystem::SetPauseMenuVisible(bool bVisible)
+void FCrossyGameUiSystem::SetPauseMenuVisible(bool bVisible)
 {
 	bPauseMenuVisible = bVisible;
 	if (!bVisible)
 	{
 		bShowingOptions = false;
 		bShowingIntroOptions = false;
+		ClearDocumentFocus(PauseMenuDocument);
 	}
 
 #if WITH_RMLUI
@@ -471,7 +476,7 @@ void FGameUiSystem::SetPauseMenuVisible(bool bVisible)
 #endif
 }
 
-void FGameUiSystem::SetGameOverVisible(bool bVisible)
+void FCrossyGameUiSystem::SetGameOverVisible(bool bVisible)
 {
 	bGameOverVisible = bVisible;
 	if (bVisible)
@@ -488,6 +493,10 @@ void FGameUiSystem::SetGameOverVisible(bool bVisible)
 	{
 		bVisible ? GameOverDocument->Show() : GameOverDocument->Hide();
 	}
+	if (!bVisible)
+	{
+		ClearDocumentFocus(GameOverDocument);
+	}
 	if (bVisible)
 	{
 		if (IntroDocument) IntroDocument->Hide();
@@ -497,12 +506,12 @@ void FGameUiSystem::SetGameOverVisible(bool bVisible)
 #endif
 }
 
-void FGameUiSystem::SetScore(int32 Score)
+void FCrossyGameUiSystem::SetScore(int32 Score)
 {
 	SetElementTextAny("score-value", std::to_string(std::max(0, Score)).c_str());
 }
 
-void FGameUiSystem::SetBestScore(int32 BestScore)
+void FCrossyGameUiSystem::SetBestScore(int32 BestScore)
 {
 	const FString Text = std::to_string(std::max(0, BestScore));
 
@@ -513,42 +522,93 @@ void FGameUiSystem::SetBestScore(int32 BestScore)
 	SetElementTextAny("final-best-value", Text.c_str());
 }
 
-void FGameUiSystem::SetCoins(int32 Coins)
+void FCrossyGameUiSystem::SetCoins(int32 Coins)
 {
 	SetElementTextAny("coin-value", std::to_string(std::max(0, Coins)).c_str());
 }
 
-void FGameUiSystem::SetLane(int32 Lane)
+void FCrossyGameUiSystem::SetLane(int32 Lane)
 {
 	SetElementTextAny("lane-value", std::to_string(std::max(1, Lane)).c_str());
 }
 
-void FGameUiSystem::SetCombo(int32 Combo)
+void FCrossyGameUiSystem::SetCombo(int32 Combo)
 {
 	const FString Text = "x" + std::to_string(std::max(1, Combo));
 	SetElementTextAny("combo-value", Text.c_str());
 }
 
-void FGameUiSystem::SetStatusText(const FString& Text)
+void FCrossyGameUiSystem::SetStatusText(const FString& Text)
 {
 	SetElementTextAny("status-text", Text.c_str());
 }
 
-void FGameUiSystem::ShowGameOver(int32 FinalScore, int32 BestScore)
+void FCrossyGameUiSystem::SetTopScoresText(const FString& Text)
+{
+	static const char* CandidateIds[] =
+	{
+		"top-scores-value",
+		"top-scores",
+		"top-scores-text",
+		"final-top-scores-value",
+		"final-top-scores",
+		"ranking-value",
+		"rankings-value",
+		"ranking-text",
+		"final-ranking-value",
+		"leaderboard-value",
+		"leaderboard-text"
+	};
+
+	for (const char* ElementId : CandidateIds)
+	{
+		SetElementTextAny(ElementId, Text.c_str());
+	}
+}
+
+void FCrossyGameUiSystem::ShowGameOver(int32 FinalScore, int32 BestScore)
 {
 	const int32 SafeFinalScore = std::max(0, FinalScore);
 	const int32 SafeBestScore = std::max(SafeFinalScore, BestScore);
-	SetElementTextAny("final-score-value", std::to_string(SafeFinalScore).c_str());
-	SetElementTextAny("final-best-value", std::to_string(SafeBestScore).c_str());
+
+	const FString FinalScoreText = std::to_string(SafeFinalScore);
+	const FString BestScoreText = std::to_string(SafeBestScore);
+
+	static const char* FinalScoreIds[] =
+	{
+		"final-score-value",
+		"final-score",
+		"score-final-value",
+		"gameover-score-value"
+	};
+
+	static const char* BestScoreIds[] =
+	{
+		"final-best-value",
+		"final-best-score-value",
+		"best-score-value",
+		"gameover-best-value"
+	};
+
+	for (const char* ElementId : FinalScoreIds)
+	{
+		SetElementTextAny(ElementId, FinalScoreText.c_str());
+	}
+
+	for (const char* ElementId : BestScoreIds)
+	{
+		SetElementTextAny(ElementId, BestScoreText.c_str());
+	}
+
 	SetGameOverVisible(true);
 }
 
-void FGameUiSystem::HideGameOver()
+void FCrossyGameUiSystem::HideGameOver()
 {
 	SetGameOverVisible(false);
 }
 
-void FGameUiSystem::ResetRunUi()
+void FCrossyGameUiSystem::ResetRunUi()
 {
 	SetScore(0);
 	SetCoins(0);
@@ -557,11 +617,13 @@ void FGameUiSystem::ResetRunUi()
 	SetStatusText("READY");
 	SetIntroOptionsVisible(false);
 	SetIntroVisible(false);
+	SetPauseMenuVisible(false);
 	SetGameOverVisible(false);
 	SetHudVisible(true);
+	ClearInteractiveFocus();
 }
 
-bool FGameUiSystem::LoadDocuments()
+bool FCrossyGameUiSystem::LoadDocuments()
 {
 #if WITH_RMLUI
 	if (!Context)
@@ -595,12 +657,12 @@ bool FGameUiSystem::LoadDocuments()
 #endif
 }
 
-void FGameUiSystem::BindUiEvents()
+void FCrossyGameUiSystem::BindUiEvents()
 {
 #if WITH_RMLUI
 	if (!EventListener)
 	{
-		EventListener = std::make_unique<FGameUiEventListener>(this);
+		EventListener = std::make_unique<FCrossyGameUiEventListener>(this);
 	}
 
 	UnbindPauseMenuEvents();
@@ -634,7 +696,7 @@ void FGameUiSystem::BindUiEvents()
 #endif
 }
 
-void FGameUiSystem::BindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount)
+void FCrossyGameUiSystem::BindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount)
 {
 #if WITH_RMLUI
 	if (!Document || !EventListener || !ElementIds)
@@ -656,7 +718,7 @@ void FGameUiSystem::BindDocumentClickEvents(Rml::ElementDocument* Document, cons
 #endif
 }
 
-void FGameUiSystem::UnbindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount)
+void FCrossyGameUiSystem::UnbindDocumentClickEvents(Rml::ElementDocument* Document, const char* const* ElementIds, int32 ElementCount)
 {
 #if WITH_RMLUI
 	if (!Document || !EventListener || !ElementIds)
@@ -678,7 +740,7 @@ void FGameUiSystem::UnbindDocumentClickEvents(Rml::ElementDocument* Document, co
 #endif
 }
 
-void FGameUiSystem::HandleClick(const FString& ElementId)
+void FCrossyGameUiSystem::HandleClick(const FString& ElementId)
 {
 	if (bStartTransitionActive)
 	{
@@ -708,9 +770,9 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "ui-intro-toggle-fullscreen")
 	{
-		if (Callbacks.OnToggleFullscreen)
+		if (Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnToggleFullscreen();
+			Callbacks.ExecuteCommand("Application.ToggleFullscreen");
 		}
 		RefreshOptionLabels();
 		return;
@@ -718,13 +780,13 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	if (ElementId == "ui-intro-toggle-fxaa")
 	{
 		bool bNext = true;
-		if (Callbacks.IsFxaaEnabled)
+		if (Callbacks.QueryBool)
 		{
-			bNext = !Callbacks.IsFxaaEnabled();
+			bNext = !Callbacks.QueryBool("Render.FXAA");
 		}
-		if (Callbacks.OnFxaaChanged)
+		if (Callbacks.SetBool)
 		{
-			Callbacks.OnFxaaChanged(bNext);
+			Callbacks.SetBool("Render.FXAA", bNext);
 		}
 		RefreshOptionLabels();
 		return;
@@ -732,18 +794,18 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	if (ElementId == "ui-exit" || ElementId == "ui-gameover-exit")
 	{
 		QueueScriptEvent("exit");
-		if (Callbacks.OnExit)
+		if (Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnExit();
+			Callbacks.ExecuteCommand("Application.Exit");
 		}
 		return;
 	}
 	if (ElementId == "continue")
 	{
 		QueueScriptEvent("continue");
-		if (Callbacks.OnContinue)
+		if (Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnContinue();
+			Callbacks.ExecuteCommand("Viewport.Resume");
 		}
 		return;
 	}
@@ -754,22 +816,27 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "restart" || ElementId == "ui-restart")
 	{
-		ResetRunUi();
-		QueueScriptEvent("restart");
-
-		if (Callbacks.OnRestart)
+		// 인게임 재시작은 PIE/GameClient 세션 재시작이 아니라
+		// 현재 월드 안에서 런타임 맵과 플레이 상태만 다시 시작합니다.
+		if (ElementId == "restart" && Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnRestart();
+			Callbacks.ExecuteCommand("Viewport.ClosePauseMenu");
 		}
+		ResetRunUi();
+		SetPauseMenuVisible(false);
+		SetGameOverVisible(false);
+		SetIntroVisible(false);
+		SetHudVisible(true);
 
+		QueueScriptEvent("restart");
 		return;
 	}
 	if (ElementId == "exit")
 	{
 		QueueScriptEvent("exit");
-		if (Callbacks.OnExit)
+		if (Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnExit();
+			Callbacks.ExecuteCommand("Application.Exit");
 		}
 		return;
 	}
@@ -788,9 +855,9 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	}
 	if (ElementId == "toggle-fullscreen")
 	{
-		if (Callbacks.OnToggleFullscreen)
+		if (Callbacks.ExecuteCommand)
 		{
-			Callbacks.OnToggleFullscreen();
+			Callbacks.ExecuteCommand("Application.ToggleFullscreen");
 		}
 		RefreshOptionLabels();
 		return;
@@ -798,20 +865,40 @@ void FGameUiSystem::HandleClick(const FString& ElementId)
 	if (ElementId == "toggle-fxaa")
 	{
 		bool bNext = true;
-		if (Callbacks.IsFxaaEnabled)
+		if (Callbacks.QueryBool)
 		{
-			bNext = !Callbacks.IsFxaaEnabled();
+			bNext = !Callbacks.QueryBool("Render.FXAA");
 		}
-		if (Callbacks.OnFxaaChanged)
+		if (Callbacks.SetBool)
 		{
-			Callbacks.OnFxaaChanged(bNext);
+			Callbacks.SetBool("Render.FXAA", bNext);
 		}
 		RefreshOptionLabels();
 		return;
 	}
 }
 
-void FGameUiSystem::QueueScriptEvent(const FString& EventName)
+void FCrossyGameUiSystem::SetLayerVisible(const FString& LayerName, bool bVisible)
+{
+	if (LayerName == "PauseMenu")
+	{
+		SetPauseMenuVisible(bVisible);
+	}
+	else if (LayerName == "HUD")
+	{
+		SetHudVisible(bVisible);
+	}
+	else if (LayerName == "Intro")
+	{
+		SetIntroVisible(bVisible);
+	}
+	else if (LayerName == "GameOver")
+	{
+		SetGameOverVisible(bVisible);
+	}
+}
+
+void FCrossyGameUiSystem::QueueScriptEvent(const FString& EventName)
 {
 	if (EventName.empty())
 	{
@@ -830,7 +917,7 @@ void FGameUiSystem::QueueScriptEvent(const FString& EventName)
 	PendingScriptEvents.push_back(EventName);
 }
 
-void FGameUiSystem::FlushQueuedScriptEvents()
+void FCrossyGameUiSystem::FlushQueuedScriptEvents()
 {
 	if (bFlushingScriptEvents || PendingScriptEvents.empty())
 	{
@@ -849,7 +936,7 @@ void FGameUiSystem::FlushQueuedScriptEvents()
 	bFlushingScriptEvents = false;
 }
 
-void FGameUiSystem::DispatchScriptEvent(const FString& EventName)
+void FCrossyGameUiSystem::DispatchScriptEvent(const FString& EventName)
 {
 	if (ScriptEventHandler)
 	{
@@ -857,7 +944,7 @@ void FGameUiSystem::DispatchScriptEvent(const FString& EventName)
 	}
 }
 
-void FGameUiSystem::BeginStartTransition()
+void FCrossyGameUiSystem::BeginStartTransition()
 {
 	if (bStartTransitionActive || bStartEventQueuedOrDispatched)
 	{
@@ -876,7 +963,7 @@ void FGameUiSystem::BeginStartTransition()
 	ApplyIntroIdleBoxVisual();
 }
 
-void FGameUiSystem::UpdateStartTransition(float DeltaTime)
+void FCrossyGameUiSystem::UpdateStartTransition(float DeltaTime)
 {
 	if (!bStartTransitionActive)
 	{
@@ -961,7 +1048,7 @@ void FGameUiSystem::UpdateStartTransition(float DeltaTime)
 	}
 }
 
-void FGameUiSystem::CompleteStartTransition()
+void FCrossyGameUiSystem::CompleteStartTransition()
 {
 	bStartTransitionActive = false;
 	bStartTransitionResetDispatched = false;
@@ -978,9 +1065,10 @@ void FGameUiSystem::CompleteStartTransition()
 	}
 #endif
 	bIntroVisible = false;
+	ClearDocumentFocus(IntroDocument);
 }
 
-void FGameUiSystem::ApplyStartTransitionVisual(float TopHeightPx, float BottomHeightPx, int32 Alpha)
+void FCrossyGameUiSystem::ApplyStartTransitionVisual(float TopHeightPx, float BottomHeightPx, int32 Alpha)
 {
 	const int32 SafeTopHeight = static_cast<int32>(std::max(0.0f, TopHeightPx));
 	const int32 SafeBottomHeight = static_cast<int32>(std::max(0.0f, BottomHeightPx));
@@ -995,7 +1083,7 @@ void FGameUiSystem::ApplyStartTransitionVisual(float TopHeightPx, float BottomHe
 	SetElementProperty(IntroDocument, "intro-soft-bottom", "background-color", ColorText.c_str());
 }
 
-void FGameUiSystem::ApplyIntroIdleBoxVisual()
+void FCrossyGameUiSystem::ApplyIntroIdleBoxVisual()
 {
 	float Height = PresentationRect.Height;
 	if (Height <= 1.0f && OwnerWindow)
@@ -1012,7 +1100,7 @@ void FGameUiSystem::ApplyIntroIdleBoxVisual()
 	ApplyStartTransitionVisual(BaseTop, BaseBottom, 72);
 }
 
-float FGameUiSystem::EaseInOutCubic(float T) const
+float FCrossyGameUiSystem::EaseInOutCubic(float T) const
 {
 	T = std::max(0.0f, std::min(1.0f, T));
 	if (T < 0.5f)
@@ -1023,12 +1111,12 @@ float FGameUiSystem::EaseInOutCubic(float T) const
 	return 1.0f - (K * K * K) * 0.5f;
 }
 
-float FGameUiSystem::LerpFloat(float A, float B, float T) const
+float FCrossyGameUiSystem::LerpFloat(float A, float B, float T) const
 {
 	return A + (B - A) * std::max(0.0f, std::min(1.0f, T));
 }
 
-void FGameUiSystem::SetOptionsVisible(bool bVisible)
+void FCrossyGameUiSystem::SetOptionsVisible(bool bVisible)
 {
 	bShowingOptions = bVisible;
 	SetElementDisplay(PauseMenuDocument, "main-panel", !bShowingOptions);
@@ -1036,7 +1124,7 @@ void FGameUiSystem::SetOptionsVisible(bool bVisible)
 	RefreshOptionLabels();
 }
 
-void FGameUiSystem::SetIntroOptionsVisible(bool bVisible)
+void FCrossyGameUiSystem::SetIntroOptionsVisible(bool bVisible)
 {
 	bShowingIntroOptions = bVisible;
 	SetElementDisplay(IntroDocument, "intro-main-panel", !bShowingIntroOptions);
@@ -1044,7 +1132,7 @@ void FGameUiSystem::SetIntroOptionsVisible(bool bVisible)
 	RefreshOptionLabels();
 }
 
-void FGameUiSystem::RefreshOptionLabels()
+void FCrossyGameUiSystem::RefreshOptionLabels()
 {
 #if WITH_RMLUI
 	if (!PauseMenuDocument && !IntroDocument)
@@ -1052,19 +1140,19 @@ void FGameUiSystem::RefreshOptionLabels()
 		return;
 	}
 
-	const bool bFullscreen = Callbacks.IsFullscreen ? Callbacks.IsFullscreen() : false;
+	const bool bFullscreen = Callbacks.QueryBool ? Callbacks.QueryBool("Application.Fullscreen") : false;
 	const char* FullscreenText = bFullscreen ? "전체화면 해제" : "전체화면";
 	SetElementText(PauseMenuDocument, "toggle-fullscreen", FullscreenText);
 	SetElementText(IntroDocument, "ui-intro-toggle-fullscreen", FullscreenText);
 
-	const bool bFxaa = Callbacks.IsFxaaEnabled ? Callbacks.IsFxaaEnabled() : false;
+	const bool bFxaa = Callbacks.QueryBool ? Callbacks.QueryBool("Render.FXAA") : false;
 	const char* FxaaText = bFxaa ? "FXAA: 켜짐" : "FXAA: 꺼짐";
 	SetElementText(PauseMenuDocument, "toggle-fxaa", FxaaText);
 	SetElementText(IntroDocument, "ui-intro-toggle-fxaa", FxaaText);
 #endif
 }
 
-void FGameUiSystem::SetElementProperty(Rml::ElementDocument* Document, const char* ElementId, const char* PropertyName, const char* Value)
+void FCrossyGameUiSystem::SetElementProperty(Rml::ElementDocument* Document, const char* ElementId, const char* PropertyName, const char* Value)
 {
 #if WITH_RMLUI
 	if (!Document || !ElementId || !PropertyName || !Value)
@@ -1083,7 +1171,7 @@ void FGameUiSystem::SetElementProperty(Rml::ElementDocument* Document, const cha
 #endif
 }
 
-void FGameUiSystem::SetElementDisplay(Rml::ElementDocument* Document, const char* ElementId, bool bVisible)
+void FCrossyGameUiSystem::SetElementDisplay(Rml::ElementDocument* Document, const char* ElementId, bool bVisible)
 {
 #if WITH_RMLUI
 	if (!Document || !ElementId)
@@ -1101,7 +1189,7 @@ void FGameUiSystem::SetElementDisplay(Rml::ElementDocument* Document, const char
 #endif
 }
 
-void FGameUiSystem::SetElementText(Rml::ElementDocument* Document, const char* ElementId, const char* Text)
+void FCrossyGameUiSystem::SetElementText(Rml::ElementDocument* Document, const char* ElementId, const char* Text)
 {
 #if WITH_RMLUI
 	if (!Document || !ElementId || !Text)
@@ -1119,7 +1207,7 @@ void FGameUiSystem::SetElementText(Rml::ElementDocument* Document, const char* E
 #endif
 }
 
-void FGameUiSystem::SetElementTextAny(const char* ElementId, const char* Text)
+void FCrossyGameUiSystem::SetElementTextAny(const char* ElementId, const char* Text)
 {
 #if WITH_RMLUI
 	SetElementText(IntroDocument, ElementId, Text);
@@ -1132,12 +1220,44 @@ void FGameUiSystem::SetElementTextAny(const char* ElementId, const char* Text)
 #endif
 }
 
-bool FGameUiSystem::IsInteractiveUiVisible() const
+bool FCrossyGameUiSystem::IsInteractiveUiVisible() const
 {
 	return bStartTransitionActive || bIntroVisible || bPauseMenuVisible || bGameOverVisible;
 }
 
-bool FGameUiSystem::ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam)
+bool FCrossyGameUiSystem::ShouldCaptureKeyboard() const
+{
+	return bIntroVisible || bPauseMenuVisible || bGameOverVisible;
+}
+
+void FCrossyGameUiSystem::ClearDocumentFocus(Rml::ElementDocument* Document)
+{
+#if WITH_RMLUI
+	if (!Context || !Document)
+	{
+		return;
+	}
+
+	if (Rml::Element* FocusElement = Context->GetFocusElement())
+	{
+		FocusElement->Blur();
+	}
+	Context->UnfocusDocument(Document);
+#else
+	(void)Document;
+#endif
+}
+
+void FCrossyGameUiSystem::ClearInteractiveFocus()
+{
+#if WITH_RMLUI
+	ClearDocumentFocus(IntroDocument);
+	ClearDocumentFocus(PauseMenuDocument);
+	ClearDocumentFocus(GameOverDocument);
+#endif
+}
+
+bool FCrossyGameUiSystem::ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam)
 {
 	if (!bInitialized || !bAvailable)
 	{
@@ -1185,7 +1305,7 @@ bool FGameUiSystem::ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t w
 	return false;
 }
 
-bool FGameUiSystem::ProcessMouseMove(float ScreenX, float ScreenY)
+bool FCrossyGameUiSystem::ProcessMouseMove(float ScreenX, float ScreenY)
 {
 #if WITH_RMLUI
 	if (!Context)
@@ -1210,7 +1330,7 @@ bool FGameUiSystem::ProcessMouseMove(float ScreenX, float ScreenY)
 #endif
 }
 
-bool FGameUiSystem::ProcessMouseButtonDown(int Button, float ScreenX, float ScreenY)
+bool FCrossyGameUiSystem::ProcessMouseButtonDown(int Button, float ScreenX, float ScreenY)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible())
@@ -1236,7 +1356,7 @@ bool FGameUiSystem::ProcessMouseButtonDown(int Button, float ScreenX, float Scre
 #endif
 }
 
-bool FGameUiSystem::ProcessMouseButtonUp(int Button, float ScreenX, float ScreenY)
+bool FCrossyGameUiSystem::ProcessMouseButtonUp(int Button, float ScreenX, float ScreenY)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible())
@@ -1260,7 +1380,7 @@ bool FGameUiSystem::ProcessMouseButtonUp(int Button, float ScreenX, float Screen
 #endif
 }
 
-bool FGameUiSystem::ProcessMouseWheel(float WheelDelta, float ScreenX, float ScreenY)
+bool FCrossyGameUiSystem::ProcessMouseWheel(float WheelDelta, float ScreenX, float ScreenY)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible())
@@ -1286,7 +1406,7 @@ bool FGameUiSystem::ProcessMouseWheel(float WheelDelta, float ScreenX, float Scr
 #endif
 }
 
-bool FGameUiSystem::ProcessKeyDown(int VirtualKey)
+bool FCrossyGameUiSystem::ProcessKeyDown(int VirtualKey)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible())
@@ -1307,7 +1427,7 @@ bool FGameUiSystem::ProcessKeyDown(int VirtualKey)
 #endif
 }
 
-bool FGameUiSystem::ProcessKeyUp(int VirtualKey)
+bool FCrossyGameUiSystem::ProcessKeyUp(int VirtualKey)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible())
@@ -1328,7 +1448,7 @@ bool FGameUiSystem::ProcessKeyUp(int VirtualKey)
 #endif
 }
 
-bool FGameUiSystem::ProcessTextInput(uint32 Codepoint)
+bool FCrossyGameUiSystem::ProcessTextInput(uint32 Codepoint)
 {
 #if WITH_RMLUI
 	if (!Context || !IsInteractiveUiVisible() || Codepoint < 32)
@@ -1344,7 +1464,7 @@ bool FGameUiSystem::ProcessTextInput(uint32 Codepoint)
 #endif
 }
 
-bool FGameUiSystem::WantsMouse() const
+bool FCrossyGameUiSystem::WantsMouse() const
 {
 #if WITH_RMLUI
 	return Context && IsInteractiveUiVisible();
@@ -1353,16 +1473,16 @@ bool FGameUiSystem::WantsMouse() const
 #endif
 }
 
-bool FGameUiSystem::WantsKeyboard() const
+bool FCrossyGameUiSystem::WantsKeyboard() const
 {
 #if WITH_RMLUI
-	return Context && IsInteractiveUiVisible();
+	return Context && ShouldCaptureKeyboard();
 #else
 	return false;
 #endif
 }
 
-void FGameUiSystem::UnbindPauseMenuEvents()
+void FCrossyGameUiSystem::UnbindPauseMenuEvents()
 {
 #if WITH_RMLUI
 	if (!EventListener)

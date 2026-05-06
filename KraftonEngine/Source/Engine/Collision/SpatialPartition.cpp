@@ -208,45 +208,11 @@ void FSpatialPartition::FlushPrimitive()
 
 			if (!Prim->IsVisible())
 			{
-				if (Prim->IsInOctreeOverflow())
-				{
-					RemovePrimitive(Prim);
-				}
-				else if (FOctree* Node = Prim->GetOctreeNode())
-				{
-					Node->RemoveDirect(Prim, false);
-				}
+				RemoveSinglePrimitive(Prim);
 				continue;
 			}
 
-			const FBoundingBox PrimBox = Prim->GetWorldBoundingBox();
-
-			if (Prim->IsInOctreeOverflow())
-			{
-				RemovePrimitive(Prim);
-
-				if (!Octree->Insert(Prim))
-				{
-					InsertPrimitive(Prim);
-				}
-				continue;
-			}
-
-			if (FOctree* Node = Prim->GetOctreeNode())
-			{
-				if (Node->GetLooseBounds().IsContains(PrimBox))
-				{
-					continue;
-				}
-
-				Node->RemoveDirect(Prim, false);
-
-				if (!Octree->Insert(Prim))
-				{
-					InsertPrimitive(Prim);
-				}
-				continue;
-			}
+			RemoveSinglePrimitive(Prim);
 
 			if (!Octree->Insert(Prim))
 			{
@@ -443,13 +409,16 @@ void FSpatialPartition::RemoveSinglePrimitive(UPrimitiveComponent* Primitive)
 	{
 		RemovePrimitive(Primitive);
 	}
-	else if (FOctree* Node = Primitive->GetOctreeNode())
-	{
-		Node->RemoveDirect(Primitive);
-	}
 	else if (Octree)
 	{
-		Octree->Remove(Primitive);
+		if (!Octree->Remove(Primitive) && Primitive->GetOctreeNode())
+		{
+			Primitive->ClearOctreeLocation();
+		}
+	}
+	else if (Primitive->GetOctreeNode())
+	{
+		Primitive->ClearOctreeLocation();
 	}
 }
 

@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Viewport/ViewportPresentationTypes.h"
+#include "Engine/UI/ViewportUiLayer.h"
 
 #include <cstdint>
 #include <functional>
@@ -15,7 +16,7 @@ class FWindowsWindow;
 class UGameViewportClient;
 class FRmlD3D11RenderInterface;
 class FRmlWin32SystemInterface;
-class FGameUiEventListener;
+class FCrossyGameUiEventListener;
 
 namespace Rml
 {
@@ -24,37 +25,33 @@ namespace Rml
 	class ElementDocument;
 }
 
-struct FGameUiCallbacks
+struct FCrossyGameUiCallbacks
 {
-	std::function<void()> OnContinue;
-	std::function<void()> OnRestart;
-	std::function<void()> OnExit;
-	std::function<void()> OnToggleFullscreen;
-	std::function<bool()> IsFullscreen;
-	std::function<void(bool)> OnFxaaChanged;
-	std::function<bool()> IsFxaaEnabled;
+	std::function<void(const FString& CommandName)> ExecuteCommand;
+	std::function<bool(const FString& StateName)> QueryBool;
+	std::function<void(const FString& StateName, bool bValue)> SetBool;
 };
 
 // 공통 게임 UI 레이어.
 // Standalone Client와 Editor PIE가 같은 UGameViewportClient/PresentationRect를 통해 동일한 HUD와 메뉴를 사용한다.
-class FGameUiSystem
+class FCrossyGameUiSystem : public IViewportUiLayer
 {
 public:
-	FGameUiSystem();
-	~FGameUiSystem();
+	FCrossyGameUiSystem();
+	~FCrossyGameUiSystem() override;
 
 	bool Initialize(FWindowsWindow* Window, FRenderer& Renderer, UGameViewportClient* InViewportClient);
-	void Shutdown();
+	void Shutdown() override;
 
-	void SetCallbacks(FGameUiCallbacks InCallbacks);
+	void SetCallbacks(FCrossyGameUiCallbacks InCallbacks);
 	void SetScriptEventHandler(std::function<void(const FString&)> InHandler);
 	void ClearScriptEventHandler();
 
-	void SetPresentationRect(const FViewportPresentationRect& InRect);
-	const FViewportPresentationRect& GetPresentationRect() const { return PresentationRect; }
+	void SetPresentationRect(const FViewportPresentationRect& InRect) override;
+	const FViewportPresentationRect& GetPresentationRect() const override { return PresentationRect; }
 
-	void Update(float DeltaTime);
-	void Render();
+	void Update(float DeltaTime) override;
+	void Render() override;
 
 	void SetIntroVisible(bool bVisible);
 	bool IsIntroVisible() const { return bIntroVisible; }
@@ -63,6 +60,7 @@ public:
 	bool IsHudVisible() const { return bHudVisible; }
 
 	void SetPauseMenuVisible(bool bVisible);
+	void SetLayerVisible(const FString& LayerName, bool bVisible) override;
 	bool IsPauseMenuVisible() const { return bPauseMenuVisible; }
 
 	void SetGameOverVisible(bool bVisible);
@@ -74,14 +72,15 @@ public:
 	void SetLane(int32 Lane);
 	void SetCombo(int32 Combo);
 	void SetStatusText(const FString& Text);
+	void SetTopScoresText(const FString& Text);
 	void ShowGameOver(int32 FinalScore, int32 BestScore);
 	void HideGameOver();
 	void ResetRunUi();
 
-	bool IsAvailable() const { return bAvailable; }
-	bool IsInitialized() const { return bInitialized; }
+	bool IsAvailable() const override { return bAvailable; }
+	bool IsInitialized() const override { return bInitialized; }
 
-	bool ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam);
+	bool ProcessWin32Message(void* hWnd, uint32 Msg, std::uintptr_t wParam, std::intptr_t lParam) override;
 	bool ProcessMouseMove(float ScreenX, float ScreenY);
 	bool ProcessMouseButtonDown(int Button, float ScreenX, float ScreenY);
 	bool ProcessMouseButtonUp(int Button, float ScreenX, float ScreenY);
@@ -90,12 +89,12 @@ public:
 	bool ProcessKeyUp(int VirtualKey);
 	bool ProcessTextInput(uint32 Codepoint);
 
-	bool WantsMouse() const;
-	bool WantsKeyboard() const;
+	bool WantsMouse() const override;
+	bool WantsKeyboard() const override;
 	void UnbindPauseMenuEvents();
 
 private:
-	friend class FGameUiEventListener;
+	friend class FCrossyGameUiEventListener;
 
 	bool LoadDocuments();
 	void BindUiEvents();
@@ -122,13 +121,16 @@ private:
 	void SetElementText(Rml::ElementDocument* Document, const char* ElementId, const char* Text);
 	void SetElementTextAny(const char* ElementId, const char* Text);
 	bool IsInteractiveUiVisible() const;
+	bool ShouldCaptureKeyboard() const;
+	void ClearDocumentFocus(Rml::ElementDocument* Document);
+	void ClearInteractiveFocus();
 	void SyncContextDimensions();
 
 private:
 	FWindowsWindow* OwnerWindow = nullptr;
 	UGameViewportClient* ViewportClient = nullptr;
 	FViewportPresentationRect PresentationRect;
-	FGameUiCallbacks Callbacks;
+	FCrossyGameUiCallbacks Callbacks;
 	std::function<void(const FString&)> ScriptEventHandler;
 	TArray<FString> PendingScriptEvents;
 	bool bFlushingScriptEvents = false;
@@ -139,7 +141,7 @@ private:
 
 	std::unique_ptr<FRmlD3D11RenderInterface> RenderInterface;
 	std::unique_ptr<FRmlWin32SystemInterface> SystemInterface;
-	std::unique_ptr<FGameUiEventListener> EventListener;
+	std::unique_ptr<FCrossyGameUiEventListener> EventListener;
 
 	Rml::Context* Context = nullptr;
 	Rml::ElementDocument* IntroDocument = nullptr;

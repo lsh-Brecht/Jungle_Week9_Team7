@@ -1,4 +1,6 @@
-﻿#include "ParryComponent.h"
+#include "Games/Crossy/Components/ParryComponent.h"
+#include "Object/ObjectFactory.h"
+#include "Games/Crossy/Components/ParryableProjectileComponent.h"
 #include "GameFramework/AActor.h"
 #include "GameFramework/Pawn.h"
 #include "Component/PrimitiveComponent.h"
@@ -6,6 +8,7 @@
 #include "Component/SceneComponent.h"
 #include "Component/Movement/ProjectileMovementComponent.h"
 #include "Sound/SoundManager.h"
+#include "Games/Crossy/Audio/CrossyAudioIds.h"
 #include "GameFramework/World.h"
 #include "Math/Vector.h"
 
@@ -20,38 +23,45 @@ void UParryComponent::BeginPlay()
 	ParryDelegate.Add(
 		[]()
 		{
-			FSoundManager::Get().PlayEffect(SoundEffect::Parry);
+			FSoundManager::Get().PlayEffect(CrossyAudioIds::Parry);
 		}
 	);
 
-	// Find the best ScaleTarget (prefer BoxComponent)
+	ResolveScaleTarget();
+}
+
+void UParryComponent::ResolveScaleTarget()
+{
+	ScaleTarget = nullptr;
+
+	AActor* Owner = GetOwner();
+	if (!Owner || !IsAliveObject(Owner))
+	{
+		return;
+	}
+
+	// 1순위: BoxComponent
 	for (UActorComponent* Comp : Owner->GetComponents())
 	{
 		if (UBoxComponent* Box = Cast<UBoxComponent>(Comp))
 		{
 			ScaleTarget = Box;
-			break;
-		}
-		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
-		{
-			if (!ScaleTarget)
-			{
-				ScaleTarget = Prim;
-			}
+			return;
 		}
 	}
 
-	if (ScaleTarget)
+	// 2순위: PrimitiveComponent
+	for (UActorComponent* Comp : Owner->GetComponents())
 	{
-		if (UBoxComponent* Box = Cast<UBoxComponent>(ScaleTarget))
+		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
 		{
-			ParryDelegate.AddDynamic(Box, &UBoxComponent::OnParry);
-		}
-		else if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(ScaleTarget))
-		{
-			ParryDelegate.AddDynamic(Prim, &UPrimitiveComponent::OnParry);
+			ScaleTarget = Prim;
+			return;
 		}
 	}
+
+	// 3순위: RootComponent
+	ScaleTarget = Owner->GetRootComponent();
 }
 
 void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -62,8 +72,10 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		CurrentParryTime += DeltaTime;
 		if (CurrentParryTime >= ParryDuration)
 		{
-			if (ScaleTarget)
+			if (ScaleTarget && IsAliveObject(ScaleTarget))
 				ScaleTarget->SetRelativeScale(OriginalScale);
+			else
+				ScaleTarget = nullptr;
 			bIsParrying = false;
 			CurrentParryTime = 0.f;
 		}
@@ -78,9 +90,15 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	TArray<FSpinningProjectile> Remaining;
 	for (FSpinningProjectile& Spinning : SpinningProjectiles)
 	{
+		AActor* Actor = Spinning.Actor;
+		if (!Actor || !IsAliveObject(Actor) || !Actor->GetWorld())
+		{
+			continue;
+		}
+
 		Spinning.ElapsedTime += DeltaTime;
 
-		if (USceneComponent* Root = Spinning.Actor->GetRootComponent())
+		if (USceneComponent* Root = Actor->GetRootComponent())
 			Root->AddLocalRotation(FRotator(DeltaDeg, 0.0f, 0.0f));
 
 		if (Spinning.ElapsedTime < SpinDuration)
@@ -89,9 +107,9 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 		}
 		else
 		{
-			Spinning.Actor->SetVisible(false);
-			Spinning.Actor->SetActorTickEnabled(false);
-			Spinning.Actor->SetActorEnableCollision(false);
+			Actor->SetVisible(false);
+			Actor->SetActorTickEnabled(false);
+			Actor->SetActorEnableCollision(false);
 		}
 	}
 	SpinningProjectiles = std::move(Remaining);
@@ -99,13 +117,29 @@ void UParryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UParryComponent::Parry()
 {
-	if (bIsParrying) return;
+	AActor* Owner = GetOwner();
+	if (!Owner || !IsAliveObject(Owner) || !Owner->GetWorld())
+	{
+		return;
+	}
+
+	if (bIsParrying)
+	{
+		return;
+	}
+
+	if (!ScaleTarget || !IsAliveObject(ScaleTarget))
+	{
+		ResolveScaleTarget();
+	}
+
 	bIsParrying = true;
 	CurrentParryTime = 0.f;
 
-	if (ScaleTarget)
+	if (ScaleTarget && IsAliveObject(ScaleTarget))
 	{
 		OriginalScale = ScaleTarget->GetRelativeScale();
+		ScaleTarget->SetRelativeScale(OriginalScale * ParryScaleMultiplier);
 	}
 
 	ParryDelegate.BroadCast();
@@ -116,7 +150,7 @@ void UParryComponent::Parry()
 void UParryComponent::DeflectNearbyProjectiles()
 {
 	AActor* Owner = GetOwner();
-	if (!Owner) return;
+	if (!Owner || !IsAliveObject(Owner)) return;
 
 	UWorld* World = Owner->GetWorld();
 	if (!World) return;
@@ -133,24 +167,40 @@ void UParryComponent::DeflectNearbyProjectiles()
 	TSet<AActor*> Processed;
 	for (UPrimitiveComponent* Prim : Candidates)
 	{
+		if (!Prim || !IsAliveObject(Prim)) continue;
+
 		AActor* OtherActor = Prim->GetOwner();
-		if (!OtherActor || OtherActor == Owner) continue;
+		if (!OtherActor || !IsAliveObject(OtherActor) || OtherActor == Owner) continue;
+		if (OtherActor->GetWorld() != World) continue;
 		if (Processed.contains(OtherActor)) continue;
 		if (Cast<APawn>(OtherActor)) continue;
 
 		UProjectileMovementComponent* Projectile = nullptr;
+		UParryableProjectileComponent* ParryState = nullptr;
 		for (UActorComponent* Comp : OtherActor->GetComponents())
 		{
-			Projectile = Cast<UProjectileMovementComponent>(Comp);
-			if (Projectile) break;
+			if (!Projectile)
+			{
+				Projectile = Cast<UProjectileMovementComponent>(Comp);
+			}
+			if (!ParryState)
+			{
+				ParryState = Cast<UParryableProjectileComponent>(Comp);
+			}
 		}
 		if (!Projectile) continue;
-		if (Projectile->IsParried()) continue;
+
+		if (!ParryState)
+		{
+			ParryState = OtherActor->AddComponent<UParryableProjectileComponent>();
+		}
+		if (!ParryState || ParryState->IsParried()) continue;
+
 		Projectile->Deactivate();
 		Processed.insert(OtherActor);
 
 		Projectile->StopSimulating();
-		Projectile->SetParried(true);
+		ParryState->SetParried(true);
 		SpinningProjectiles.push_back({ OtherActor, Projectile, 0.0f });
 	}
 }
