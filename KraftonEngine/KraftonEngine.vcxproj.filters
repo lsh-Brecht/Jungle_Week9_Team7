@@ -288,6 +288,9 @@
     <FxCompile Include="Shaders\PostProcess\FXAA.hlsl">
       <Filter>Shaders\PostProcess</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\PostProcess\Fade.hlsl">
+      <Filter>Shaders\PostProcess</Filter>
+    </FxCompile>
     <FxCompile Include="Shaders\PostProcess\HeightFog.hlsl">
       <Filter>Shaders\PostProcess</Filter>
     </FxCompile>
@@ -307,6 +310,9 @@
       <Filter>Shaders\PostProcess</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PostProcess\ShadowMapVis.hlsl">
+      <Filter>Shaders\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PostProcess\Vignette.hlsl">
       <Filter>Shaders\PostProcess</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\UI\Billboard.hlsl">
@@ -415,6 +421,9 @@
     </ClCompile>
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp">
       <Filter>Source\Editor\Viewport</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Camera\CameraFadeModifier.cpp">
+      <Filter>Source\Engine\Camera</Filter>
     </ClCompile>
     <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp">
       <Filter>Source\Engine\Camera</Filter>
@@ -938,6 +947,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Scripting\LuaSpringArmComponentBindings.cpp">
+      <Filter>Source\Engine\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
@@ -1153,6 +1165,9 @@
     </ClInclude>
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h">
       <Filter>Source\Editor\Viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Camera\CameraFadeModifier.h">
+      <Filter>Source\Engine\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Camera\CameraModifier.h">
       <Filter>Source\Engine\Camera</Filter>

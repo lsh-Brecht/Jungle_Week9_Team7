@@ -516,6 +516,7 @@
     <ClCompile Include="Source\Engine\Scripting\LuaPropertyBridge.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaScriptSubsystem.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaShapeBindings.cpp" />
+    <ClCompile Include="Source\Engine\Scripting\LuaSpringArmComponentBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaStaticMeshBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldExtendedBindings.cpp" />
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp" />
@@ -1107,14 +1108,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="Shaders\PostProcess\Fade.hlsl">
+    <FxCompile Include="Shaders\PostProcess\FXAA.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="Shaders\PostProcess\FXAA.hlsl">
+    <FxCompile Include="Shaders\PostProcess\Fade.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">true</ExcludedFromBuild>

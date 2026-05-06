@@ -23,6 +23,7 @@
 #include "Component/Movement/PawnMovementComponent.h"
 #include "Component/ControllerInputComponent.h"
 #include "Component/StaticMeshComponent.h"
+#include "Component/SpringArmComponent.h"
 #include "Component/TextRenderComponent.h"
 
 #include "Mesh/ObjManager.h"
@@ -554,6 +555,7 @@ namespace
 			{ "luascript", ULuaScriptComponent::StaticClass(), true },
 			{ "staticmesh", UStaticMeshComponent::StaticClass(), true },
 			{ "textrender", UTextRenderComponent::StaticClass(), true },
+			{ "springarm", USpringArmComponent::StaticClass(), true },
 			{ "shape", UShapeComponent::StaticClass(), false },
 			{ "box", UBoxComponent::StaticClass(), true },
 			{ "sphere", USphereComponent::StaticClass(), true },
