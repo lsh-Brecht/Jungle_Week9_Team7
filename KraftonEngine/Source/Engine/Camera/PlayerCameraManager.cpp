@@ -68,13 +68,13 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
-	UE_LOG("[CameraManager] Initialize");
+	//UE_LOG("[CameraManager] Initialize");
+	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
 	SetActorTickEnabled(false);
 
-	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
 	EnsureOutputCamera();
 }
 void APlayerCameraManager::Serialize(FArchive& Ar)
@@ -173,14 +173,14 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
-	if (!bDebugModifierAdded)
-	{
-		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-		AddCameraModifier(TestModifier);
-		bDebugModifierAdded = true;
+	//if (!bDebugModifierAdded)
+	//{
+	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//	AddCameraModifier(TestModifier);
+	//	bDebugModifierAdded = true;
 
-		UE_LOG("[CameraManager] Debug modifier added");
-	}
+	//	UE_LOG("[CameraManager] Debug modifier added");
+	//}
 
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{

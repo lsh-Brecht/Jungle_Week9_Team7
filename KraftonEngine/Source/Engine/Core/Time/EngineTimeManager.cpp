@@ -1,4 +1,4 @@
-#include "EngineTimeManager.h"
+﻿#include "EngineTimeManager.h"
 #include "Core/Log.h"
 #include <algorithm>
 
@@ -106,6 +106,8 @@ float FEngineTimeManager::GetEffectiveTimeDilation() const
 	float Effective = GlobalTimeDilation;
 	if (bSlomoActive)
 	{
+		// 아래 발제 코드에서 Slomo까지 곱해놓음
+		// float T = DeltaTime * GlobalTimeDilation;
 		Effective *= SlomoTimeDilation;
 	}
 	return Effective;
