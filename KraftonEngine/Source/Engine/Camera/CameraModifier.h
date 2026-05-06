@@ -19,10 +19,10 @@ public:
 	//per frame, update alpha, call modifyCamera
 	//비활성화를 반영해주며 alpha 값에 따라 ModifyCamera 를 호출함
 	bool UpdateCameraModifier(float DeltaTime, FCameraView& InOutView);
-
+	
+	//여기서 다형성으로 효과 만들기
 	virtual bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
 
-	//D
 	void EnableModifier();
 	void DisableModifier(bool bRemoveAfterFadeOut);
 

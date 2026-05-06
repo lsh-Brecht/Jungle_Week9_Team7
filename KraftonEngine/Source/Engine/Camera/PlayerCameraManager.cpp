@@ -1,4 +1,4 @@
-﻿#include "Camera/PlayerCameraManager.h"
+#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "CameraShakeModifier.h"
+#include "Camera/CameraShakeModifier.h"
 
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
@@ -70,13 +70,13 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
-	UE_LOG("[CameraManager] Initialize");
+	//UE_LOG("[CameraManager] Initialize");
+	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
 	SetActorTickEnabled(false);
 
-	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
 	EnsureOutputCamera();
 }
 void APlayerCameraManager::Serialize(FArchive& Ar)
@@ -175,14 +175,14 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
-	if (!bDebugModifierAdded)
-	{
-		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-		AddCameraModifier(TestModifier);
-		bDebugModifierAdded = true;
+	//if (!bDebugModifierAdded)
+	//{
+	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//	AddCameraModifier(TestModifier);
+	//	bDebugModifierAdded = true;
 
-		UE_LOG("[CameraManager] Debug modifier added");
-	}
+	//	UE_LOG("[CameraManager] Debug modifier added");
+	//}
 
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
@@ -648,6 +648,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 	CleanupCameraModifiers();
 	SortCameraModifiers();
 
+	//여기서 순회하면서 modifier 적용
 	for (UCameraModifier* Modifier : ModifierList)
 	{
 		if (!Modifier || !IsAliveObject(Modifier))

@@ -1,4 +1,6 @@
-﻿#pragma once
+#pragma once
+
+#include <cfloat>
 #include "Math/Vector.h"
 
 class AActor;
