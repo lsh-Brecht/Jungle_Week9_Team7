@@ -157,7 +157,7 @@ function RowGenerator.GenerateRow(rowIndex)
     -- 2. 안전한 경로 계산 (-1 ~ 1 슬롯 이동)
     local nextSafeSlot = LastSafeSlot + math.random(-1, 1)
     nextSafeSlot = math.max(1, math.min(RowGenerator.MapConfig.MaxSlotIndex - 1, nextSafeSlot))
-    LastSafeSlot = nextSafeSlot -- 다음 Row를 위해 갱신
+    
 
     if biomeType == BIOME.GRASS then
         local obstacleChance = RowGenerator.GetObstacleChance(rowIndex)
@@ -218,6 +218,8 @@ function RowGenerator.GenerateRow(rowIndex)
             _G.AddDynamicSpawner(rowIndex, PREFABS.TRAIN, speed, interval, dirY)
         end
     end
+
+    LastSafeSlot = nextSafeSlot -- 다음 Row를 위해 갱신
 end
 
 return RowGenerator
