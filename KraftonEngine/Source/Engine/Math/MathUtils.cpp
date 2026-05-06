@@ -1,4 +1,6 @@
-﻿#include "MathUtils.h"
+#include "MathUtils.h"
+
+#include <cmath>
 
 namespace
 {
@@ -57,6 +59,11 @@ FVector FMath::VInterpTo(const FVector& Current, const FVector& Target, float De
 
 	const float Alpha = Clamp01(DeltaTime * InterpSpeed);
 	return Current + Delta * Alpha;
+}
+
+FVector2 FMath::Lerp(const FVector2& A, const FVector2& B, float Alpha)
+{
+	return A + (B - A) * Alpha;
 }
 
 FVector2 FMath::QuadraticBezier(const FVector2& P0, const FVector2& P1, const FVector2& P2, float T)

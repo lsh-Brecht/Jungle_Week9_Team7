@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Camera/CameraTypes.h"
 #include "Core/EngineTypes.h"
@@ -106,8 +106,4 @@ private:
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;
-	
-	
-	//테스트
-	bool bDebugModifierAdded = false;
 };

@@ -1,4 +1,4 @@
-﻿#include "Camera/PlayerCameraManager.h"
+#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "CameraShakeModifier.h"
+#include "Camera/CameraShakeModifier.h"
 
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
@@ -76,7 +76,6 @@ void APlayerCameraManager::Initialize(APlayerController* InOwner)
 	bNeedsTick = false;
 	SetActorTickEnabled(false);
 
-	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
 	EnsureOutputCamera();
 }
 void APlayerCameraManager::Serialize(FArchive& Ar)
@@ -175,14 +174,6 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
-	if (!bDebugModifierAdded)
-	{
-		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-		AddCameraModifier(TestModifier);
-		bDebugModifierAdded = true;
-
-		UE_LOG("[CameraManager] Debug modifier added");
-	}
 
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
@@ -195,11 +186,6 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 		return;
 	}
 
-	//테스트
-	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
-	//AddCameraModifier(TestModifier);
-
-	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))

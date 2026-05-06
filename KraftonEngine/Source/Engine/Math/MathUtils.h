@@ -1,4 +1,6 @@
 #pragma once
+
+#include <cmath>
 #include "Core/CoreTypes.h"
 #include "Vector.h"
 
@@ -92,7 +94,7 @@ namespace FMath
 	FVector2 QuadraticBezier(const FVector2& P0, const FVector2& P1, const FVector2& P2, float T);
 	FVector2 CubicBezier(const FVector2& P0, const FVector2& P1, const FVector2& P2, const FVector2& P3, float T);
 	float CubicBezierYFromX(float X, const FVector2& P1, const FVector2& P2, int32 Iteration = 6);
-	float PerlinNoise1D(float X, int Seed);
+	float PerlinNoise1D(float X, int32 Seed);
 }
 
 // 기존 매크로 호환 — 이행 완료 후 제거

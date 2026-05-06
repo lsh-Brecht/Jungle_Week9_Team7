@@ -1,4 +1,4 @@
-﻿#include "Component/SpringArmComponent.h"
+#include "Component/SpringArmComponent.h"
 
 #include "Component/CameraComponent.h"
 #include "Core/RayTypes.h"
@@ -98,12 +98,8 @@ void USpringArmComponent::SetCameraLagSpeed(float InSpeed)
 {
 	CameraLagSpeed = FMath::Max(InSpeed, 0.0f);
 }
-void USpringArmComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
+void USpringArmComponent::RefreshCameraTransform(float DeltaTime)
 {
-	USceneComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	(void)TickType;
-	(void)ThisTickFunction;
-
 	NormalizeOption();
 
 	const FQuat DesiredRotation = GetDesiredRotation();
@@ -131,6 +127,12 @@ void USpringArmComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	}
 
 	UpdateCameraChildren(ResolvedCameraLocation, DesiredRotation);
+}
+
+void USpringArmComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction& ThisTickFunction)
+{
+	USceneComponent::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	RefreshCameraTransform(DeltaTime);
 }
 
 void USpringArmComponent::NormalizeOption()
@@ -205,7 +207,6 @@ FVector USpringArmComponent::ResolveCollision(const FVector& Pivot, const FVecto
 
 		FRaycastQueryParams Params;
 		Params.IgnoreActor = GetOwner();
-		Params.bIgnoreHidden = true;
 		Params.bIgnoreHidden = true;
 		Params.bTraceOnlyBlocking = true;
 		Params.MaxDistance = DesiredDistance;
