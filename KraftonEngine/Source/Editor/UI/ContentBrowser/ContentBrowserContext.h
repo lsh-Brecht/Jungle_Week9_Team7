@@ -1,6 +1,9 @@
 ﻿#pragma once
 #include "imgui.h" 
+#include "Core/CoreTypes.h"
 #include "Platform/Paths.h"
+#include "UI/ContentBrowser/ContentItem.h"
+#include <functional>
 #include <memory>
 
 class ContentBrowserElement;
@@ -14,6 +17,7 @@ struct ContentBrowserContext final
 	std::shared_ptr<ContentBrowserElement> SelectedElement;
 
 	UEditorEngine* EditorEngine;
+	std::function<bool(const FContentItem&)> OnAssetDoubleClicked;
 
 	bool bIsNeedRefresh = false;
 	bool bIsRenaming = false;

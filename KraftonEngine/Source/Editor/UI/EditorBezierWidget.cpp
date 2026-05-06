@@ -2,9 +2,13 @@
 #include "Editor/UI/EditorBezierWidget.h"
 
 #include "Editor/Settings/EditorSettings.h"
+#include "Core/Log.h"
+#include "Math/MathUtils.h"
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
 
+#include <algorithm>
+#include <cfloat>
 #include <cstdio>
 
 // ImGui Bezier widget. @r-lyeh, public domain
@@ -44,6 +48,119 @@ namespace
 			Results[Step] = Point;
 		}
 	}
+
+	float EvalHermite(const FRichCurveKey& Key0, const FRichCurveKey& Key1, float Alpha)
+	{
+		const float T = FMath::Clamp01(Alpha);
+		const float T2 = T * T;
+		const float T3 = T2 * T;
+		const float DT = Key1.Time - Key0.Time;
+
+		const float H00 = 2.0f * T3 - 3.0f * T2 + 1.0f;
+		const float H10 = T3 - 2.0f * T2 + T;
+		const float H01 = -2.0f * T3 + 3.0f * T2;
+		const float H11 = T3 - T2;
+
+		return H00 * Key0.Value
+			+ H10 * Key0.LeaveTangent * DT
+			+ H01 * Key1.Value
+			+ H11 * Key1.ArriveTangent * DT;
+	}
+
+	float EvaluateCachedKeys(const TArray<FRichCurveKey>& Keys, float InTime)
+	{
+		if (Keys.empty())
+		{
+			return 0.0f;
+		}
+
+		if (Keys.size() == 1 || InTime <= Keys.front().Time)
+		{
+			return Keys.front().Value;
+		}
+
+		if (InTime >= Keys.back().Time)
+		{
+			return Keys.back().Value;
+		}
+
+		auto Upper = std::upper_bound(Keys.begin(), Keys.end(), InTime,
+			[](float Time, const FRichCurveKey& Key)
+			{
+				return Time < Key.Time;
+			});
+
+		const FRichCurveKey& Key1 = *Upper;
+		const FRichCurveKey& Key0 = *(Upper - 1);
+		const float DeltaTime = Key1.Time - Key0.Time;
+		if (FMath::Abs(DeltaTime) <= FMath::Epsilon)
+		{
+			return Key1.Value;
+		}
+
+		const float Alpha = FMath::Clamp01((InTime - Key0.Time) / DeltaTime);
+		switch (Key0.InterpMode)
+		{
+		case ERichCurveInterpMode::Constant:
+			return Key0.Value;
+		case ERichCurveInterpMode::Cubic:
+			return EvalHermite(Key0, Key1, Alpha);
+		case ERichCurveInterpMode::Linear:
+		default:
+			return FMath::Lerp(Key0.Value, Key1.Value, Alpha);
+		}
+	}
+
+	const char* GetInterpModeName(ERichCurveInterpMode Mode)
+	{
+		switch (Mode)
+		{
+		case ERichCurveInterpMode::Constant: return "Constant";
+		case ERichCurveInterpMode::Cubic: return "Cubic";
+		case ERichCurveInterpMode::Linear:
+		default: return "Linear";
+		}
+	}
+
+	ERichCurveInterpMode GetInterpModeFromIndex(int32 Index)
+	{
+		switch (Index)
+		{
+		case 0: return ERichCurveInterpMode::Constant;
+		case 2: return ERichCurveInterpMode::Cubic;
+		case 1:
+		default: return ERichCurveInterpMode::Linear;
+		}
+	}
+
+	int32 GetInterpModeIndex(ERichCurveInterpMode Mode)
+	{
+		switch (Mode)
+		{
+		case ERichCurveInterpMode::Constant: return 0;
+		case ERichCurveInterpMode::Cubic: return 2;
+		case ERichCurveInterpMode::Linear:
+		default: return 1;
+		}
+	}
+}
+
+void FEditorBezierWidget::SetCurveAsset(UCurveFloat* InCurveAsset)
+{
+	CurrentCurveAsset = InCurveAsset;
+	bIsOpen = CurrentCurveAsset != nullptr;
+	FEditorSettings::Get().UI.bBezier = bIsOpen;
+
+	if (CurrentCurveAsset)
+	{
+		SyncDataFromAsset();
+	}
+	else
+	{
+		CachedKeys.clear();
+		CachedCurvePoints.clear();
+		SelectedKeyIndex = -1;
+	}
 }
 
 void FEditorBezierWidget::Render(float DeltaTime)
@@ -51,12 +168,401 @@ void FEditorBezierWidget::Render(float DeltaTime)
 	(void)DeltaTime;
 
 	FEditorSettings& Settings = FEditorSettings::Get();
-	ImGui::SetNextWindowSize(ImVec2(360.0f, 640.0f), ImGuiCond_FirstUseEver);
-	if (ImGui::Begin("Bezier", &Settings.UI.bBezier))
+	bool bWindowOpen = Settings.UI.bBezier || bIsOpen;
+	if (!bWindowOpen)
 	{
-		ImGui::ShowBezierDemo();
+		return;
+	}
+
+	ImGui::SetNextWindowSize(ImVec2(640.0f, 560.0f), ImGuiCond_FirstUseEver);
+	if (ImGui::Begin("Curve Editor", &bWindowOpen))
+	{
+		if (!CurrentCurveAsset)
+		{
+			ImGui::TextDisabled("No UCurveFloat asset selected.");
+		}
+		else
+		{
+			bool bModified = RenderToolbar();
+			ImGui::Separator();
+			bModified |= RenderCurveCanvas();
+			ImGui::Separator();
+			bModified |= RenderKeyTable();
+
+			if (bModified)
+			{
+				SyncDataToAsset();
+			}
+		}
 	}
 	ImGui::End();
+
+	bIsOpen = bWindowOpen;
+	Settings.UI.bBezier = bWindowOpen;
+}
+
+void FEditorBezierWidget::SyncDataFromAsset()
+{
+	CachedKeys.clear();
+	CachedCurvePoints.clear();
+	SelectedKeyIndex = -1;
+
+	if (!CurrentCurveAsset)
+	{
+		return;
+	}
+
+	CachedKeys = CurrentCurveAsset->GetKeys();
+	RebuildCachedPoints();
+}
+
+void FEditorBezierWidget::SyncDataToAsset()
+{
+	if (!CurrentCurveAsset)
+	{
+		return;
+	}
+
+	float SelectedTime = 0.0f;
+	const bool bHasSelectedKey = SelectedKeyIndex >= 0 && SelectedKeyIndex < static_cast<int32>(CachedKeys.size());
+	if (bHasSelectedKey)
+	{
+		SelectedTime = CachedKeys[SelectedKeyIndex].Time;
+	}
+
+	CurrentCurveAsset->SetKeys(CachedKeys);
+	CachedKeys = CurrentCurveAsset->GetKeys();
+	RebuildCachedPoints();
+
+	if (bHasSelectedKey)
+	{
+		SelectedKeyIndex = CurrentCurveAsset->FindKeyIndex(SelectedTime);
+	}
+}
+
+bool FEditorBezierWidget::RenderToolbar()
+{
+	bool bModified = false;
+
+	const FString& CurveName = CurrentCurveAsset->GetCurveName();
+	const FString& SourcePath = CurrentCurveAsset->GetSourceFilePath();
+	ImGui::Text("Asset: %s", CurveName.empty() ? "(Unnamed Curve)" : CurveName.c_str());
+	ImGui::TextDisabled("%s", SourcePath.empty() ? "(No source file)" : SourcePath.c_str());
+
+	if (SourcePath.empty())
+	{
+		ImGui::BeginDisabled();
+	}
+	if (ImGui::Button("Save"))
+	{
+		SyncDataToAsset();
+		if (!CurrentCurveAsset->SaveToFile(SourcePath))
+		{
+			UE_LOG("Failed to save curve asset: %s", SourcePath.c_str());
+		}
+	}
+	if (SourcePath.empty())
+	{
+		ImGui::EndDisabled();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Reload"))
+	{
+		SyncDataFromAsset();
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Add Key"))
+	{
+		const float NewTime = CachedKeys.empty() ? 0.0f : CachedKeys.back().Time + 1.0f;
+		const float NewValue = CachedKeys.empty() ? 0.0f : CachedKeys.back().Value;
+		CachedKeys.emplace_back(NewTime, NewValue, ERichCurveInterpMode::Linear);
+		SelectedKeyIndex = static_cast<int32>(CachedKeys.size()) - 1;
+		RebuildCachedPoints();
+		bModified = true;
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Linear"))
+	{
+		CachedKeys.clear();
+		CachedKeys.emplace_back(0.0f, 0.0f, ERichCurveInterpMode::Linear);
+		CachedKeys.emplace_back(1.0f, 1.0f, ERichCurveInterpMode::Linear);
+		SelectedKeyIndex = 0;
+		RebuildCachedPoints();
+		bModified = true;
+	}
+
+	return bModified;
+}
+
+bool FEditorBezierWidget::RenderCurveCanvas()
+{
+	const ImVec2 CanvasSize(ImGui::GetContentRegionAvail().x, 260.0f);
+	if (CanvasSize.x <= 0.0f)
+	{
+		return false;
+	}
+
+	ImDrawList* DrawList = ImGui::GetWindowDrawList();
+	const ImVec2 CanvasMin = ImGui::GetCursorScreenPos();
+	const ImVec2 CanvasMax(CanvasMin.x + CanvasSize.x, CanvasMin.y + CanvasSize.y);
+
+	ImGui::InvisibleButton("##CurveCanvas", CanvasSize);
+	const bool bCanvasHovered = ImGui::IsItemHovered();
+	const bool bCanvasActive = ImGui::IsItemActive();
+
+	DrawList->AddRectFilled(CanvasMin, CanvasMax, ImGui::GetColorU32(ImGuiCol_FrameBg));
+	DrawList->AddRect(CanvasMin, CanvasMax, ImGui::GetColorU32(ImGuiCol_Border));
+
+	if (CachedKeys.empty())
+	{
+		DrawList->AddText(ImVec2(CanvasMin.x + 12.0f, CanvasMin.y + 12.0f), ImGui::GetColorU32(ImGuiCol_TextDisabled), "No keys");
+		return false;
+	}
+
+	float MinTime = CachedKeys.front().Time;
+	float MaxTime = CachedKeys.back().Time;
+	float MinValue = CachedKeys.front().Value;
+	float MaxValue = CachedKeys.front().Value;
+	for (const FRichCurveKey& Key : CachedKeys)
+	{
+		MinTime = FMath::Min(MinTime, Key.Time);
+		MaxTime = FMath::Max(MaxTime, Key.Time);
+		MinValue = FMath::Min(MinValue, Key.Value);
+		MaxValue = FMath::Max(MaxValue, Key.Value);
+	}
+
+	if (FMath::Abs(MaxTime - MinTime) <= FMath::Epsilon)
+	{
+		MinTime -= 0.5f;
+		MaxTime += 0.5f;
+	}
+	if (FMath::Abs(MaxValue - MinValue) <= FMath::Epsilon)
+	{
+		MinValue -= 0.5f;
+		MaxValue += 0.5f;
+	}
+
+	const float ValuePadding = (MaxValue - MinValue) * 0.15f;
+	MinValue -= ValuePadding;
+	MaxValue += ValuePadding;
+
+	auto ToScreen = [&](float Time, float Value)
+	{
+		const float X = (Time - MinTime) / (MaxTime - MinTime);
+		const float Y = (Value - MinValue) / (MaxValue - MinValue);
+		return ImVec2(
+			CanvasMin.x + X * CanvasSize.x,
+			CanvasMax.y - Y * CanvasSize.y);
+	};
+
+	auto ToCurve = [&](const ImVec2& Screen)
+	{
+		const float X = FMath::Clamp01((Screen.x - CanvasMin.x) / CanvasSize.x);
+		const float Y = FMath::Clamp01((CanvasMax.y - Screen.y) / CanvasSize.y);
+		return ImVec2(
+			MinTime + X * (MaxTime - MinTime),
+			MinValue + Y * (MaxValue - MinValue));
+	};
+
+	const ImU32 GridColor = ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.35f);
+	for (int32 i = 1; i < 4; ++i)
+	{
+		const float X = CanvasMin.x + CanvasSize.x * (static_cast<float>(i) / 4.0f);
+		const float Y = CanvasMin.y + CanvasSize.y * (static_cast<float>(i) / 4.0f);
+		DrawList->AddLine(ImVec2(X, CanvasMin.y), ImVec2(X, CanvasMax.y), GridColor);
+		DrawList->AddLine(ImVec2(CanvasMin.x, Y), ImVec2(CanvasMax.x, Y), GridColor);
+	}
+
+	const int32 SampleCount = 96;
+	ImVec2 Previous = ToScreen(MinTime, EvaluateCachedKeys(CachedKeys, MinTime));
+	for (int32 i = 1; i <= SampleCount; ++i)
+	{
+		const float Alpha = static_cast<float>(i) / static_cast<float>(SampleCount);
+		const float Time = FMath::Lerp(MinTime, MaxTime, Alpha);
+		const ImVec2 Current = ToScreen(Time, EvaluateCachedKeys(CachedKeys, Time));
+		DrawList->AddLine(Previous, Current, ImGui::GetColorU32(ImGuiCol_PlotLines), 2.0f);
+		Previous = Current;
+	}
+
+	const float GrabRadius = 6.0f;
+	int32 HoveredKeyIndex = -1;
+	const ImVec2 MousePos = ImGui::GetIO().MousePos;
+	for (int32 Index = 0; Index < static_cast<int32>(CachedKeys.size()); ++Index)
+	{
+		const ImVec2 Point = ToScreen(CachedKeys[Index].Time, CachedKeys[Index].Value);
+		const float Dx = Point.x - MousePos.x;
+		const float Dy = Point.y - MousePos.y;
+		if (Dx * Dx + Dy * Dy <= GrabRadius * GrabRadius * 4.0f)
+		{
+			HoveredKeyIndex = Index;
+		}
+
+		const bool bSelected = Index == SelectedKeyIndex;
+		DrawList->AddCircleFilled(Point, bSelected ? GrabRadius + 2.0f : GrabRadius,
+			bSelected ? ImGui::GetColorU32(ImGuiCol_ButtonActive) : ImGui::GetColorU32(ImGuiCol_PlotLinesHovered));
+		DrawList->AddCircle(Point, GrabRadius + 2.0f, ImGui::GetColorU32(ImGuiCol_Text));
+	}
+
+	if (bCanvasHovered && HoveredKeyIndex >= 0)
+	{
+		ImGui::SetTooltip("Key %d: %.3f, %.3f", HoveredKeyIndex, CachedKeys[HoveredKeyIndex].Time, CachedKeys[HoveredKeyIndex].Value);
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		{
+			SelectedKeyIndex = HoveredKeyIndex;
+		}
+	}
+
+	bool bModified = false;
+	if (bCanvasActive && SelectedKeyIndex >= 0 && SelectedKeyIndex < static_cast<int32>(CachedKeys.size()) && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+	{
+		ImVec2 CurvePoint = ToCurve(MousePos);
+		if (SelectedKeyIndex > 0)
+		{
+			CurvePoint.x = FMath::Max(CurvePoint.x, CachedKeys[SelectedKeyIndex - 1].Time + 1.0e-3f);
+		}
+		if (SelectedKeyIndex + 1 < static_cast<int32>(CachedKeys.size()))
+		{
+			CurvePoint.x = FMath::Min(CurvePoint.x, CachedKeys[SelectedKeyIndex + 1].Time - 1.0e-3f);
+		}
+
+		CachedKeys[SelectedKeyIndex].Time = CurvePoint.x;
+		CachedKeys[SelectedKeyIndex].Value = CurvePoint.y;
+		RebuildCachedPoints();
+		bModified = true;
+	}
+
+	return bModified;
+}
+
+bool FEditorBezierWidget::RenderKeyTable()
+{
+	if (CachedKeys.empty())
+	{
+		return false;
+	}
+
+	bool bModified = false;
+	bool bDeleteSelected = false;
+
+	if (ImGui::BeginTable("CurveKeys", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable))
+	{
+		ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 48.0f);
+		ImGui::TableSetupColumn("Time");
+		ImGui::TableSetupColumn("Value");
+		ImGui::TableSetupColumn("Arrive");
+		ImGui::TableSetupColumn("Leave");
+		ImGui::TableSetupColumn("Mode");
+		ImGui::TableHeadersRow();
+
+		for (int32 Index = 0; Index < static_cast<int32>(CachedKeys.size()); ++Index)
+		{
+			FRichCurveKey& Key = CachedKeys[Index];
+			ImGui::PushID(Index);
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			const bool bSelected = SelectedKeyIndex == Index;
+			char Label[32];
+			std::snprintf(Label, sizeof(Label), "%d", Index);
+			if (ImGui::Selectable(Label, bSelected, ImGuiSelectableFlags_SpanAllColumns))
+			{
+				SelectedKeyIndex = Index;
+			}
+
+			ImGui::TableSetColumnIndex(1);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::DragFloat("##Time", &Key.Time, 0.01f, -FLT_MAX, FLT_MAX, "%.3f"))
+			{
+				SelectedKeyIndex = Index;
+				bModified = true;
+			}
+
+			ImGui::TableSetColumnIndex(2);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::DragFloat("##Value", &Key.Value, 0.01f, -FLT_MAX, FLT_MAX, "%.3f"))
+			{
+				SelectedKeyIndex = Index;
+				bModified = true;
+			}
+
+			ImGui::TableSetColumnIndex(3);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::DragFloat("##Arrive", &Key.ArriveTangent, 0.01f, -FLT_MAX, FLT_MAX, "%.3f"))
+			{
+				SelectedKeyIndex = Index;
+				bModified = true;
+			}
+
+			ImGui::TableSetColumnIndex(4);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::DragFloat("##Leave", &Key.LeaveTangent, 0.01f, -FLT_MAX, FLT_MAX, "%.3f"))
+			{
+				SelectedKeyIndex = Index;
+				bModified = true;
+			}
+
+			ImGui::TableSetColumnIndex(5);
+			int32 ModeIndex = GetInterpModeIndex(Key.InterpMode);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::Combo("##Mode", &ModeIndex, "Constant\0Linear\0Cubic\0"))
+			{
+				Key.InterpMode = GetInterpModeFromIndex(ModeIndex);
+				SelectedKeyIndex = Index;
+				bModified = true;
+			}
+
+			if (ImGui::BeginPopupContextItem("KeyContext"))
+			{
+				if (ImGui::MenuItem("Delete Key"))
+				{
+					SelectedKeyIndex = Index;
+					bDeleteSelected = true;
+				}
+				ImGui::TextDisabled("%s", GetInterpModeName(Key.InterpMode));
+				ImGui::EndPopup();
+			}
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndTable();
+	}
+
+	if (SelectedKeyIndex >= 0 && ImGui::Button("Delete Selected Key"))
+	{
+		bDeleteSelected = true;
+	}
+
+	if (bDeleteSelected && SelectedKeyIndex >= 0 && SelectedKeyIndex < static_cast<int32>(CachedKeys.size()))
+	{
+		CachedKeys.erase(CachedKeys.begin() + SelectedKeyIndex);
+		SelectedKeyIndex = FMath::Min(SelectedKeyIndex, static_cast<int32>(CachedKeys.size()) - 1);
+		bModified = true;
+	}
+
+	if (bModified)
+	{
+		std::stable_sort(CachedKeys.begin(), CachedKeys.end(),
+			[](const FRichCurveKey& A, const FRichCurveKey& B)
+			{
+				return A.Time < B.Time;
+			});
+		RebuildCachedPoints();
+	}
+
+	return bModified;
+}
+
+void FEditorBezierWidget::RebuildCachedPoints()
+{
+	CachedCurvePoints.clear();
+	for (const FRichCurveKey& Key : CachedKeys)
+	{
+		CachedCurvePoints.emplace_back(Key.Time, Key.Value);
+	}
 }
 
 namespace ImGui
@@ -138,7 +644,7 @@ namespace ImGui
 			for (int i = 0; i < IM_ARRAYSIZE(presets); ++i) {
 				if (i == 1 || i == 9 || i == 17) ImGui::Separator();
 				if (ImGui::MenuItem(presets[i].name, NULL, P[4] == i)) {
-					P[4] = i;
+					P[4] = static_cast<float>(i);
 					reload = 1;
 				}
 			}
@@ -166,7 +672,7 @@ namespace ImGui
 			return false;
 
 		// header and spacing
-		int changed = SliderFloat4(label, P, 0, 1, "%.3f", 1.0f);
+		int changed = SliderFloat4(label, P, 0.0f, 1.0f, "%.3f");
 		int hovered = IsItemActive() || IsItemHovered(); // IsItemDragged() ?
 		Dummy(ImVec2(0, 3));
 
@@ -186,16 +692,18 @@ namespace ImGui
 		RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
 
 		// background grid
-		for (int i = 0; i <= Canvas.x; i += (Canvas.x / 4)) {
+		for (int i = 0; i <= 4; ++i) {
+			const float X = Canvas.x * (static_cast<float>(i) / 4.0f);
 			DrawList->AddLine(
-				ImVec2(bb.Min.x + i, bb.Min.y),
-				ImVec2(bb.Min.x + i, bb.Max.y),
+				ImVec2(bb.Min.x + X, bb.Min.y),
+				ImVec2(bb.Min.x + X, bb.Max.y),
 				GetColorU32(ImGuiCol_TextDisabled));
 		}
-		for (int i = 0; i <= Canvas.y; i += (Canvas.y / 4)) {
+		for (int i = 0; i <= 4; ++i) {
+			const float Y = Canvas.y * (static_cast<float>(i) / 4.0f);
 			DrawList->AddLine(
-				ImVec2(bb.Min.x, bb.Min.y + i),
-				ImVec2(bb.Max.x, bb.Min.y + i),
+				ImVec2(bb.Min.x, bb.Min.y + Y),
+				ImVec2(bb.Max.x, bb.Min.y + Y),
 				GetColorU32(ImGuiCol_TextDisabled));
 		}
 
@@ -254,7 +762,7 @@ namespace ImGui
 		for (int i = 0; i < 3; ++i) {
 			double now = ((clock() - epoch) / (double)CLOCKS_PER_SEC);
 			float delta = ((int)(now * 1000) % 1000) / 1000.f; delta += i / 3.f; if (delta > 1) delta -= 1;
-			int idx = (int)(delta * SMOOTHNESS);
+			int idx = static_cast<int>(delta * static_cast<float>(SMOOTHNESS));
 			float evalx = results[idx].x; // 
 			float evaly = results[idx].y; // ImGui::BezierValue( delta, P );
 			ImVec2 p0 = ImVec2(evalx, 1 - 0) * (bb.Max - bb.Min) + bb.Min;

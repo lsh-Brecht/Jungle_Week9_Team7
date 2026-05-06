@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <utility>
 
 namespace
 {
@@ -217,6 +218,11 @@ void FEditorContentBrowserWidget::SetIconSize(float Size)
 	BrowserContext.ContentSize = ImVec2(ClampedSize, ClampedSize);
 }
 
+//void FEditorContentBrowserWidget::SetAssetDoubleClickHandler(std::function<bool(const FContentItem&)> Handler)
+//{
+//	BrowserContext.OnAssetDoubleClicked = std::move(Handler);
+//}
+
 void FEditorContentBrowserWidget::LoadFromSettings()
 {
 	BrowserContext.CurrentPath = ResolveContentBrowserSettingsPath(FEditorSettings::Get().ContentBrowserPath);
@@ -262,6 +268,11 @@ void FEditorContentBrowserWidget::RefreshContent()
 		{
 			element = std::make_shared<MaterialElement>();
 			element.get()->SetIcon(ICons[Extension].Get());
+		}
+		else if (Content.Path.extension() == ".curve")
+		{
+			element = std::make_shared<CurveElement>();
+			element.get()->SetIcon(ICons["Default"].Get());
 		}
 		else if (Content.Path.extension() == ".lua")
 		{

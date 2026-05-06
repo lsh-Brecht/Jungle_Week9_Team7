@@ -6,6 +6,7 @@
 #include "ContentBrowserContext.h"
 #include "ContentBrowserElement.h"
 #include <wrl/client.h>
+#include <functional>
 
 class FEditorContentBrowserWidget final : public FEditorWidget
 {
@@ -22,6 +23,7 @@ public:
 	void SaveToSettings() const;
 	void SetIconSize(float Size);
 	float GetIconSize() const { return BrowserContext.ContentSize.x; }
+	//void SetAssetDoubleClickHandler(std::function<bool(const FContentItem&)> Handler);
 
 private:
 	void LoadFromSettings();
