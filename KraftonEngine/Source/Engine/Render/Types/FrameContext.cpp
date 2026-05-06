@@ -4,6 +4,7 @@
 
 void FFrameContext::SetCameraInfo(const UCameraComponent* Camera)
 {
+	CameraUUID      = Camera->GetUUID();
 	View            = Camera->GetViewMatrix();
 	Proj            = Camera->GetProjectionMatrix();
 	CameraPosition  = Camera->GetWorldLocation();

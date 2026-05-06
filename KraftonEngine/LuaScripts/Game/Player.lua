@@ -171,7 +171,8 @@ local Player = {
 
     -- 사망 연출 상태
     isDeadTriggered = false,
-    deathTimer = 0.0
+    deathTimer = 0.0,
+    fadeStarted = false
 }
 
 local function Log(msg)
@@ -307,8 +308,8 @@ local function ResetPostProcessEffect()
     Player.deathTimer = 0.0
     
     if IsValidHandle(Player.camera) then
-        -- 기본값으로 복구
-        Player.camera.VignetteIntensity = 0.5
+        -- 기본값으로 복구 (C++ 기본값과 일치)
+        Player.camera.VignetteIntensity = 1.0
         Player.camera.FadeAlpha = 0.0
     end
     
@@ -991,18 +992,18 @@ function OnOverlap(otherActor)
 
     -- 사망 연출 시작
     Player.isDeadTriggered = true
-    Player.deathTimer = 1.5
-    Log("[COLLISION] Vehicle overlap -> Death Sequence Start")
+    Player.deathTimer = 2.0 -- 총 연출 시간 (Phase 1: Vignette 0.5s + Phase 2: Fade 1.5s)
+    Player.fadeStarted = false
+    
+    local camUUID = "nil"
+    if IsValidHandle(Player.camera) then camUUID = tostring(Player.camera.UUID) end
+    Log("[COLLISION] Vehicle hit! Actor: " .. tostring(otherActor.Name) .. " -> Death Sequence Start. CamUUID: " .. camUUID)
 
-    if IsValidHandle(Player.controller) then
-        -- 1. 전역 Fade Out 시작 (1.5초 동안 검은색으로)
-        Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
-        
-        -- 2. 활성화된 카메라의 Vignette 강도 높이기
-        if IsValidHandle(Player.camera) then
-            Player.camera.VignetteIntensity = 0.4
-            Player.camera.VignetteColor = Vec(0.5, 0, 0) -- 피격 느낌을 위한 붉은색
-        end
+    if IsValidHandle(Player.camera) then
+        -- Vignette 초기화: 효과 없음(1.0)에서 시작
+        Player.camera.VignetteIntensity = 1.0
+        Player.camera.VignetteColor = Vec(0.8, 0.0, 0.0) -- 더 강한 빨간색
+        Player.camera.VignetteSmoothness = 0.6 -- 더 부드러운 전이
     end
 end
 
@@ -1021,8 +1022,12 @@ function OnInput(deltaTime)
 
          -- [수정] 게임이 진행 중이 아닐 때는 사망 연출 플래그를 강제로 리셋합니다.
          if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
+             if Player.isDeadTriggered then
+                 Log("[DEATH_ABORT] Game is no longer playing. Resetting death FX.")
+             end
              Player.isDeadTriggered = false
              Player.deathTimer = 0.0
+             Player.fadeStarted = false
     
            -- 마우스 캡처 해제
             if Input ~= nil and Input.SetMouseCaptured ~= nil then
@@ -1033,10 +1038,40 @@ function OnInput(deltaTime)
 
     -- 사망 연출 처리
     if Player.isDeadTriggered then
+        -- [추가] 렌더러가 사용하는 최신 카메라로 동기화 (UUID 불일치 해결)
+        if IsValidHandle(Player.controller) and Player.controller.GetActiveCamera ~= nil then
+            Player.camera = Player.controller:GetActiveCamera()
+        end
+
         if Player.deathTimer > 0 then
             Player.deathTimer = Player.deathTimer - dt
+            
+            -- Phase 1: Vignette 연출 (남은 시간 2.0s ~ 1.5s 구간, 총 0.5초)
+            if Player.deathTimer > 1.5 then
+                if IsValidHandle(Player.camera) then
+                    -- 0.5초 동안 VignetteIntensity를 1.0(Off)에서 0.1(Strong)으로 선형 보간
+                    local alpha = (2.0 - Player.deathTimer) / 0.5
+                    local targetIntensity = 1.0 + (0.1 - 1.0) * alpha
+                    Player.camera.VignetteIntensity = targetIntensity
+                end
+            else
+                -- Phase 2: Fade Out 연출 시작 (1.5s 시점 일회성 호출)
+                if not Player.fadeStarted then
+                    if IsValidHandle(Player.controller) then
+                        -- 나머지 1.5초 동안 화면을 검게 덮음
+                        Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
+                    end
+                    Player.fadeStarted = true
+                end
+                
+                -- Phase 2 중에도 Vignette 상태 유지 (Intensity 0.1 고정)
+                if IsValidHandle(Player.camera) then
+                    Player.camera.VignetteIntensity = 0.1
+                end
+            end
+
             if Player.deathTimer <= 0 then
-                Log("[DEATH] Timer Finished -> GameOver")
+                Log("[DEATH] Sequence Finished -> Triggering GameOver")
                 if State.GameOver ~= nil then
                     State.GameOver("Hit by vehicle")
                 elseif Game ~= nil and Game.DispatchEvent ~= nil then
@@ -1044,7 +1079,7 @@ function OnInput(deltaTime)
                 end
             end
         end
-        return -- 연출 중에는 입력 처리 중단
+        return -- 연출 중에는 모든 게임플레이 입력(이동, 회전 등)을 무시
     end
 
     if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then

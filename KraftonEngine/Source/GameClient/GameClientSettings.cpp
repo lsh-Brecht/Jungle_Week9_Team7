@@ -83,6 +83,8 @@ void ApplyRuntimeDefaults(FGameClientSettings& Settings)
 	Settings.RenderOptions.ShowFlags.bViewLightCulling = false;
 	Settings.RenderOptions.ShowFlags.bVisualize25DCulling = false;
 	Settings.RenderOptions.ShowFlags.bShowShadowFrustum = false;
+	Settings.RenderOptions.ShowFlags.bVignette = true;
+	Settings.RenderOptions.ShowFlags.bFade = true;
 }
 }
 
