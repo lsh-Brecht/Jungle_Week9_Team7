@@ -645,6 +645,33 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 				}
 				Controller->StartCameraShake(Duration, LocationAmplitude, RotationAmplitude, Frequency, FOVAmplitude, bSingleInstance);
 			}
-		)
+		),
+
+		"SetCameraVignette",
+		[](const FLuaPlayerControllerHandle& Self, float Intensity, float Smoothness, const FVector& Color)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->SetCameraVignette(Intensity, Smoothness, Color);
+			}
+		},
+
+		"SetCameraFade",
+		[](const FLuaPlayerControllerHandle& Self, float Alpha, const FVector& Color)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->SetCameraFade(Alpha, Color);
+			}
+		},
+
+		"ResetCameraPostProcess",
+		[](const FLuaPlayerControllerHandle& Self)
+		{
+			if (APlayerController* Controller = Self.Resolve())
+			{
+				Controller->ResetCameraPostProcess();
+			}
+		}
 	);
 }

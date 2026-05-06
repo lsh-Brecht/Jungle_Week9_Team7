@@ -51,6 +51,10 @@ public:
 		bool bSingleInstance = false
 	);
 
+	void SetCameraVignette(float Intensity, float Smoothness, const FVector& Color);
+	void SetCameraFade(float Alpha, const FVector& Color);
+	void ResetCameraPostProcess();
+
 	UControllerInputComponent* FindControllerInputComponent() const;
 	APlayerCameraManager& GetCameraManager();
 	const APlayerCameraManager& GetCameraManager() const;
