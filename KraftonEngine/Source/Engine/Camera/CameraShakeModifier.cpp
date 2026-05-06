@@ -28,6 +28,7 @@ bool UCameraShakeModifier::ModifyCamera(float DeltaTime, FCameraView& InOutView)
 		return true;
 	}
 
+	// DeltaTime is RawDeltaTime, unaffected by HitStop or Slomo.
 	ElapsedTime += DeltaTime;
 
 	if (Params.Duration > 0.0f && ElapsedTime > Params.Duration)

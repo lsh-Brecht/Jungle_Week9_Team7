@@ -16,6 +16,7 @@ void RegisterStaticMeshComponentBinding(sol::state& Lua);
 void RegisterCameraComponentBinding(sol::state& Lua);
 void RegisterPawnOrientationComponentBinding(sol::state& Lua);
 
+void RegisterFVector2Binding(sol::state& Lua);
 void RegisterFVectorBinding(sol::state& Lua);
 void RegisterFVector4Binding(sol::state& Lua);
 void RegisterFRotatorBinding(sol::state& Lua);

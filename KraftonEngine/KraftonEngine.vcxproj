@@ -342,8 +342,9 @@
     <ClCompile Include="Source\Editor\UI\NotificationToast.cpp" />
     <ClCompile Include="Source\Editor\Viewport\EditorViewportClient.cpp" />
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp" />
+    <ClCompile Include="Source\Engine\Camera\CameraFadeModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp" />
-      <ClCompile Include="Source\Engine\Camera\CameraShakeModifier.cpp"/>
+    <ClCompile Include="Source\Engine\Camera\CameraShakeModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp" />
     <ClCompile Include="Source\Engine\Collision\MeshTriangleBVH.cpp" />
@@ -385,7 +386,7 @@
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp" />
-      <ClCompile Include="Source\Engine\Component\SpringArmComponent.cpp"/>
+    <ClCompile Include="Source\Engine\Component\SpringArmComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SubUVComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\TextRenderComponent.cpp" />
@@ -415,7 +416,7 @@
     <ClCompile Include="Source\Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Source\Engine\Materials\Material.cpp" />
     <ClCompile Include="Source\Engine\Materials\MaterialManager.cpp" />
-      <ClCompile Include="Source\Engine\Math\MathUtils.cpp"/>
+    <ClCompile Include="Source\Engine\Math\MathUtils.cpp" />
     <ClCompile Include="Source\Engine\Math\Matrix.cpp" />
     <ClCompile Include="Source\Engine\Math\Quat.cpp" />
     <ClCompile Include="Source\Engine\Math\Rotator.cpp" />
@@ -592,8 +593,9 @@
     <ClInclude Include="Source\Editor\Viewport\EditorViewportClient.h" />
     <ClInclude Include="Source\Editor\Viewport\FLevelViewportLayout.h" />
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
+    <ClInclude Include="Source\Engine\Camera\CameraFadeModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraModifier.h" />
-      <ClInclude Include="Source\Engine\Camera\CameraShakeModifier.h"/>
+    <ClInclude Include="Source\Engine\Camera\CameraShakeModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
     <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
@@ -639,7 +641,7 @@
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h" />
-      <ClInclude Include="Source\Engine\Component\SpringArmComponent.h"/>
+    <ClInclude Include="Source\Engine\Component\SpringArmComponent.h" />
     <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h" />
     <ClInclude Include="Source\Engine\Component\SubUVComponent.h" />
     <ClInclude Include="Source\Engine\Component\TextRenderComponent.h" />
@@ -1109,6 +1111,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="Shaders\PostProcess\Fade.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="Shaders\PostProcess\FXAA.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -1159,6 +1168,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Shaders\PostProcess\ShadowMapVis.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='GameClient|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\PostProcess\Vignette.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ObjViewDebug|x64'">true</ExcludedFromBuild>
