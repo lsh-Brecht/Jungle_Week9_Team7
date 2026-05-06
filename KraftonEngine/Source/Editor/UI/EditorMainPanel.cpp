@@ -87,6 +87,14 @@ void FEditorMainPanel::Create(FWindowsWindow* InWindow, FRenderer& InRenderer, U
 	SceneWidget.Initialize(InEditorEngine);
 	StatWidget.Initialize(InEditorEngine);
 	ContentBrowserWidget.Initialize(InEditorEngine, InRenderer.GetFD3DDevice().GetDevice());
+	ContentBrowserWidget.SetAssetClickHandler([this](const FContentItem& Item)
+		{
+			return HandleContentBrowserAssetClicked(Item);
+		});
+	ContentBrowserWidget.SetAssetDoubleClickHandler([this](const FContentItem& Item)
+		{
+			return HandleContentBrowserAssetClicked(Item);
+		});
 	ShadowMapDebugWidget.Initialize(InEditorEngine);
 	BezierWidget.Initialize(InEditorEngine);
 }
@@ -1239,7 +1247,7 @@ void FEditorMainPanel::HandleGlobalShortcuts()
 	}
 }
 
-bool FEditorMainPanel::HandleContentBrowserAssetDoubleClicked(const FContentItem& Item)
+bool FEditorMainPanel::HandleContentBrowserAssetClicked(const FContentItem& Item)
 {
 	if (Item.bIsDirectory)
 	{

@@ -78,13 +78,29 @@ void ContentBrowserElement::Render(ContentBrowserContext& Context)
 	{
 		Context.SelectedElement = shared_from_this();
 		bIsSelected = true;
-		OnLeftClicked(Context);
+		bool bHandledClick = false;
+		if (Context.OnAssetClicked)
+		{
+			bHandledClick = Context.OnAssetClicked(ContentItem);
+		}
+		if (!bHandledClick)
+		{
+			OnLeftClicked(Context);
+		}
 	}
 
 	bool bDoubleClicked = ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 	if (bDoubleClicked && !Context.bIsRenaming)
 	{
-		OnDoubleLeftClicked(Context);
+		bool bHandledDoubleClick = false;
+		if (Context.OnAssetDoubleClicked)
+		{
+			bHandledDoubleClick = Context.OnAssetDoubleClicked(ContentItem);
+		}
+		if (!bHandledDoubleClick)
+		{
+			OnDoubleLeftClicked(Context);
+		}
 	}
 
 	if (ImGui::BeginPopupContextItem())

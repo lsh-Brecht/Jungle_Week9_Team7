@@ -17,6 +17,7 @@ struct ContentBrowserContext final
 	std::shared_ptr<ContentBrowserElement> SelectedElement;
 
 	UEditorEngine* EditorEngine;
+	std::function<bool(const FContentItem&)> OnAssetClicked;
 	std::function<bool(const FContentItem&)> OnAssetDoubleClicked;
 
 	bool bIsNeedRefresh = false;

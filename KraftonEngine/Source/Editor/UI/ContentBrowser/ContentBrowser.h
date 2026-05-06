@@ -23,7 +23,8 @@ public:
 	void SaveToSettings() const;
 	void SetIconSize(float Size);
 	float GetIconSize() const { return BrowserContext.ContentSize.x; }
-	//void SetAssetDoubleClickHandler(std::function<bool(const FContentItem&)> Handler);
+	void SetAssetClickHandler(std::function<bool(const FContentItem&)> Handler);
+	void SetAssetDoubleClickHandler(std::function<bool(const FContentItem&)> Handler);
 
 private:
 	void LoadFromSettings();

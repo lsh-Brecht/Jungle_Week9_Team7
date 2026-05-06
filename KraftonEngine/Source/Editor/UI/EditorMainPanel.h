@@ -56,7 +56,7 @@ private:
 	void ApplySelectedPackageGame(int32 GameIndex);
 	void CopyPackageSettingsToTextBuffers();
 	void CopyTextBuffersToPackageSettings();
-	bool HandleContentBrowserAssetDoubleClicked(const FContentItem& Item);
+	bool HandleContentBrowserAssetClicked(const FContentItem& Item);
 
 	FWindowsWindow* Window = nullptr;
 	UEditorEngine* EditorEngine = nullptr;
