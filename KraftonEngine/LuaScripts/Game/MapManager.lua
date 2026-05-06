@@ -163,6 +163,7 @@ end
 -- 반드시 _G에 등록해야 합니다.
 _G.MapManager_Reset = reset_map_runtime
 _G.MapManager_ResetAsync = reset_map_runtime_async
+_G.MapManager_GenerateInitial = generate_initial_rows
 
 _G.AddDynamicSpawner = function(rowIndex, prefab, speed, interval, dirY)
     table.insert(MapManager.ActiveSpawners, {
@@ -180,6 +181,7 @@ function BeginPlay()
     -- Lua component environment가 바뀌거나 재로드되어도 GameState에서 접근 가능하게 하기 위함입니다.
     _G.MapManager_Reset = reset_map_runtime
     _G.MapManager_ResetAsync = reset_map_runtime_async
+_G.MapManager_GenerateInitial = generate_initial_rows
 
     clear_runtime_tables()
     configure_generator()
@@ -191,9 +193,7 @@ function BeginPlay()
         print("[MapManager] Pawn 연결 실패")
     end
 
-    -- 인트로 진입 전 맵을 미리 만들어 둡니다.
-    -- Tick은 Playing 상태에서만 스포너를 돌리므로 인트로 중 차량은 움직이지 않습니다.
-    generate_initial_rows()
+    -- 인트로 시네마틱 연출 후 생성하기 위해 BeginPlay에서는 생성하지 않습니다.
 end
 
 function Tick(deltaTime)
