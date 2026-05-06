@@ -42,6 +42,19 @@ public:
 	void ClearCameraReferencesForActor(const AActor* Actor);
 	void ClearCameraReferencesForComponent(const UActorComponent* Component);
 
+	void StartCameraShake(
+		float Duration,
+		float LocationAmplitude,
+		float RotationAmplitude,
+		float Frequency,
+		float FOVAmplitude = 0.0f,
+		bool bSingleInstance = false
+	);
+
+	void SetCameraVignette(float Intensity, float Smoothness, const FVector& Color);
+	void SetCameraFade(float Alpha, const FVector& Color);
+	void ResetCameraPostProcess();
+
 	UControllerInputComponent* FindControllerInputComponent() const;
 	APlayerCameraManager& GetCameraManager();
 	const APlayerCameraManager& GetCameraManager() const;

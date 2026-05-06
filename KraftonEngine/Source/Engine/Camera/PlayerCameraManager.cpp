@@ -1,4 +1,4 @@
-#include "Camera/PlayerCameraManager.h"
+﻿#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
@@ -172,9 +172,8 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 	return HasValidOutputCamera() ? OutputCameraComponent : nullptr;
 }
 
-void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
+void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 {
-	(void)(RawDeltaTime);
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -211,7 +210,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 	}
 
 	FCameraView DesiredView;
-	if (!TargetCamera->CalcCameraView(OwnerController, DeltaTime, DesiredView))
+	if (!TargetCamera->CalcCameraView(OwnerController, GameDeltaTime, DesiredView))
 	{
 		return;
 	}
@@ -225,7 +224,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 		ViewTarget.POV = CurrentView;
 
 		FCameraView FinalView = CurrentView;
-		ApplyCameraModifiers(DeltaTime, FinalView);
+		ApplyCameraModifiers(RawDeltaTime, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
 		UpdateVignetteCenter(TargetCamera);
 
@@ -237,7 +236,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 
 	if (bIsBlending)
 	{
-		BlendElapsedTime += DeltaTime;
+		BlendElapsedTime += GameDeltaTime;
 		const float Duration = Transition.BlendTime;
 		const float RawAlpha = Duration > 0.0f ? Clamp(BlendElapsedTime / Duration, 0.0f, 1.0f) : 1.0f;
 		const float Alpha = EvaluateBlendAlpha(RawAlpha, Transition.Function);
@@ -255,10 +254,10 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 	}
 	else if (Smoothing.bEnableSmoothing)
 	{
-		const float LocationAlpha = ExpAlpha(Smoothing.LocationLagSpeed, DeltaTime);
-		const float RotationAlpha = ExpAlpha(Smoothing.RotationLagSpeed, DeltaTime);
-		const float FOVAlpha = ExpAlpha(Smoothing.FOVLagSpeed, DeltaTime);
-		const float OrthoAlpha = ExpAlpha(Smoothing.OrthoWidthLagSpeed, DeltaTime);
+		const float LocationAlpha = ExpAlpha(Smoothing.LocationLagSpeed, GameDeltaTime);
+		const float RotationAlpha = ExpAlpha(Smoothing.RotationLagSpeed, GameDeltaTime);
+		const float FOVAlpha = ExpAlpha(Smoothing.FOVLagSpeed, GameDeltaTime);
+		const float OrthoAlpha = ExpAlpha(Smoothing.OrthoWidthLagSpeed, GameDeltaTime);
 
 		CurrentView.Location = LerpVector(CurrentView.Location, DesiredView.Location, LocationAlpha);
 		CurrentView.Rotation = FQuat::Slerp(CurrentView.Rotation, DesiredView.Rotation, RotationAlpha);
@@ -279,7 +278,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime, float RawDeltaTime)
 	ViewTarget.POV = CurrentView;
 
 	FCameraView FinalView = CurrentView;
-	ApplyCameraModifiers(DeltaTime, FinalView);
+	ApplyCameraModifiers(RawDeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
 	UpdateVignetteCenter(TargetCamera);
 }
