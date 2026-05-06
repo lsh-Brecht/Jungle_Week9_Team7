@@ -665,6 +665,12 @@ function State.StartGame(reason)
     State.SetPlayerMovementEnabled(true)
     State.SetMenuObjectsVisible(false)
     set_visible(State.CachedCreditsText, false)
+
+    local pc = get_player_controller()
+    if is_valid(pc) and pc.StartFadeOut ~= nil then
+        pc:StartFadeOut(0.0)
+    end
+
     push_score_to_ui()
     State.UpdateHUD()
     

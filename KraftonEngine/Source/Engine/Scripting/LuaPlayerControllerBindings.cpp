@@ -566,6 +566,51 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			}
 
 			Controller->AddMovementInput(Direction, Scale);
+		},
+
+		"StartFadeIn",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float TargetAlpha)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartFadeIn Call.");
+					return;
+				}
+				if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+				{
+					Mgr->StartFadeIn(Duration, TargetAlpha, FVector::ZeroVector);
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Duration, float TargetAlpha, const FVector& Color)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartFadeIn Call.");
+					return;
+				}
+				if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+				{
+					Mgr->StartFadeIn(Duration, TargetAlpha, Color);
+				}
+			}
+		),
+
+		"StartFadeOut",
+		[](const FLuaPlayerControllerHandle& Self, float Duration)
+		{
+			APlayerController* Controller = Self.Resolve();
+			if (!Controller)
+			{
+				UE_LOG("[Lua] Invalid PlayerController.StartFadeOut Call.");
+				return;
+			}
+			if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+			{
+				Mgr->StartFadeOut(Duration);
+			}
 		}
 	);
 }

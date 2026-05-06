@@ -1,5 +1,6 @@
 ﻿#include "Camera/PlayerCameraManager.h"
 
+#include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
 #include "Component/ComponentReferenceUtils.h"
@@ -596,6 +597,39 @@ void APlayerCameraManager::ClearCameraModifiers()
 	}
 
 	ModifierList.clear();
+	FadeModifier = nullptr;
+}
+
+UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
+{
+	if (FadeModifier && IsAliveObject(FadeModifier)
+		&& std::find(ModifierList.begin(), ModifierList.end(), FadeModifier) != ModifierList.end())
+	{
+		return FadeModifier;
+	}
+
+	FadeModifier = UObjectManager::Get().CreateObject<UCameraFadeModifier>(this);
+	if (FadeModifier)
+	{
+		AddCameraModifier(FadeModifier);
+	}
+	return FadeModifier;
+}
+
+void APlayerCameraManager::StartFadeIn(float Duration, float TargetAlpha, const FVector& Color)
+{
+	if (UCameraFadeModifier* Mod = EnsureFadeModifier())
+	{
+		Mod->StartFadeIn(Duration, TargetAlpha, Color);
+	}
+}
+
+void APlayerCameraManager::StartFadeOut(float Duration)
+{
+	if (FadeModifier && IsAliveObject(FadeModifier))
+	{
+		FadeModifier->StartFadeOut(Duration);
+	}
 }
 
 void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)

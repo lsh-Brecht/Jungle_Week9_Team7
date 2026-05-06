@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Camera/CameraModifier.h"
 #include "Math/Vector.h"

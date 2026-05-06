@@ -1,5 +1,7 @@
-#include "Camera/CameraFadeModifier.h"
+﻿#include "Camera/CameraFadeModifier.h"
 #include "Math/MathUtils.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Core/Log.h"
 
 IMPLEMENT_CLASS(UCameraFadeModifier, UCameraModifier)
 
