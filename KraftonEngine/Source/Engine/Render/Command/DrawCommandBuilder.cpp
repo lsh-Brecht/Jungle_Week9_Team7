@@ -35,6 +35,8 @@ void FDrawCommandBuilder::Create(ID3D11Device* InDevice, ID3D11DeviceContext* In
 	OutlineCB.Create(InDevice, sizeof(FOutlinePostProcessConstants));
 	SceneDepthCB.Create(InDevice, sizeof(FSceneDepthPConstants));
 	FXAACB.Create(InDevice, sizeof(FFXAAConstants));
+	VignetteCB.Create(InDevice, sizeof(FVignettePostProcessConstants));
+	FadeCB.Create(InDevice, sizeof(FFadePostProcessConstants));
 }
 
 void FDrawCommandBuilder::Release()
@@ -53,6 +55,8 @@ void FDrawCommandBuilder::Release()
 	OutlineCB.Release();
 	SceneDepthCB.Release();
 	FXAACB.Release();
+	VignetteCB.Release();
+	FadeCB.Release();
 }
 
 // ============================================================
@@ -540,6 +544,44 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 			FDrawCommand& Cmd = DrawCommandList.AddCommand();
 			Cmd.InitFullscreenTriangle(CullingShader, ERenderPass::PostProcess, PPRS);
 			Cmd.BuildSortKey(4);
+		}
+	}
+
+	// Vignette (UserBits=5 → LightCulling 뒤, FadeBefore)
+	if (Frame.RenderOptions.ShowFlags.bVignette)
+	{
+		FShader* VignetteShader = FShaderManager::Get().GetOrCreate(EShaderPath::Vignette);
+		if (VignetteShader)
+		{
+			FVignettePostProcessConstants VignetteData = {};
+			VignetteData.VignetteCenter     = FVector2(0.0f, 0.0f);  // Phase 2에서 Pawn 스크린 UV로 갱신
+			VignetteData.VignetteIntensity  = 0.5f;                  // 검증용 임시 디폴트
+			VignetteData.VignetteSmoothness = 0.5f;
+			VignetteData.VignetteColor      = FVector(0.0f, 0.0f, 0.0f);
+			VignetteCB.Update(Ctx, &VignetteData, sizeof(FVignettePostProcessConstants));
+
+			FDrawCommand& Cmd = DrawCommandList.AddCommand();
+			Cmd.InitFullscreenTriangle(VignetteShader, ERenderPass::PostProcess, PPRS);
+			Cmd.Bindings.PerShaderCB[0] = &VignetteCB;
+			Cmd.BuildSortKey(5);
+		}
+	}
+
+	// Fade (UserBits=6 → 모든 PostProcess 효과 위에 덮음)
+	if (Frame.RenderOptions.ShowFlags.bFade)
+	{
+		FShader* FadeShader = FShaderManager::Get().GetOrCreate(EShaderPath::Fade);
+		if (FadeShader)
+		{
+			FFadePostProcessConstants FadeData = {};
+			FadeData.FadeColor = FVector(0.0f, 0.0f, 0.0f);
+			FadeData.FadeAlpha = 0.0f;  // 디폴트 Off, Phase 2에서 모디파이어로 보간
+			FadeCB.Update(Ctx, &FadeData, sizeof(FFadePostProcessConstants));
+
+			FDrawCommand& Cmd = DrawCommandList.AddCommand();
+			Cmd.InitFullscreenTriangle(FadeShader, ERenderPass::PostProcess, PPRS);
+			Cmd.Bindings.PerShaderCB[0] = &FadeCB;
+			Cmd.BuildSortKey(6);
 		}
 	}
 
