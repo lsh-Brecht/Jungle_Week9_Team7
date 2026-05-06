@@ -171,7 +171,10 @@ local Player = {
 
     -- 사망 연출 상태
     isDeadTriggered = false,
-    deathTimer = 0.0
+    deathTimer = 0.0,
+
+    -- [테스트] 카메라 셰이크 쿨다운
+    cameraShakeCooldown = 0.0
 }
 
 local function Log(msg)
@@ -993,6 +996,14 @@ function OnOverlap(otherActor)
     Player.isDeadTriggered = true
     Player.deathTimer = 1.5
     Log("[COLLISION] Vehicle overlap -> Death Sequence Start")
+
+    -- [테스트] 사망 시 강한 CameraShake 적용
+    if Player.cameraShakeCooldown <= 0.0 then
+        if IsValidHandle(Player.controller) and Player.controller.StartCameraShake ~= nil then
+            Player.controller:StartCameraShake(0.4, 0.15, 2.0, 30.0)
+        end
+        Player.cameraShakeCooldown = 0.25
+    end
 
     if IsValidHandle(Player.controller) then
         -- 1. 전역 Fade Out 시작 (1.5초 동안 검은색으로)
