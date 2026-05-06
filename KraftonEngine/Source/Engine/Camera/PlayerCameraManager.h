@@ -106,9 +106,4 @@ private:
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;
-	
-	
-	//테스트용 코드. 구조 변경 후 작동하지 않는다면 아래 변수와 함께
-	//PlayerCameraManager.cpp 의 주석을 해제해 로그를 확인해볼 것.
-	//bool bDebugModifierAdded = false;
 };
