@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/CoreTypes.h"
 #include "Math/Quat.h"
@@ -21,7 +21,7 @@ struct FCameraPostProcess
 {
 	// Vignette
 	FVector2 VignetteCenter = FVector2(0.5f, 0.5f);  // UV 공간. Pawn 추적 시 매 프레임 갱신, 폴백은 화면 중심
-	float VignetteIntensity = 0.5f;                  // smoothstep 시작 거리
+	float VignetteIntensity = 0.2f;                  // smoothstep 시작 거리
 	float VignetteSmoothness = 0.5f;                 // smoothstep 폭
 	FVector VignetteColor = FVector::ZeroVector;     // 가장자리 색상
 
