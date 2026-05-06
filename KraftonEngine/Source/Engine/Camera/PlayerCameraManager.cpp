@@ -664,7 +664,7 @@ void APlayerCameraManager::StartFadeOut(float Duration)
 	}
 }
 
-void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
+void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView& InOutView)
 {
 	if (!InOutView.bValid || ModifierList.empty())
 	{
@@ -682,7 +682,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 			continue;
 		}
 
-		const bool bContinueChain = Modifier->UpdateCameraModifier(DeltaTime, InOutView);
+		const bool bContinueChain = Modifier->UpdateCameraModifier(RawDeltaTime, InOutView);
 		if (!bContinueChain)
 		{
 			break;
@@ -760,5 +760,7 @@ void APlayerCameraManager::UpdateVignetteCenter(UCameraComponent* TargetCamera)
 
 	const float U = NDC.X * 0.5f + 0.5f;
 	const float V = -NDC.Y * 0.5f + 0.5f;
+	PP.VignetteCenter = FVector2(U, V);
+}+ 0.5f;
 	PP.VignetteCenter = FVector2(U, V);
 }

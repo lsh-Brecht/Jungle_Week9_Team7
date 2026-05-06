@@ -49,7 +49,7 @@ public:
 	bool HasValidOutputCamera() const;
 	UCameraComponent* GetOutputCameraIfValid() const;
 
-	void UpdateCamera(float DeltaTime);
+	void UpdateCamera(float GameDeltaTime, float RawDeltaTime);
 	void SnapToActiveCamera();
 
 	void AddCameraModifier(UCameraModifier* Modifier);
@@ -78,7 +78,7 @@ private:
 	float EvaluateBlendAlpha(float RawAlpha, ECameraBlendFunction Function) const;
 	void EnsureOutputCamera();
 
-	void ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView);
+	void ApplyCameraModifiers(float RawDeltaTime, FCameraView& InOutView);
 	void CleanupCameraModifiers();
 	void SortCameraModifiers();
 	UCameraFadeModifier* EnsureFadeModifier();

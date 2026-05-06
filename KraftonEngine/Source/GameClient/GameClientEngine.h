@@ -44,7 +44,7 @@ public:
 
 private:
 	void TickAlways(float RawDeltaTime);
-	void TickInGame(float GameDeltaTime);
+	void TickInGame(float GameDeltaTime, float RawDeltaTime);
 	void ProcessPendingCommands();
 	bool RestartGame();
 	void InitCameraManager();

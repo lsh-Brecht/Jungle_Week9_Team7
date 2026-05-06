@@ -467,26 +467,26 @@ void UWorld::BeginPlay()
 	}
 }
 
-void UWorld::Tick(float DeltaTime, ELevelTick TickType)
+void UWorld::Tick(float GameDeltaTime, float RawDeltaTime, ELevelTick TickType)
 {
 	{
 		SCOPE_STAT_CAT("FlushPrimitive", "1_WorldTick");
 		Partition.FlushPrimitive();
 	}
 
-	Scene.GetDebugDrawQueue().Tick(DeltaTime);
+	Scene.GetDebugDrawQueue().Tick(RawDeltaTime);
 
-	TickManager.Tick(this, DeltaTime, TickType);
+	TickManager.Tick(this, GameDeltaTime, TickType);
 
 	UpdateCollision();
 
-	UpdatePlayerCameraManagers(DeltaTime);
+	UpdatePlayerCameraManagers(GameDeltaTime, RawDeltaTime);
 
 	ApplyCollisionDebugVisualization();
 }
 
 
-void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
+void UWorld::UpdatePlayerCameraManagers(float GameDeltaTime, float RawDeltaTime)
 {
 	const bool bCanDriveWorldView = GetWorldType() != EWorldType::Editor || HasBegunPlay();
 
@@ -498,7 +498,7 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 		}
 
 		APlayerCameraManager& Manager = Controller->GetCameraManager();
-		Manager.UpdateCamera(DeltaTime);
+		Manager.UpdateCamera(GameDeltaTime, RawDeltaTime);
 
 		if (bCanDriveWorldView)
 		{

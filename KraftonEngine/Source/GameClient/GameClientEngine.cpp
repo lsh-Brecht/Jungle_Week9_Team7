@@ -208,7 +208,7 @@ void UGameClientEngine::TickAlways(float RawDeltaTime)
 	GameViewport.SetInputEnabled(!bPauseMenuOpen);
 }
 
-void UGameClientEngine::TickInGame(float GameDeltaTime)
+void UGameClientEngine::TickInGame(float GameDeltaTime, float RawDeltaTime)
 {
     FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
@@ -220,7 +220,7 @@ void UGameClientEngine::TickInGame(float GameDeltaTime)
     FGameplayInputRouter::Route(InputFrame, InputContext);
 
     TaskScheduler.Tick(GameDeltaTime);
-    WorldTick(GameDeltaTime);
+    WorldTick(GameDeltaTime, RawDeltaTime);
 	GetRuntimeModules().OnTick(GameDeltaTime);
 
     CameraManager.SyncWorldViewCamera();
