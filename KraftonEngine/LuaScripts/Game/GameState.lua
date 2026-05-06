@@ -626,6 +626,7 @@ function State.StartGame(reason)
     State.Score = 0
     State.StartScoreRow = 0
     State.Elapsed = 0.0
+    State.IsDying = false
     State.bCreditsPrinted = false
 
     hide_game_over_ui()
