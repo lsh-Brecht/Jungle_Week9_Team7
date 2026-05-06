@@ -38,6 +38,7 @@ public:
 	void RefreshContentBrowser() { ContentBrowserWidget.Refresh(); }
 	void SetContentBrowserIconSize(float Size) { ContentBrowserWidget.SetIconSize(Size); }
 	float GetContentBrowserIconSize() const { return ContentBrowserWidget.GetIconSize(); }
+	bool OpenCurveAsset(const FString& CurvePath);
 
 private:
 	void RenderMainMenuBar();

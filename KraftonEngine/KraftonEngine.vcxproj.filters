@@ -965,6 +965,9 @@
     <ClCompile Include="Source\Engine\Scripting\LuaWorldLibrary.cpp">
       <Filter>Source\Engine\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Engine\Serialization\CurveSaveManager.cpp">
+      <Filter>Source\Engine\Serialization</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Engine\Serialization\PrefabSaveManager.cpp">
       <Filter>Source\Engine\Serialization</Filter>
     </ClCompile>
@@ -1806,6 +1809,9 @@
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\MemoryArchive.h">
+      <Filter>Source\Engine\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Engine\Serialization\CurveSaveManager.h">
       <Filter>Source\Engine\Serialization</Filter>
     </ClInclude>
     <ClInclude Include="Source\Engine\Serialization\PrefabSaveManager.h">
