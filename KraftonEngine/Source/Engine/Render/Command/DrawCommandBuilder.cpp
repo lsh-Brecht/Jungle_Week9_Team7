@@ -13,6 +13,7 @@
 #include "Render/Pipeline/RenderCollector.h"
 #include "Materials/Material.h"
 #include "Texture/Texture2D.h"
+#include "Core/Log.h"
 
 // UpdateProxyLOD defined in RenderCollector.cpp (shared)
 extern void UpdateProxyLOD(FPrimitiveSceneProxy* Proxy, const FLODUpdateContext& LODCtx);
@@ -460,6 +461,16 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 	EViewMode ViewMode = Frame.RenderOptions.ViewMode;
 	const FDrawCommandRenderState PPRS = PassRenderStateTable->ToDrawCommandState(ERenderPass::PostProcess, ViewMode);
 
+	// [DEBUG LOG] 매 프레임 플래그와 강도를 출력하여 렌더러가 인식하는 상태를 확인합니다.
+	// static uint32 GlobalPPLogCounter = 0;
+	// if (GlobalPPLogCounter++ % 60 == 0)
+	// {
+	// 	UE_LOG("[DrawCommandBuilder] CamUUID=%u | ShowFlags: Vig=%d, Fade=%d | Values: Intensity=%.2f, Alpha=%.2f",
+	// 		Frame.CameraUUID,
+	// 		Frame.RenderOptions.ShowFlags.bVignette, Frame.RenderOptions.ShowFlags.bFade,
+	// 		Frame.PostProcess.VignetteIntensity, Frame.PostProcess.FadeAlpha);
+	// }
+
 	// HeightFog (UserBits=0 → Outline보다 먼저)
 	if (Frame.RenderOptions.ShowFlags.bFog && CollectScene && CollectScene->GetEnvironment().HasFog())
 	{
@@ -548,8 +559,15 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 	}
 
 	// Vignette (UserBits=5 → LightCulling 뒤, Fade 앞)
-	if (Frame.RenderOptions.ShowFlags.bVignette)
+	if (Frame.RenderOptions.ShowFlags.bVignette && Frame.PostProcess.VignetteIntensity < 0.99f)
 	{
+		static uint32 VignetteLogCounter = 0;
+		if (VignetteLogCounter++ % 60 == 0)
+		{
+			UE_LOG("[Renderer] Drawing Vignette. Intensity: %.2f, Center: (%.2f, %.2f)", 
+				Frame.PostProcess.VignetteIntensity, Frame.PostProcess.VignetteCenter.X, Frame.PostProcess.VignetteCenter.Y);
+		}
+
 		FShader* VignetteShader = FShaderManager::Get().GetOrCreate(EShaderPath::Vignette);
 		if (VignetteShader)
 		{
@@ -568,7 +586,7 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 	}
 
 	// Fade (UserBits=6 → 모든 PostProcess 효과 위에 덮음)
-	if (Frame.RenderOptions.ShowFlags.bFade)
+	if (Frame.RenderOptions.ShowFlags.bFade && Frame.PostProcess.FadeAlpha > 0.001f)
 	{
 		FShader* FadeShader = FShaderManager::Get().GetOrCreate(EShaderPath::Fade);
 		if (FadeShader)

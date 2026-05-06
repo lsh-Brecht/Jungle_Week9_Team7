@@ -1,4 +1,4 @@
-#include "LuaBindings.h"
+﻿#include "LuaBindings.h"
 #include "SolInclude.h"
 #include "LuaHandles.h"
 #include "LuaBindingHelper.h"
@@ -672,6 +672,52 @@ void RegisterPlayerControllerBinding(sol::state& Lua)
 			{
 				Controller->ResetCameraPostProcess();
 			}
+		},
+
+		"StartVignette",
+		sol::overload(
+			[](const FLuaPlayerControllerHandle& Self, float Intensity, const FVector& Color, float Duration)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartVignette Call.");
+					return;
+				}
+				if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+				{
+					Mgr->StartVignette(Intensity, Color, Duration);
+				}
+			},
+			[](const FLuaPlayerControllerHandle& Self, float Intensity, const FVector& Color, float Duration, float Smoothness)
+			{
+				APlayerController* Controller = Self.Resolve();
+				if (!Controller)
+				{
+					UE_LOG("[Lua] Invalid PlayerController.StartVignette Call.");
+					return;
+				}
+				if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+				{
+					Mgr->StartVignette(Intensity, Color, Duration, Smoothness);
+				}
+			}
+		),
+
+		"StopVignette",
+		[](const FLuaPlayerControllerHandle& Self, float Duration)
+		{
+			APlayerController* Controller = Self.Resolve();
+			if (!Controller)
+			{
+				UE_LOG("[Lua] Invalid PlayerController.StopVignette Call.");
+				return;
+			}
+			if (APlayerCameraManager* Mgr = Controller->GetCameraManagerPtr())
+			{
+				Mgr->StopVignette(Duration);
+			}
 		}
 	);
 }
+

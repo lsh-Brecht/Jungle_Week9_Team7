@@ -1,0 +1,99 @@
+# Vignette 미렌더링 버그 수정 계획
+
+## Context
+
+- 사용자 요구: Player 사망 시 Vignette → Fade Out 순차 연출 (`Player.lua:1040-1083`).
+- 현재 상태: Lua 가 `Player.camera.VignetteIntensity` 를 1.0 → 0.1 로 정상 갱신함에도 불구하고 화면에는 Vignette 효과가 나타나지 않음. Fade 는 정상 작동.
+- 구현 명세 (`Document/vignette_fade_implements.md`): Phase 1~3 까지 완료된 상태로, PostProcess 데이터는 `CameraComponent.PostProcess` → `CalcCameraView` → `BlendViews`/Smoothing → `ApplyCameraModifiers` → `OutputCamera.ApplyCameraView` → `FrameContext.SetCameraInfo` → DrawCommandBuilder 경로로 흐르도록 설계됨.
+- 본 변경은 디버그 문서(`Document/vignette_debug.md`)의 미스터리 — "Fade 는 되고 Vignette 는 안 됨" — 에 대한 단일 근본 원인 수정.
+
+## Root Cause (단일)
+
+`KraftonEngine/Source/Engine/Camera/PlayerCameraManager.cpp` 의 `APlayerCameraManager::UpdateCamera` (line 266-281) **smoothing 브랜치가 `CurrentView.PostProcess` 를 갱신하지 않음**.
+
+- `Smoothing.bEnableSmoothing` 디폴트는 `true` (CameraTypes.h:83).
+- 첫 프레임 (`!CurrentView.bValid`, line 229-243) 에서 `CurrentView = DesiredView` 로 PostProcess 가 1.0 (디폴트) 로 초기화됨.
+- 이후 매 프레임 smoothing 브랜치만 타고 `CurrentView.PostProcess` 는 절대 갱신되지 않음. Lua 가 카메라에 쓴 0.1 은 `DesiredView.PostProcess` 까지만 도달하고 `CurrentView` 로 넘어가지 못함.
+- `FinalView = CurrentView` (line 291) → `OutputCamera.ApplyCameraView(FinalView)` → `SetCameraInfo` 가 `OutputCamera.GetPostProcess()` 를 복사 (FrameContext.cpp:18) → 렌더러 측 `Frame.PostProcess.VignetteIntensity = 1.0`.
+- `DrawCommandBuilder.cpp:562` 의 스킵 조건 `VignetteIntensity < 0.99f` 에 막혀 DrawCommand 가 발행되지 않음. 셰이더에서 빨간색을 강제 출력해도 화면에 나타나지 않는 현상과 일치.
+
+Fade 가 정상 동작하는 이유: `UCameraFadeModifier::ModifyCamera` 가 `ApplyCameraModifiers` 단계에서 `FinalView.PostProcess.FadeAlpha` 를 직접 max-누적으로 덮어쓰므로 smoothing 경로의 PostProcess 망실 문제를 우회.
+
+블렌딩 경로는 `BlendViews` (line 537-543) 가 PostProcess 를 lerp 하므로 정상.
+
+부수적 발견 — `Player.lua:1041-1044` 의 "UUID 불일치 해결용" 코드는 dead code:
+- `LuaPlayerControllerBindings.cpp` 에 `GetViewCamera` 가 노출되지 않음 (`GetActiveCamera` 만 존재, line 459).
+- `if Player.controller.GetViewCamera ~= nil` 가 항상 false → 재할당 미실행.
+- 즉 `Player.camera` 는 부팅 시 `World.GetActiveCamera()` (line 746) 가 반환한 ActiveCamera 그대로이며, Lua 의 `VignetteIntensity` 쓰기는 올바른 카메라(=`ActiveCameraCached`)를 향함. 데이터 플로우는 카메라 매니저 내부에서 끊겼던 것.
+
+## Critical Files
+
+- `KraftonEngine/Source/Engine/Camera/PlayerCameraManager.cpp` (line 266-281): smoothing 브랜치 — **수정 대상**.
+- `KraftonEngine/Source/Engine/Camera/CameraTypes.h:18-31`: `FCameraPostProcess` 정의 (참조용).
+- `KraftonEngine/Source/Engine/Camera/Component/CameraComponent.cpp:282-285`: `CalcCameraView` 가 `OutView.PostProcess = PostProcess` 로 항상 카메라 값을 출력 (검증 완료, 변경 불요).
+- `KraftonEngine/Source/Engine/Render/Types/FrameContext.cpp:18`: `PostProcess = Camera->GetPostProcess()` (검증 완료, 변경 불요).
+- `KraftonEngine/Source/Engine/Render/Command/DrawCommandBuilder.cpp:562`: 스킵 조건 (정상 동작 확인, 변경 불요).
+- `KraftonEngine/LuaScripts/Game/Player.lua:1041-1044`: dead code (선택적 정리).
+
+## Change
+
+### 변경 1 — 필수: `PlayerCameraManager.cpp:266-281`
+
+smoothing 브랜치 마지막에 PostProcess 동기화 한 줄 추가.
+
+```cpp
+else if (Smoothing.bEnableSmoothing)
+{
+    const float LocationAlpha = ExpAlpha(Smoothing.LocationLagSpeed, DeltaTime);
+    const float RotationAlpha = ExpAlpha(Smoothing.RotationLagSpeed, DeltaTime);
+    const float FOVAlpha = ExpAlpha(Smoothing.FOVLagSpeed, DeltaTime);
+    const float OrthoAlpha = ExpAlpha(Smoothing.OrthoWidthLagSpeed, DeltaTime);
+
+    CurrentView.Location = LerpVector(CurrentView.Location, DesiredView.Location, LocationAlpha);
+    CurrentView.Rotation = FQuat::Slerp(CurrentView.Rotation, DesiredView.Rotation, RotationAlpha);
+
+    FCameraState NewState = DesiredView.State;
+    NewState.FOV = LerpFloat(CurrentView.State.FOV, DesiredView.State.FOV, FOVAlpha);
+    NewState.OrthoWidth = LerpFloat(CurrentView.State.OrthoWidth, DesiredView.State.OrthoWidth, OrthoAlpha);
+    CurrentView.State = NewState;
+    CurrentView.PostProcess = DesiredView.PostProcess;   // 추가: smoothing 대상이 아닌 즉시 동기 필드
+    CurrentView.bValid = true;
+}
+```
+
+근거:
+- PostProcess 는 시간 보간(`bEnableSmoothing`)의 의미 단위가 아님. Vignette 의 부드러움은 셰이더 내부 `smoothstep` 으로 처리됨.
+- BlendViews 의 lerp 도 카메라 전환 자체에 종속된 보간이며, 단일 카메라 내 매 프레임 갱신과는 다른 의미.
+- 1줄 추가, 기존 동작 (Location/Rotation/State smoothing) 변경 없음. CLAUDE.md 의 "Surgical Changes" 원칙 준수.
+
+### 변경 2 — 선택 (사용자 승인 시): `Player.lua:1041-1044` dead code 제거
+
+```lua
+-- [추가] 렌더러가 사용하는 최신 카메라로 동기화 (UUID 불일치 해결)
+if IsValidHandle(Player.controller) and Player.controller.GetViewCamera ~= nil then
+    Player.camera = Player.controller:GetViewCamera()
+end
+```
+
+이 블록은 `GetViewCamera` 가 PlayerController Lua 바인딩에 존재하지 않아 항상 미실행. 사용자가 디버그 중 추가했으나 misleading 한 흔적이므로 정리 권장. **본 변경 1 만으로 버그는 해소됨** — 변경 2 는 cosmetic.
+
+### 변경 안 하는 것 (Explore 에이전트가 의심했지만 실제 문제 아님)
+
+- DrawCommandBuilder 의 `< 0.99f` 스킵 임계 — 정상적 최적화. VignetteIntensity 가 실제로 0.1 로 도달하면 통과함.
+- BlendViews 의 PostProcess lerp — 카메라 전환 시에만 동작, 본 버그와 무관.
+- `ApplyCameraView` 의 PostProcess 덮어쓰기 순서 — 이미 `ApplyCameraModifiers` 후에 호출되므로 정상.
+- ShowFlags / 셰이더 등록 / CB 슬롯 / RenderState — Fade 와 동일 경로 사용, 모두 검증됨.
+
+## Verification
+
+1. **빌드** — `KraftonEngine.vcxproj` 빌드 후 GameClient 실행.
+2. **기본 동작** — 게임 실행 후 평상시 화면에 Vignette 가 보이지 않음을 확인 (디폴트 `VignetteIntensity = 1.0`, `< 0.99` 조건 미충족 → 드로우콜 미발행).
+3. **사망 연출 — Phase 1 (Vignette)**:
+   - 차량과 충돌해 사망 트리거 발동.
+   - 0~0.5초 구간: 화면 가장자리에 검은 비네트가 점진적으로 짙어지는지 시각 확인.
+   - `[Renderer] Drawing Vignette. Intensity: 0.1X, Center: (X.XX, X.XX)` 로그가 1.0 이 아닌 보간된 값으로 찍히는지 확인 (DrawCommandBuilder.cpp:567).
+4. **사망 연출 — Phase 2 (Fade)**:
+   - 0.5~2.0초 구간: Vignette 가 유지되는 동안 Fade Out 이 위에 덮이며 화면이 검게 됨 (UserBits 5 → 6 정렬, `Fade` 가 `Vignette` 위로 합성).
+5. **Pawn 추적** — 사망 직전 Pawn 이 화면 중앙이 아닌 위치에 있을 때 Vignette 의 어두운 영역 중심이 Pawn 위치에서 멀어지는 방향으로 형성되는지 확인 (UpdateVignetteCenter 동작 검증).
+6. **회귀 — 카메라 블렌딩**: 다른 카메라로 전환 시 Vignette 값이 자연스럽게 lerp 되는지 확인 (BlendViews 경로는 변경 없음).
+7. **회귀 — Smoothing**: 일반 플레이 중 카메라 위치/회전 보간이 평소와 동일한지 (smoothing 보간 로직 자체는 무수정).

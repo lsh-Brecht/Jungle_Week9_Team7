@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include "Camera/CameraShakeModifier.h"
+#include "Camera/CameraVignetteModifier.h"
 
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
@@ -266,6 +267,7 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 		NewState.FOV = LerpFloat(CurrentView.State.FOV, DesiredView.State.FOV, FOVAlpha);
 		NewState.OrthoWidth = LerpFloat(CurrentView.State.OrthoWidth, DesiredView.State.OrthoWidth, OrthoAlpha);
 		CurrentView.State = NewState;
+		CurrentView.PostProcess = DesiredView.PostProcess;
 		CurrentView.bValid = true;
 	}
 	else
@@ -280,6 +282,22 @@ void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 	FCameraView FinalView = CurrentView;
 	ApplyCameraModifiers(RawDeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
+
+	// static uint32 ChainLogCounter = 0;
+	// if (ChainLogCounter++ % 30 == 0)
+	// {
+	// 	UE_LOG("[CameraMgr] Tgt=%u TgtPP=%.2f Desired=%.2f Current=%.2f Final=%.2f Blend=%d Smooth=%d Out=%u OutPP=%.2f",
+	// 		TargetCamera ? TargetCamera->GetUUID() : 0,
+	// 		TargetCamera ? TargetCamera->GetPostProcess().VignetteIntensity : -1.0f,
+	// 		DesiredView.PostProcess.VignetteIntensity,
+	// 		CurrentView.PostProcess.VignetteIntensity,
+	// 		FinalView.PostProcess.VignetteIntensity,
+	// 		bIsBlending ? 1 : 0,
+	// 		Smoothing.bEnableSmoothing ? 1 : 0,
+	// 		OutputCameraComponent ? OutputCameraComponent->GetUUID() : 0,
+	// 		OutputCameraComponent ? OutputCameraComponent->GetPostProcess().VignetteIntensity : -1.0f);
+	// }
+	//
 	UpdateVignetteCenter(TargetCamera);
 }
 
@@ -630,6 +648,7 @@ void APlayerCameraManager::ClearCameraModifiers()
 
 	ModifierList.clear();
 	FadeModifier = nullptr;
+	VignetteModifier = nullptr;
 }
 
 UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
@@ -648,10 +667,32 @@ UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
 	return FadeModifier;
 }
 
+UVignetteModifier* APlayerCameraManager::EnsureVignetteModifier()
+{
+	if (VignetteModifier && IsAliveObject(VignetteModifier)
+		&& std::find(ModifierList.begin(), ModifierList.end(), VignetteModifier) != ModifierList.end())
+	{
+		return VignetteModifier;
+	}
+
+	VignetteModifier = UObjectManager::Get().CreateObject<UVignetteModifier>(this);
+	if (VignetteModifier)
+	{
+		// Vignette는 보통 Fade보다 아래에 위치하도록 우선순위 조정 (낮을수록 나중에 적용되나 현재 sort 로직 확인 필요)
+		// 현재 SortCameraModifiers는 PriorityA > PriorityB 순으로 정렬 (큰 값이 먼저 적용됨)
+		// 렌더링 순서상 Fade가 마지막에 덮어야 하므로, Fade의 우선순위가 더 낮아야 함 (작은 값이 뒤에 옴)
+		// 하지만 modifier chain은 누적 방식이므로 나중에 적용되는 것이 덮어씀.
+		VignetteModifier->SetPriority(64);
+		AddCameraModifier(VignetteModifier);
+	}
+	return VignetteModifier;
+}
+
 void APlayerCameraManager::StartFadeIn(float Duration, float TargetAlpha, const FVector& Color)
 {
 	if (UCameraFadeModifier* Mod = EnsureFadeModifier())
 	{
+		Mod->SetPriority(128); // Fade가 더 나중에 적용되어 Vignette를 덮도록 높은 우선순위 (수정: chain 순서 확인)
 		Mod->StartFadeIn(Duration, TargetAlpha, Color);
 	}
 }
@@ -664,7 +705,24 @@ void APlayerCameraManager::StartFadeOut(float Duration)
 	}
 }
 
-void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView& InOutView)
+void APlayerCameraManager::StartVignette(float Intensity, const FVector& Color, float Duration, float Smoothness)
+{
+	if (UVignetteModifier* Mod = EnsureVignetteModifier())
+	{
+		Mod->StartVignette(Intensity, Color, Duration, Smoothness);
+	}
+}
+
+void APlayerCameraManager::StopVignette(float Duration)
+{
+	if (VignetteModifier && IsAliveObject(VignetteModifier))
+	{
+		VignetteModifier->StopVignette(Duration);
+	}
+}
+
+
+void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
 {
 	if (!InOutView.bValid || ModifierList.empty())
 	{
@@ -682,7 +740,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float RawDeltaTime, FCameraView&
 			continue;
 		}
 
-		const bool bContinueChain = Modifier->UpdateCameraModifier(RawDeltaTime, InOutView);
+		const bool bContinueChain = Modifier->UpdateCameraModifier(DeltaTime, InOutView);
 		if (!bContinueChain)
 		{
 			break;

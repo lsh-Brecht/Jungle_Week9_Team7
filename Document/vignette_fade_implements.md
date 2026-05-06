@@ -94,7 +94,7 @@
 7.  **`Render/Command/DrawCommandBuilder.cpp`**: Phase 1 하드코딩 디폴트 제거. Vignette/Fade CB 채울 때 `Frame.PostProcess.*` 사용.
 8.  **`KraftonEngine.vcxproj`**: `CameraFadeModifier.{h,cpp}` 등록.
 
-### Phase 3: Lua Script 바인딩 (Scripting)
+### Phase 3: Lua Script 바인딩 (Scripting) (C++ & HLSL) — 완료 (2026-05-06)
 1.  **속성 노출**:
     - `CameraComponent`에 `VignetteIntensity`, `VignetteColor` 속성 바인딩.
 2.  **함수 바인딩**:

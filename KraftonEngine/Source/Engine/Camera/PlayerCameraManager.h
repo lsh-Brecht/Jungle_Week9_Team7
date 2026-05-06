@@ -14,6 +14,7 @@ class UCameraModifier;
 class UCameraShakeModifier;
 struct FCameraShakeParams;
 class UCameraFadeModifier;
+class UVignetteModifier;
 
 struct FViewTarget
 {
@@ -60,6 +61,9 @@ public:
 	void StartFadeIn(float Duration, float TargetAlpha, const FVector& Color);
 	void StartFadeOut(float Duration);
 
+	void StartVignette(float Intensity, const FVector& Color, float Duration, float Smoothness = 0.5f);
+	void StopVignette(float Duration);
+
 	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap);
 	void ClearCameraReferencesForActor(const AActor* Actor);
 	void ClearCameraReferencesForComponent(const UActorComponent* Component);
@@ -82,6 +86,7 @@ private:
 	void CleanupCameraModifiers();
 	void SortCameraModifiers();
 	UCameraFadeModifier* EnsureFadeModifier();
+	UVignetteModifier* EnsureVignetteModifier();
 
 	// Pawn(SubjectActor) 월드 좌표를 OutputCamera의 ViewProjection으로 투영해 PostProcess.VignetteCenter를 UV로 갱신.
 	// Subject가 없거나 화면 밖이면 (0.5, 0.5)로 폴백.
@@ -106,6 +111,7 @@ private:
 
 	TArray<UCameraModifier*> ModifierList;
 	UCameraFadeModifier* FadeModifier = nullptr;
+	UVignetteModifier* VignetteModifier = nullptr;
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;

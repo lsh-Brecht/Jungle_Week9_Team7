@@ -345,6 +345,7 @@
     <ClCompile Include="Source\Engine\Camera\CameraFadeModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\CameraShakeModifier.cpp" />
+    <ClCompile Include="Source\Engine\Camera\CameraVignetteModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp" />
     <ClCompile Include="Source\Engine\Collision\MeshTriangleBVH.cpp" />
@@ -598,6 +599,7 @@
     <ClInclude Include="Source\Engine\Camera\CameraModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraShakeModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
+    <ClInclude Include="Source\Engine\Camera\CameraVignetteModifier.h" />
     <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
     <ClInclude Include="Source\Engine\Collision\DynamicAABBTree.h" />

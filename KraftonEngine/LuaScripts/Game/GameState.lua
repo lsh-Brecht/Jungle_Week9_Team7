@@ -14,7 +14,7 @@ local DEFAULT_CONFIG = {
     StartButtonName = "StartButton",
     RestartButtonName = "RestartButton",
     DefeatY = -1000.0,
-    GameOverLocation = Vec(0.0, 0.501545, -2000.0),
+    GameOverLocation = Vec(0.0, 0.0, -1000.0),
     StartLocation = nil,
 
     -- X축으로 ScoreUnit만큼 전진할 때마다 1점
@@ -573,7 +573,7 @@ function State.ResetToIntro()
         end
 
         if Game.UI.ShowIntro ~= nil then
-            Game.UI.ShowIntro(true)
+            Game.UI.ShowIntro(false) -- Wait for cinematic
         end
 
         if Game.UI.HideGameOver ~= nil then
@@ -651,7 +651,7 @@ function State.StartGame(reason)
 
     local player = State.GetPlayer()
     if is_valid(player) and State.Config.StartLocation ~= nil then
-        player.Location = FVector.new(0.0, 0.501545, -0.251383)
+        player.Location = FVector.new(0.0, 0.0, -0.25)
     end
 
     if is_valid(player) then
@@ -691,7 +691,7 @@ function State.ReturnToStartScreen(reason)
 
     local player = State.GetPlayer()
     if is_valid(player) and State.Config.StartLocation ~= nil then
-        player.Location = FVector.new(0.0, 0.501545, -0.251383) 
+        player.Location = FVector.new(0.0, 0.0, -0.25) 
     end
 
     State.SetPlayerMovementEnabled(false)
@@ -769,9 +769,6 @@ function State.GameOver(reason)
     State.Mode = "GameOver"
 
     local player = State.GetPlayer()
-    if is_valid(player) and State.Config.GameOverLocation ~= nil then
-        player.Location = clone_vector(State.Config.GameOverLocation)
-    end
 
     State.SetPlayerMovementEnabled(false)
     State.SetMenuObjectsVisible(true)
@@ -872,7 +869,7 @@ function State.Tick(deltaTime)
         end
 
         if Game.UI.ShowIntro ~= nil then
-            Game.UI.ShowIntro(State.Mode ~= "Playing")
+            Game.UI.ShowIntro(false) -- Wait for cinematic to show it
         end
 
         if Game.UI.HideGameOver ~= nil and State.Mode ~= "GameOver" then

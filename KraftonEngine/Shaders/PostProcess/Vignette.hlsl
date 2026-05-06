@@ -3,6 +3,8 @@
 // PostProcess 패스의 AlphaBlend 합성에 의해 SceneColor 위에 가장자리 색상이 lerp 됨.
 
 #include "Common/Functions.hlsli"
+#include "Common/VertexLayouts.hlsli"
+#include "Common/SystemSamplers.hlsli"
 
 // b2 (PerShader0): Vignette parameters
 cbuffer VignetteBuffer : register(b2)
@@ -22,6 +24,10 @@ PS_Input_UV VS(uint vertexID : SV_VertexID)
 float4 PS(PS_Input_UV input) : SV_TARGET
 {
     float dist = length(input.uv - VignetteCenter);
+    
+    // Intensity가 작을수록 마스크가 넓어짐 (중심에서 가까운 곳부터 1.0이 됨)
     float mask = smoothstep(VignetteIntensity, VignetteIntensity + VignetteSmoothness, dist);
-    return float4(VignetteColor, mask);
+    
+    // mask 0 = 배경, mask 1 = VignetteColor
+    return float4(float3(165, 42, 42), mask);
 }

@@ -452,6 +452,11 @@ void RegisterCameraComponentBinding(sol::state& Lua)
 					UE_LOG("[Lua] Invalid CameraComponent.VignetteIntensity Access.");
 					return;
 				}
+				static uint32 LuaSetCounter = 0;
+				if (LuaSetCounter++ % 30 == 0)
+				{
+					UE_LOG("[Lua->Cam] UUID=%u VignetteIntensity := %.2f", C->GetUUID(), Value);
+				}
 				C->GetMutablePostProcess().VignetteIntensity = Value;
 			}
 		),

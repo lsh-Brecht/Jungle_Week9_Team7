@@ -23,6 +23,7 @@ class FGPUOcclusionCulling;
 struct FFrameContext
 {
 	// Camera
+	uint32  CameraUUID = 0;
 	FMatrix View;
 	FMatrix Proj;
 	FVector CameraPosition;
