@@ -70,7 +70,8 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
-	UE_LOG("[CameraManager] Initialize");
+	//UE_LOG("[CameraManager] Initialize");
+	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
@@ -174,6 +175,14 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	//if (!bDebugModifierAdded)
+	//{
+	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//	AddCameraModifier(TestModifier);
+	//	bDebugModifierAdded = true;
+
+	//	UE_LOG("[CameraManager] Debug modifier added");
+	//}
 
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
@@ -186,6 +195,11 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 		return;
 	}
 
+	//테스트
+	//UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//AddCameraModifier(TestModifier);
+
+	//UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -634,6 +648,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 	CleanupCameraModifiers();
 	SortCameraModifiers();
 
+	//여기서 순회하면서 modifier 적용
 	for (UCameraModifier* Modifier : ModifierList)
 	{
 		if (!Modifier || !IsAliveObject(Modifier))

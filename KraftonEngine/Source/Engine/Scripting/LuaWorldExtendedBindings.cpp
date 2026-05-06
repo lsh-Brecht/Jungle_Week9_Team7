@@ -282,6 +282,23 @@ void RegisterWorldExtendedBinding(sol::state& Lua)
 			return Result;
 		});
 
+	// Time Manager
+	World.set_function("SetGlobalTimeDilation", [](float Scale) { if (GEngine) GEngine->GetTimeManager().SetGlobalTimeDilation(Scale); });
+	World.set_function("GetGlobalTimeDilation", []() -> float { return GEngine ? GEngine->GetTimeManager().GetGlobalTimeDilation() : 1.0f; });
+	
+	World.set_function("StartHitStop", [](float Duration) { if (GEngine) GEngine->GetTimeManager().StartHitStop(Duration); });
+	World.set_function("StopHitStop", []() { if (GEngine) GEngine->GetTimeManager().StopHitStop(); });
+	World.set_function("IsHitStopActive", []() -> bool { return GEngine ? GEngine->GetTimeManager().IsHitStopActive() : false; });
+	
+	World.set_function("StartSlomo", [](float Scale, float Duration) { if (GEngine) GEngine->GetTimeManager().StartSlomo(Scale, Duration); });
+	World.set_function("StopSlomo", []() { if (GEngine) GEngine->GetTimeManager().StopSlomo(); });
+	World.set_function("IsSlomoActive", []() -> bool { return GEngine ? GEngine->GetTimeManager().IsSlomoActive() : false; });
+	
+	World.set_function("GetRawDeltaTime", []() -> float { return GEngine ? GEngine->GetTimeManager().GetRawDeltaTime() : 0.0f; });
+	World.set_function("GetGameDeltaTime", []() -> float { return GEngine ? GEngine->GetTimeManager().GetGameDeltaTime() : 0.0f; });
+	World.set_function("GetGameTime", []() -> float { return GEngine ? GEngine->GetTimeManager().GetGameTime() : 0.0f; });
+	World.set_function("GetUnscaledTime", []() -> float { return GEngine ? GEngine->GetTimeManager().GetUnscaledTime() : 0.0f; });
+
 	// Game 테이블
 	sol::table Game = Lua.get_or("Game", Lua.create_table());
 	Lua["Game"] = Game;
