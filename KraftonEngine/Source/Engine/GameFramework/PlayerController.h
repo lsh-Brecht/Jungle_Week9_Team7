@@ -11,6 +11,7 @@ class FArchive;
 class UActorComponent;
 class UCameraComponent;
 class UControllerInputComponent;
+class APlayerCameraManager;
 struct FControllerMovementInput;
 
 class APlayerController : public AActor
@@ -19,7 +20,7 @@ public:
 	DECLARE_CLASS(APlayerController, AActor)
 
 	APlayerController() = default;
-	~APlayerController() override = default;
+	~APlayerController() override;
 
 	void Serialize(FArchive& Ar) override;
 	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap) override;
@@ -42,8 +43,9 @@ public:
 	void ClearCameraReferencesForComponent(const UActorComponent* Component);
 
 	UControllerInputComponent* FindControllerInputComponent() const;
-	FPlayerCameraManager& GetCameraManager() { return CameraManager; }
-	const FPlayerCameraManager& GetCameraManager() const { return CameraManager; }
+	APlayerCameraManager& GetCameraManager();
+	const APlayerCameraManager& GetCameraManager() const;
+	APlayerCameraManager* GetCameraManagerPtr() const;
 
 	FRotator GetControlRotation() const { return ControlRotation; }
 	void SetControlRotation(const FRotator& InRotation);
@@ -56,9 +58,12 @@ private:
 	UCameraComponent* FindCameraOnActor(AActor* Target) const;
 	AActor* ResolveActorUUID(uint32 ActorUUID) const;
 
+	APlayerCameraManager* EnsureCameraManager();
+	void DestroyCameraManager();
+
 private:
 	AActor* PossessedActor = nullptr;
 	uint32 PossessedActorUUID = 0;
 	FRotator ControlRotation;
-	FPlayerCameraManager CameraManager;
+	APlayerCameraManager* CameraManager = nullptr;
 };

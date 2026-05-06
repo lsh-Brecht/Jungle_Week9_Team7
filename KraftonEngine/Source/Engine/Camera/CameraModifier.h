@@ -3,20 +3,24 @@
 #include "Object/Object.h"
 #include "Camera/CameraTypes.h"
 
-class FPlayerCameraManager;
+class APlayerCameraManager;
 
 class UCameraModifier : public UObject
 {
 public:
 	DECLARE_CLASS(UCameraModifier, UObject)
 	UCameraModifier() = default;
-	~UCameraModifier() = default;
+	~UCameraModifier() override = default;
 
-	void Initialize(FPlayerCameraManager* Owner);
+	void Initialize(APlayerCameraManager* Owner);
+	virtual void OnAddedToCameraManager() {}
+	virtual void OnRemovedFromCameraManager() {}
 
 	//per frame, update alpha, call modifyCamera
 	//비활성화를 반영해주며 alpha 값에 따라 ModifyCamera 를 호출함
 	bool UpdateCameraModifier(float DeltaTime, FCameraView& InOutView);
+	
+	//나중에 필요시 virtual 로 전환해 UCameraShakeModifier, UFOVKickModifier 구현
 	bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
 
 	//D
@@ -43,7 +47,7 @@ public:
 	bool IsShouldDestroy() const { return IsPendingRemove() && Alpha <= 0.0f; }
 
 public:
-	FPlayerCameraManager* CameraOwner = nullptr;
+	APlayerCameraManager* CameraOwner = nullptr;
 	float Alpha = 0.0f;
 	float AlphaInTime = 0.0f;	//alpha 값이 올라가는 시간
 	float AlphaOutTime = 0.0f;	//alpha 값이 내려가는 시간

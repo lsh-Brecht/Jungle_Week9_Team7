@@ -1,4 +1,4 @@
-#include "GameFramework/World.h"
+﻿#include "GameFramework/World.h"
 #include "Object/ObjectFactory.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
@@ -16,6 +16,7 @@
 #include "Object/Object.h"
 #include <algorithm>
 #include "Profiling/Stats.h"
+#include "Camera/PlayerCameraManager.h"
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -495,7 +496,7 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 			continue;
 		}
 
-		FPlayerCameraManager& Manager = Controller->GetCameraManager();
+		APlayerCameraManager& Manager = Controller->GetCameraManager();
 		Manager.UpdateCamera(DeltaTime);
 
 		if (bCanDriveWorldView)

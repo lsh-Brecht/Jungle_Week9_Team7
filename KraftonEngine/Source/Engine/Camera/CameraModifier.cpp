@@ -1,9 +1,10 @@
-﻿#include "CameraModifier.h"
-#include "Math/MathUtils.h"
+﻿#include "Math/MathUtils.h"
+#include "Camera/CameraModifier.h"
 #include "Camera/PlayerCameraManager.h"
-//class FPlayerCameraManager;
+//class APlayerCameraManager;
+IMPLEMENT_CLASS(UCameraModifier, UObject)
 
-void UCameraModifier::Initialize(FPlayerCameraManager* Owner)
+void UCameraModifier::Initialize(APlayerCameraManager* Owner)
 {
 	CameraOwner = Owner;
 }
@@ -45,9 +46,6 @@ bool UCameraModifier::UpdateCameraModifier(float DeltaTime, FCameraView& InOutVi
 
 bool UCameraModifier::ModifyCamera(float DeltaTime, FCameraView& InOutView)
 {
-	(void)DeltaTime;
-	(void)InOutView;
-
 	return true;
 }
 
