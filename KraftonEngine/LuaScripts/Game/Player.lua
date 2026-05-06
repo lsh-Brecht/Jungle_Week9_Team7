@@ -40,7 +40,6 @@ local CONFIG = {
     },
 
     HopMovement = {
-        ReceiveControllerInput = false,
         InitialSpeed = 8.0,
         MaxSpeed = 18.0,
         HopCoefficient = 1.0,
@@ -471,7 +470,7 @@ local function SetupPawnMovementComponents()
         SafeSetProperty(hopGeneric, "Auto Register Updated", true)
         SafeSetProperty(hopGeneric, "Updated Component", CONFIG.HopMovement.UpdatedComponent)
         SafeSetProperty(hopGeneric, "Visual Hop Component", CONFIG.HopMovement.VisualHopComponent)
-        SafeSetProperty(hopGeneric, "Receive Controller Input", CONFIG.HopMovement.ReceiveControllerInput)
+        SafeSetProperty(hopGeneric, "Receive Controller Input", true)
         SafeSetProperty(hopGeneric, "Controller Input Priority", CONFIG.HopMovement.ControllerInputPriority)
     end
 
