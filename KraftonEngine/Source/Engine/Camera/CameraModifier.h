@@ -19,8 +19,8 @@ public:
 	//per frame, update alpha, call modifyCamera
 	//비활성화를 반영해주며 alpha 값에 따라 ModifyCamera 를 호출함
 	bool UpdateCameraModifier(float DeltaTime, FCameraView& InOutView);
-	
-	//여기서 다형성으로 효과 만들기
+
+	// 파생 클래스(UCameraFadeModifier 등)가 InOutView를 변형. 반환값은 chain 계속 여부 (true=다음 modifier 적용).
 	virtual bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
 
 	void EnableModifier();

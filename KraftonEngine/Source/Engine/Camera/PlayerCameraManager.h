@@ -13,6 +13,7 @@ class UCameraComponent;
 class UCameraModifier;
 class UCameraShakeModifier;
 struct FCameraShakeParams;
+class UCameraFadeModifier;
 
 struct FViewTarget
 {
@@ -56,6 +57,9 @@ public:
 	void ClearCameraModifiers();
 	const TArray<UCameraModifier*>& GetCameraModifiers() const { return ModifierList; }
 
+	void StartFadeIn(float Duration, float TargetAlpha, const FVector& Color);
+	void StartFadeOut(float Duration);
+
 	void RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap);
 	void ClearCameraReferencesForActor(const AActor* Actor);
 	void ClearCameraReferencesForComponent(const UActorComponent* Component);
@@ -77,16 +81,14 @@ private:
 	void ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView);
 	void CleanupCameraModifiers();
 	void SortCameraModifiers();
+	UCameraFadeModifier* EnsureFadeModifier();
+
+	// Pawn(SubjectActor) 월드 좌표를 OutputCamera의 ViewProjection으로 투영해 PostProcess.VignetteCenter를 UV로 갱신.
+	// Subject가 없거나 화면 밖이면 (0.5, 0.5)로 폴백.
+	void UpdateVignetteCenter(UCameraComponent* TargetCamera);
 
 private:
 	APlayerController* OwnerController = nullptr;
-
-	// Skeleton 요구사항 쪽
-	FColor FadeColor = FColor::Black();
-	float FadeAmount = 0.0f;
-	FVector2 FadeAlpha = FVector2(0.0f, 0.0f);
-	float FadeTime = 0.0f;
-	float FadeTimeRemaining = 0.0f;
 
 	FName CameraStyle;
 	FViewTarget ViewTarget;
@@ -103,6 +105,7 @@ private:
 	FCameraView BlendFromView;
 
 	TArray<UCameraModifier*> ModifierList;
+	UCameraFadeModifier* FadeModifier = nullptr;
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;

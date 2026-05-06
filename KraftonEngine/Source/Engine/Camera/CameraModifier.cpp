@@ -2,6 +2,7 @@
 #include "Camera/CameraModifier.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Core/Log.h"
+
 //class APlayerCameraManager;
 IMPLEMENT_CLASS(UCameraModifier, UObject)
 

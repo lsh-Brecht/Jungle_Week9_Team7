@@ -6,6 +6,7 @@
 // Lua에 함수를 바인딩함
 void RegisterLuaBindings(sol::state& Lua)
 {
+	RegisterFVector2Binding(Lua);
 	RegisterFVectorBinding(Lua);
 	RegisterFVector4Binding(Lua);
 	RegisterFRotatorBinding(Lua);
