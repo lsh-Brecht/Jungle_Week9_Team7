@@ -21,7 +21,7 @@ public:
 	bool UpdateCameraModifier(float DeltaTime, FCameraView& InOutView);
 	
 	//나중에 필요시 virtual 로 전환해 UCameraShakeModifier, UFOVKickModifier 구현
-	bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
+	virtual bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
 
 	//D
 	void EnableModifier();

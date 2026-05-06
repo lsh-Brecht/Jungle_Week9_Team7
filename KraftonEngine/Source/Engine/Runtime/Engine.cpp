@@ -118,12 +118,16 @@ void UEngine::BeginPlay()
 
 void UEngine::Tick(float DeltaTime)
 {
+	const float RawDeltaTime = DeltaTime;
+	TimeManager.Update(RawDeltaTime);
+	const float GameDeltaTime = TimeManager.GetGameDeltaTime();
+
 	FDirectoryWatcher::Get().ProcessChanges();
-	FNotificationManager::Get().Tick(DeltaTime);
+	FNotificationManager::Get().Tick(RawDeltaTime);
 	InputSystem::Get().Tick();
-	TaskScheduler.Tick(DeltaTime);
-	WorldTick(DeltaTime);
-	Render(DeltaTime);
+	TaskScheduler.Tick(RawDeltaTime);
+	WorldTick(GameDeltaTime);
+	Render(RawDeltaTime);
 }
 
 void UEngine::Render(float DeltaTime)

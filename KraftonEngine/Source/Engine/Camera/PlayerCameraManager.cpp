@@ -614,6 +614,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 	CleanupCameraModifiers();
 	SortCameraModifiers();
 
+	//여기서 순회하면서 modifier 적용
 	for (UCameraModifier* Modifier : ModifierList)
 	{
 		if (!Modifier || !IsAliveObject(Modifier))
