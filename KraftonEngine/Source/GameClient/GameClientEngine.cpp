@@ -1,4 +1,4 @@
-#include "GameClient/GameClientEngine.h"
+﻿#include "GameClient/GameClientEngine.h"
 
 #include "GameClient/GameClientRenderPipeline.h"
 #include "GameClient/GameClientPackageValidator.h"
@@ -133,7 +133,8 @@ void UGameClientEngine::Tick(float DeltaTime)
 
 	if (!bPauseMenuOpen)
 	{
-		TickInGame(DeltaTime);
+		const float GameDeltaTime = GetTimeManager().GetGameDeltaTime();
+		TickInGame(GameDeltaTime, RawDeltaTime);
 	}
 
 	Render(DeltaTime);

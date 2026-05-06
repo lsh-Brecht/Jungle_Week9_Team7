@@ -167,7 +167,14 @@ local Player = {
     
     -- 카메라 전환 직후 마우스 델타 튐 방지용
     cameraSwitchGuardTime = 0.0,
-    dropMouseDeltaFrames = 0
+    dropMouseDeltaFrames = 0,
+
+    -- 사망 연출 상태
+    isDeadTriggered = false,
+    deathTimer = 0.0,
+
+    -- [테스트] 카메라 셰이크 쿨다운
+    cameraShakeCooldown = 0.0
 }
 
 local function Log(msg)
@@ -966,11 +973,28 @@ function OnOverlap(otherActor)
         end
     end
 
-    Log("[COLLISION] Vehicle overlap -> GameOver")
-    if State.GameOver ~= nil then
-        State.GameOver("Hit by vehicle")
-    elseif Game ~= nil and Game.DispatchEvent ~= nil then
-        Game.DispatchEvent("Defeat", otherActor)
+    -- 사망 연출 시작
+    Player.isDeadTriggered = true
+    Player.deathTimer = 1.5
+    Log("[COLLISION] Vehicle overlap -> Death Sequence Start")
+
+    -- [테스트] 사망 시 강한 CameraShake 적용
+    if Player.cameraShakeCooldown <= 0.0 then
+        if IsValidHandle(Player.controller) and Player.controller.StartCameraShake ~= nil then
+            Player.controller:StartCameraShake(0.4, 0.15, 2.0, 30.0)
+        end
+        Player.cameraShakeCooldown = 0.25
+    end
+
+    if IsValidHandle(Player.controller) then
+        -- 1. 전역 Fade Out 시작 (1.5초 동안 검은색으로)
+        Player.controller:StartFadeIn(1.5, 1.0, Vec(0, 0, 0))
+        
+        -- 2. 활성화된 카메라의 Vignette 강도 높이기
+        if IsValidHandle(Player.camera) then
+            Player.camera.VignetteIntensity = 0.4
+            Player.camera.VignetteColor = Vec(0.5, 0, 0) -- 피격 느낌을 위한 붉은색
+        end
     end
 end
 

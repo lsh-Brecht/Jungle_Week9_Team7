@@ -1,4 +1,4 @@
-#include "Camera/PlayerCameraManager.h"
+﻿#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraModifier.h"
 #include "Component/CameraComponent.h"
@@ -173,7 +173,7 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 	return HasValidOutputCamera() ? OutputCameraComponent : nullptr;
 }
 
-void APlayerCameraManager::UpdateCamera(float DeltaTime)
+void APlayerCameraManager::UpdateCamera(float GameDeltaTime, float RawDeltaTime)
 {
 	//if (!bDebugModifierAdded)
 	//{
@@ -226,7 +226,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 	}
 
 	FCameraView DesiredView;
-	if (!TargetCamera->CalcCameraView(OwnerController, DeltaTime, DesiredView))
+	if (!TargetCamera->CalcCameraView(OwnerController, GameDeltaTime, DesiredView))
 	{
 		return;
 	}
@@ -240,7 +240,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 		ViewTarget.POV = CurrentView;
 
 		FCameraView FinalView = CurrentView;
-		ApplyCameraModifiers(DeltaTime, FinalView);
+		ApplyCameraModifiers(RawDeltaTime, FinalView);
 		OutputCameraComponent->ApplyCameraView(FinalView);
 
 		return;
@@ -251,7 +251,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 
 	if (bIsBlending)
 	{
-		BlendElapsedTime += DeltaTime;
+		BlendElapsedTime += GameDeltaTime;
 		const float Duration = Transition.BlendTime;
 		const float RawAlpha = Duration > 0.0f ? Clamp(BlendElapsedTime / Duration, 0.0f, 1.0f) : 1.0f;
 		const float Alpha = EvaluateBlendAlpha(RawAlpha, Transition.Function);
@@ -269,10 +269,10 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 	}
 	else if (Smoothing.bEnableSmoothing)
 	{
-		const float LocationAlpha = ExpAlpha(Smoothing.LocationLagSpeed, DeltaTime);
-		const float RotationAlpha = ExpAlpha(Smoothing.RotationLagSpeed, DeltaTime);
-		const float FOVAlpha = ExpAlpha(Smoothing.FOVLagSpeed, DeltaTime);
-		const float OrthoAlpha = ExpAlpha(Smoothing.OrthoWidthLagSpeed, DeltaTime);
+		const float LocationAlpha = ExpAlpha(Smoothing.LocationLagSpeed, GameDeltaTime);
+		const float RotationAlpha = ExpAlpha(Smoothing.RotationLagSpeed, GameDeltaTime);
+		const float FOVAlpha = ExpAlpha(Smoothing.FOVLagSpeed, GameDeltaTime);
+		const float OrthoAlpha = ExpAlpha(Smoothing.OrthoWidthLagSpeed, GameDeltaTime);
 
 		CurrentView.Location = LerpVector(CurrentView.Location, DesiredView.Location, LocationAlpha);
 		CurrentView.Rotation = FQuat::Slerp(CurrentView.Rotation, DesiredView.Rotation, RotationAlpha);
@@ -293,7 +293,7 @@ void APlayerCameraManager::UpdateCamera(float DeltaTime)
 	ViewTarget.POV = CurrentView;
 
 	FCameraView FinalView = CurrentView;
-	ApplyCameraModifiers(DeltaTime, FinalView);
+	ApplyCameraModifiers(RawDeltaTime, FinalView);
 	OutputCameraComponent->ApplyCameraView(FinalView);
 }
 
@@ -704,4 +704,35 @@ void APlayerCameraManager::SortCameraModifiers()
 			return PriorityA > PriorityB;
 		}
 	);
+}
+
+void APlayerCameraManager::UpdateVignetteCenter(UCameraComponent* TargetCamera)
+{
+	if (!OutputCameraComponent || !TargetCamera)
+	{
+		return;
+	}
+
+	FCameraPostProcess& PP = OutputCameraComponent->GetMutablePostProcess();
+
+	AActor* Subject = TargetCamera->GetSubjectActor(OwnerController);
+	if (!Subject || !IsAliveObject(Subject))
+	{
+		PP.VignetteCenter = FVector2(0.5f, 0.5f);
+		return;
+	}
+
+	const FMatrix VP = OutputCameraComponent->GetViewProjectionMatrix();
+	const FVector NDC = VP.TransformPositionWithW(Subject->GetActorLocation());
+
+	// D3D Reverse-Z: NDC.Z 범위는 [0, 1] (1=near, 0=far). 카메라 뒤면 W 부호 반전으로 NDC가 깨짐.
+	if (NDC.Z < 0.0f || NDC.Z > 1.0f || NDC.X < -1.0f || NDC.X > 1.0f || NDC.Y < -1.0f || NDC.Y > 1.0f)
+	{
+		PP.VignetteCenter = FVector2(0.5f, 0.5f);
+		return;
+	}
+
+	const float U = NDC.X * 0.5f + 0.5f;
+	const float V = -NDC.Y * 0.5f + 0.5f;
+	PP.VignetteCenter = FVector2(U, V);
 }

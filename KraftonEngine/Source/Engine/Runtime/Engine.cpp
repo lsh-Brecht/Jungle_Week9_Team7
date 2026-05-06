@@ -1,4 +1,4 @@
-#include "Engine/Runtime/Engine.h"
+﻿#include "Engine/Runtime/Engine.h"
 
 #include "Platform/Paths.h"
 #include "Core/Log.h"
@@ -168,7 +168,7 @@ void UEngine::OnWindowResized(uint32 Width, uint32 Height)
 	Renderer.ResetRenderStateCache();
 }
 
-void UEngine::WorldTick(float DeltaTime)
+void UEngine::WorldTick(float GameDeltaTime, float RawDeltaTime)
 {
 	SCOPE_STAT_CAT("UEngine::WorldTick", "1_WorldTick");
 
@@ -202,7 +202,7 @@ void UEngine::WorldTick(float DeltaTime)
 		const ELevelTick TickType = ToLevelTickType(Ctx.WorldType);
 
 		// 월드 단위 업데이트 (FlushPrimitive / VisibleProxies / DebugDraw /s TickManager)
-		World->Tick(DeltaTime, TickType);
+		World->Tick(GameDeltaTime, RawDeltaTime, TickType);
 	}
 }
 
