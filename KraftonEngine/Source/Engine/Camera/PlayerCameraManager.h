@@ -75,15 +75,12 @@ private:
 	void CleanupCameraModifiers();
 	void SortCameraModifiers();
 
+	// Pawn(SubjectActor) 월드 좌표를 OutputCamera의 ViewProjection으로 투영해 PostProcess.VignetteCenter를 UV로 갱신.
+	// Subject가 없거나 화면 밖이면 (0.5, 0.5)로 폴백.
+	void UpdateVignetteCenter(UCameraComponent* TargetCamera);
+
 private:
 	APlayerController* OwnerController = nullptr;
-
-	// Skeleton 요구사항 쪽
-	FColor FadeColor = FColor::Black();
-	float FadeAmount = 0.0f;
-	FVector2 FadeAlpha = FVector2(0.0f, 0.0f);
-	float FadeTime = 0.0f;
-	float FadeTimeRemaining = 0.0f;
 
 	FName CameraStyle;
 	FViewTarget ViewTarget;
@@ -103,8 +100,4 @@ private:
 
 	float BlendElapsedTime = 0.0f;
 	bool bIsBlending = false;
-	
-	
-	//테스트
-	bool bDebugModifierAdded = false;
 };

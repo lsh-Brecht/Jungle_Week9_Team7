@@ -547,17 +547,17 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 		}
 	}
 
-	// Vignette (UserBits=5 → LightCulling 뒤, FadeBefore)
+	// Vignette (UserBits=5 → LightCulling 뒤, Fade 앞)
 	if (Frame.RenderOptions.ShowFlags.bVignette)
 	{
 		FShader* VignetteShader = FShaderManager::Get().GetOrCreate(EShaderPath::Vignette);
 		if (VignetteShader)
 		{
 			FVignettePostProcessConstants VignetteData = {};
-			VignetteData.VignetteCenter     = FVector2(0.0f, 0.0f);  // Phase 2에서 Pawn 스크린 UV로 갱신
-			VignetteData.VignetteIntensity  = 0.5f;                  // 검증용 임시 디폴트
-			VignetteData.VignetteSmoothness = 0.5f;
-			VignetteData.VignetteColor      = FVector(0.0f, 0.0f, 0.0f);
+			VignetteData.VignetteCenter     = Frame.PostProcess.VignetteCenter;
+			VignetteData.VignetteIntensity  = Frame.PostProcess.VignetteIntensity;
+			VignetteData.VignetteSmoothness = Frame.PostProcess.VignetteSmoothness;
+			VignetteData.VignetteColor      = Frame.PostProcess.VignetteColor;
 			VignetteCB.Update(Ctx, &VignetteData, sizeof(FVignettePostProcessConstants));
 
 			FDrawCommand& Cmd = DrawCommandList.AddCommand();
@@ -574,8 +574,8 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 		if (FadeShader)
 		{
 			FFadePostProcessConstants FadeData = {};
-			FadeData.FadeColor = FVector(0.0f, 0.0f, 0.0f);
-			FadeData.FadeAlpha = 0.0f;  // 디폴트 Off, Phase 2에서 모디파이어로 보간
+			FadeData.FadeColor = Frame.PostProcess.FadeColor;
+			FadeData.FadeAlpha = Frame.PostProcess.FadeAlpha;
 			FadeCB.Update(Ctx, &FadeData, sizeof(FFadePostProcessConstants));
 
 			FDrawCommand& Cmd = DrawCommandList.AddCommand();
