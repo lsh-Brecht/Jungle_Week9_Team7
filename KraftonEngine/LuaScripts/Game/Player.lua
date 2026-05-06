@@ -994,8 +994,13 @@ function OnOverlap(otherActor)
 
     -- 사망 연출 시작
     Player.isDeadTriggered = true
-    Player.deathTimer = 1.5
+    Player.deathTimer = 3.5
     Log("[COLLISION] Vehicle overlap -> Death Sequence Start")
+
+    -- 사망 시 슬로모션 효과 (배율 0.2, 지속시간 3.0초)
+    if World ~= nil and World.StartSlomo ~= nil then
+        World.StartSlomo(0.2, 3.0)
+    end
 
     -- [테스트] 사망 시 강한 CameraShake 적용
     if Player.cameraShakeCooldown <= 0.0 then
