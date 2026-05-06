@@ -63,6 +63,7 @@ public:
 		bool bImGUISettings = false;
 		bool bEditorDebug = false;
 		bool bShadowMapDebug = false;
+		bool bBezier = false;
 	} UI;
 
 	void SaveToFile(const FString& Path) const;

@@ -112,7 +112,7 @@ public:
 	// FScene — 렌더 프록시 관리자
 	FScene& GetScene() { return Scene; }
 	const FScene& GetScene() const { return Scene; }
-	
+
 	FSpatialPartition& GetPartition() { return Partition; }
 	const FOctree* GetOctree() const { return Partition.GetOctree(); }
 	void InsertActorToOctree(AActor* actor);
@@ -136,7 +136,7 @@ private:
 	bool bHasBegunPlay = false;
 	bool bHasLastFullLODUpdateCameraPos = false;
 	mutable FWorldPrimitivePickingBVH WorldPrimitivePickingBVH;
-	mutable FWorldCollisionSystem WorldCollisionSystem{this};
+	mutable FWorldCollisionSystem WorldCollisionSystem{ this };
 	int32 DeferredPickingBVHUpdateDepth = 0;
 	bool bDeferredPickingBVHDirty = false;
 	uint32 VisibleProxyBuildFrame = 0;

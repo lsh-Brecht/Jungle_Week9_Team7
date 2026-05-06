@@ -1,4 +1,4 @@
-#include "Editor/EditorEngine.h"
+﻿#include "Editor/EditorEngine.h"
 
 #include "Profiling/StartupProfiler.h"
 #include "Core/Notification.h"
@@ -40,24 +40,24 @@ namespace
 
 namespace
 {
-FString BuildScenePathFromStem(const FString& InStem)
-{
-	std::filesystem::path ScenePath = std::filesystem::path(FSceneSaveManager::GetSceneDirectory())
-		/ (FPaths::ToWide(InStem) + FSceneSaveManager::SceneExtension);
-	return FPaths::ToUtf8(ScenePath.wstring());
-}
+	FString BuildScenePathFromStem(const FString& InStem)
+	{
+		std::filesystem::path ScenePath = std::filesystem::path(FSceneSaveManager::GetSceneDirectory())
+			/ (FPaths::ToWide(InStem) + FSceneSaveManager::SceneExtension);
+		return FPaths::ToUtf8(ScenePath.wstring());
+	}
 
-FString GetFileStem(const FString& InPath)
-{
-	const std::filesystem::path Path(FPaths::ToWide(InPath));
-	return FPaths::ToUtf8(Path.stem().wstring());
-}
+	FString GetFileStem(const FString& InPath)
+	{
+		const std::filesystem::path Path(FPaths::ToWide(InPath));
+		return FPaths::ToUtf8(Path.stem().wstring());
+	}
 }
 
 void UEditorEngine::Init(FWindowsWindow* InWindow)
 {
 	RegisterLinkedRuntimeModules();
-	
+
 	FProjectSettings::Get().LoadFromFile(FProjectSettings::GetDefaultPath());
 	GetRuntimeModules().LoadModules(FProjectSettings::Get().RuntimeModules);
 
@@ -399,22 +399,22 @@ void UEditorEngine::StartPlayInEditorSession(const FRequestPlaySessionParams& Pa
 		ModuleContext.Renderer = &Renderer;
 		ModuleContext.ViewportClient = PIEViewportClient;
 		ModuleContext.UiCommands.ExecuteCommand = [this](const FString& CommandName)
-		{
-			if (CommandName == "Viewport.Resume" || CommandName == "Viewport.ClosePauseMenu" || CommandName == "Application.Exit")
 			{
-				RequestEndPlayMap();
-			}
-			else if (CommandName == "Application.RestartSession")
-			{
-				FRequestPlaySessionParams Params;
-				RequestPlaySession(Params);
-			}
-		};
+				if (CommandName == "Viewport.Resume" || CommandName == "Viewport.ClosePauseMenu" || CommandName == "Application.Exit")
+				{
+					RequestEndPlayMap();
+				}
+				else if (CommandName == "Application.RestartSession")
+				{
+					FRequestPlaySessionParams Params;
+					RequestPlaySession(Params);
+				}
+			};
 		GetRuntimeModules().OnViewportCreated(ModuleContext);
 
 	}
 	EnterPIEPossessedMode();
-	
+
 	//이 코드와 대응되는 게 아래 EndPlayMap()에 있음.
 	//MainPanel.HideEditorWindowsForPIE(); //PIE 중에는 에디터 패널을 숨김.
 	//ViewportLayout.DisableWorldAxisForPIE(); //PIE 중에는 월드 축 렌더링을 비활성화.
@@ -492,7 +492,7 @@ void UEditorEngine::EndPlayMap()
 	SelectionManager.ClearSelection();
 	//SelectionManager.SetGizmoEnabled(true); //PIE가 끝나면 gizmo 활성화
 	SelectionManager.SetWorld(GetWorld());
-	
+
 	//이 코드와 대응되는 게 위의 StartPlayInEditorSession()에 있음.
 	//MainPanel.RestoreEditorWindowsAfterPIE();
 	//ViewportLayout.RestoreWorldAxisAfterPIE();
@@ -769,7 +769,7 @@ bool UEditorEngine::SaveSceneAsWithDialog()
 		.bPathMustExist = true,
 		.bPromptOverwrite = true,
 		.bReturnRelativeToProjectRoot = false,
-	});
+		});
 	if (SelectedPath.empty())
 	{
 		return false;
@@ -819,7 +819,7 @@ bool UEditorEngine::LoadSceneWithDialog()
 		.bPathMustExist = true,
 		.bPromptOverwrite = false,
 		.bReturnRelativeToProjectRoot = false,
-	});
+		});
 	if (SelectedPath.empty())
 	{
 		return false;

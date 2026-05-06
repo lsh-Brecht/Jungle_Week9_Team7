@@ -123,7 +123,7 @@ void UWorld::DestroyActor(AActor* Actor)
 	if (!Actor || !PersistentLevel) return;
 	TickManager.RemoveTickFunction(&Actor->PrimaryActorTick);
 	Actor->PrimaryActorTick.UnRegisterTickFunction();
-	
+
 	for (UActorComponent* Component : Actor->GetComponents())
 	{
 		if (!Component)

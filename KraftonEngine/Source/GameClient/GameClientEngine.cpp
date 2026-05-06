@@ -210,20 +210,20 @@ void UGameClientEngine::TickAlways(float RawDeltaTime)
 
 void UGameClientEngine::TickInGame(float GameDeltaTime, float RawDeltaTime)
 {
-    FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
+	FInputFrame InputFrame(InputSystem::Get().MakeSnapshot());
 
-    FGameplayInputRouteContext InputContext;
-    InputContext.World = GetWorld();
-    InputContext.ViewportClient = GameViewport.GetViewportClient();
-    InputContext.DeltaTime = GameDeltaTime;
-	
-    FGameplayInputRouter::Route(InputFrame, InputContext);
+	FGameplayInputRouteContext InputContext;
+	InputContext.World = GetWorld();
+	InputContext.ViewportClient = GameViewport.GetViewportClient();
+	InputContext.DeltaTime = GameDeltaTime;
 
-    TaskScheduler.Tick(GameDeltaTime);
-    WorldTick(GameDeltaTime, RawDeltaTime);
+	FGameplayInputRouter::Route(InputFrame, InputContext);
+
+	TaskScheduler.Tick(GameDeltaTime);
+	WorldTick(GameDeltaTime, RawDeltaTime);
 	GetRuntimeModules().OnTick(GameDeltaTime);
 
-    CameraManager.SyncWorldViewCamera();
+	CameraManager.SyncWorldViewCamera();
 }
 
 void UGameClientEngine::ProcessPendingCommands()

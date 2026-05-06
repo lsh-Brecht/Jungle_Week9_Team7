@@ -311,22 +311,22 @@ void APlayerCameraManager::SnapToActiveCamera()
 void APlayerCameraManager::RemapActorReferences(const TMap<uint32, uint32>& ActorUUIDRemap)
 {
 	auto RemapRef = [&ActorUUIDRemap](FCameraComponentReference& Ref)
-	{
-		if (Ref.OwnerActorUUID == 0)
 		{
-			return;
-		}
+			if (Ref.OwnerActorUUID == 0)
+			{
+				return;
+			}
 
-		auto It = ActorUUIDRemap.find(Ref.OwnerActorUUID);
-		if (It != ActorUUIDRemap.end())
-		{
-			Ref.OwnerActorUUID = It->second;
-		}
-		else
-		{
-			Ref.Reset();
-		}
-	};
+			auto It = ActorUUIDRemap.find(Ref.OwnerActorUUID);
+			if (It != ActorUUIDRemap.end())
+			{
+				Ref.OwnerActorUUID = It->second;
+			}
+			else
+			{
+				Ref.Reset();
+			}
+		};
 
 	RemapRef(ActiveCameraRef);
 	RemapRef(PendingCameraRef);
@@ -408,7 +408,7 @@ UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeP
 			{
 				continue;
 			}
-			
+
 			if (!ExistingShake->IsPendingRemove())
 			{
 				ExistingShake->StartShake(Params);
@@ -416,16 +416,16 @@ UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeP
 			}
 		}
 	}
-	
+
 	UCameraShakeModifier* NewShake = UObjectManager::Get().CreateObject<UCameraShakeModifier>(this);
 	if (!NewShake)
 	{
 		return nullptr;
 	}
-	
+
 	NewShake->SetPriority(128);
 	NewShake->StartShake(Params);
-	
+
 	AddCameraModifier(NewShake);
 	return NewShake;
 }

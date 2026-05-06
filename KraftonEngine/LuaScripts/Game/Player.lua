@@ -305,23 +305,6 @@ local function SafeAssign(target, key, value)
     return true
 end
 
-local function ResetPostProcessEffect()
-    Player.isDeadTriggered = false
-    Player.deathTimer = 0.0
-    
-    if IsValidHandle(Player.camera) then
-        -- 기본값으로 복구
-        Player.camera.VignetteIntensity = 0.5
-        Player.camera.FadeAlpha = 0.0
-    end
-    
-    if IsValidHandle(Player.controller) and Player.controller.StartFadeOut ~= nil then
-        Player.controller:StartFadeOut(0.0)
-    end
-    
-    Log("[FX] PostProcess Effects Reset")
-end
-
 local function GetKey(name)
     if Input == nil or Input.GetKey == nil then
         return false
@@ -834,8 +817,6 @@ local function Bootstrap()
 
     Player.initialized = true
 
-    ResetPostProcessEffect()
-
     print("[Player.lua][BOOT_OK] 설정 완료: Pawn / PlayerController / CameraActor 구조를 씬 설정대로 구성했습니다.")
 
     return true
@@ -973,7 +954,7 @@ local function UpdateCombat(inputState)
 end
 
 function OnOverlap(otherActor)
-    if not IsVehicleActor(otherActor) or Player.isDeadTriggered then
+    if not IsVehicleActor(otherActor) then
         return
     end
 
@@ -1028,36 +1009,6 @@ function OnInput(deltaTime)
         return
     end
 
-    local dt = SafeDeltaTime(deltaTime)
-
-         -- [수정] 게임이 진행 중이 아닐 때는 사망 연출 플래그를 강제로 리셋합니다.
-         if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
-             Player.isDeadTriggered = false
-             Player.deathTimer = 0.0
-    
-           -- 마우스 캡처 해제
-            if Input ~= nil and Input.SetMouseCaptured ~= nil then
-                Input.SetMouseCaptured(false)
-            end
-            return
-        end
-
-    -- 사망 연출 처리
-    if Player.isDeadTriggered then
-        if Player.deathTimer > 0 then
-            Player.deathTimer = Player.deathTimer - dt
-            if Player.deathTimer <= 0 then
-                Log("[DEATH] Timer Finished -> GameOver")
-                if State.GameOver ~= nil then
-                    State.GameOver("Hit by vehicle")
-                elseif Game ~= nil and Game.DispatchEvent ~= nil then
-                    Game.DispatchEvent("Defeat", Player.ownerObject)
-                end
-            end
-        end
-        return -- 연출 중에는 입력 처리 중단
-    end
-
     if State ~= nil and State.IsPlaying ~= nil and not State.IsPlaying() then
         Player.prevMouse1 = GetKey("MOUSE1")
         Player.prevMouse2 = GetKey("MOUSE2")
@@ -1085,6 +1036,10 @@ function OnInput(deltaTime)
     UpdateLook(dt)
     UpdateMovement(dt, inputState)
     UpdateCombat(inputState)
+
+    -- 여기서 매 프레임 SetActiveCamera를 다시 호출하지 않습니다.
+    -- PlayerController:SetActiveCamera()는 ControlRotation을 카메라 회전으로 덮어쓸 수 있어서
+    -- 마우스 yaw가 계속 0으로 돌아가는 문제가 생길 수 있습니다.
 end
 
 function EndPlay()

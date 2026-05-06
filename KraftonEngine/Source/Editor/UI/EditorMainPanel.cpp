@@ -4,6 +4,7 @@
 #include "Editor/Packaging/GamePackageBuilder.h"
 #include "Editor/Settings/EditorSettings.h"
 #include "Editor/Viewport/LevelEditorViewportClient.h"
+#include "Curves/CurveFloat.h"
 #include "Viewport/GameViewportClient.h"
 #include "Component/CameraComponent.h"
 #include "GameFramework/AActor.h"
@@ -26,6 +27,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cwctype>
 #include <filesystem>
 #include <random>
 #include <thread>
@@ -85,7 +87,16 @@ void FEditorMainPanel::Create(FWindowsWindow* InWindow, FRenderer& InRenderer, U
 	SceneWidget.Initialize(InEditorEngine);
 	StatWidget.Initialize(InEditorEngine);
 	ContentBrowserWidget.Initialize(InEditorEngine, InRenderer.GetFD3DDevice().GetDevice());
+	ContentBrowserWidget.SetAssetClickHandler([this](const FContentItem& Item)
+		{
+			return HandleContentBrowserAssetClicked(Item);
+		});
+	ContentBrowserWidget.SetAssetDoubleClickHandler([this](const FContentItem& Item)
+		{
+			return HandleContentBrowserAssetClicked(Item);
+		});
 	ShadowMapDebugWidget.Initialize(InEditorEngine);
+	BezierWidget.Initialize(InEditorEngine);
 }
 
 void FEditorMainPanel::Release()
@@ -132,6 +143,12 @@ void FEditorMainPanel::Render(float DeltaTime)
 	if (!bHideEditorWindows && Settings.UI.bImGUISettings)
 	{
 		ImGuiSetting::ShowSetting();
+	}
+
+	if (!bHideEditorWindows && Settings.UI.bBezier)
+	{
+		SCOPE_STAT_CAT("BezierWidget.Render", "5_UI");
+		BezierWidget.Render(DeltaTime);
 	}
 
 	if (!bHideEditorWindows && Settings.UI.bControl)
@@ -252,6 +269,7 @@ void FEditorMainPanel::RenderMainMenuBar()
 		ImGui::Checkbox("ContentBrowser", &Settings.UI.bContentBrowser);
 		ImGui::Checkbox("Editor Debug", &Settings.UI.bEditorDebug);
 		ImGui::Checkbox("Shadow Map Debug", &Settings.UI.bShadowMapDebug);
+		ImGui::Checkbox("Bezier", &Settings.UI.bBezier);
 		ImGui::Separator();
 		ImGui::Checkbox("IMGUI_Setting", &Settings.UI.bImGUISettings);
 		ImGui::EndPopup();
@@ -1229,6 +1247,39 @@ void FEditorMainPanel::HandleGlobalShortcuts()
 	}
 }
 
+bool FEditorMainPanel::HandleContentBrowserAssetClicked(const FContentItem& Item)
+{
+	if (Item.bIsDirectory)
+	{
+		return false;
+	}
+
+	std::wstring Extension = Item.Path.extension().wstring();
+	std::transform(Extension.begin(), Extension.end(), Extension.begin(),
+		[](wchar_t Ch)
+		{
+			return static_cast<wchar_t>(std::towlower(Ch));
+		});
+
+	if (Extension != L".curve")
+	{
+		return false;
+	}
+
+	const FString AssetPath = FPaths::ToUtf8(Item.Path.wstring());
+	UCurveFloat* CurveAsset = UCurveFloat::LoadFromFile(AssetPath);
+	if (!CurveAsset)
+	{
+		FEditorConsoleWidget::AddLog("Failed to open curve asset: %s\n", AssetPath.c_str());
+		return true;
+	}
+
+	BezierWidget.SetCurveAsset(CurveAsset);
+	FEditorSettings::Get().UI.bBezier = true;
+	FEditorConsoleWidget::AddLog("Curve asset opened: %s\n", AssetPath.c_str());
+	return true;
+}
+
 void FEditorMainPanel::HideEditorWindows()
 {
 	if (bHasSavedUIVisibility)
@@ -1254,6 +1305,7 @@ void FEditorMainPanel::HideEditorWindows()
 	Settings.UI.bImGUISettings = false;
 	Settings.UI.bEditorDebug = false;
 	Settings.UI.bShadowMapDebug = false;
+	Settings.UI.bBezier = false;
 }
 
 void FEditorMainPanel::ShowEditorWindows()

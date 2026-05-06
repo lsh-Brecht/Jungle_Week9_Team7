@@ -2,11 +2,14 @@
 
 #include "ContentBrowserElement.h"
 #include "Editor/Settings/EditorSettings.h"
+#include "Curves/CurveFloat.h"
 #include "WICTextureLoader.h"
 #include "Resource/ResourceManager.h"
 
 #include <algorithm>
+#include <cwctype>
 #include <fstream>
+#include <utility>
 
 namespace
 {
@@ -82,6 +85,17 @@ namespace
 		L"function OnOverlap(OtherActor) OtherActor:PrintLocation(); end\n"
 		L"function Tick(dt) obj.Location = obj.Location + obj.Velocity * dt obj:PrintLocation() end\n";
 
+	std::wstring ToLowerExtension(const std::filesystem::path& Path)
+	{
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(),
+			[](wchar_t Ch)
+			{
+				return static_cast<wchar_t>(std::towlower(Ch));
+			});
+		return Extension;
+	}
+
 	std::filesystem::path MakeUniqueLuaTemplatePath(const std::filesystem::path& Directory)
 	{
 		std::filesystem::path Candidate = Directory / L"template.lua";
@@ -117,6 +131,38 @@ namespace
 			"function Tick(dt)\n    obj.Location = obj.Location + obj.Velocity * dt\n    obj:PrintLocation()\nend\n\n";
 
 		return true;
+	}
+
+	std::filesystem::path MakeUniqueCurveTemplatePath(const std::filesystem::path& Directory)
+	{
+		std::filesystem::path Candidate = Directory / L"template.curve";
+		int32 Index = 1;
+
+		while (std::filesystem::exists(Candidate))
+		{
+			Candidate = Directory / (L"template" + std::to_wstring(Index) + L".curve");
+			++Index;
+		}
+
+		return Candidate;
+	}
+
+	bool CreateDefaultCurveAsset(const std::filesystem::path& Directory)
+	{
+		if (!std::filesystem::exists(Directory) || !std::filesystem::is_directory(Directory))
+		{
+			return false;
+		}
+
+		const std::filesystem::path TargetPath = MakeUniqueCurveTemplatePath(Directory);
+		UCurveFloat* Curve = UObjectManager::Get().CreateObject<UCurveFloat>();
+		Curve->SetCurveName(FPaths::ToUtf8(TargetPath.stem().wstring()));
+		Curve->AddKey(0.0f, 0.0f, ERichCurveInterpMode::Linear);
+		Curve->AddKey(1.0f, 1.0f, ERichCurveInterpMode::Linear);
+
+		const bool bSaved = Curve->SaveToFile(FPaths::ToUtf8(TargetPath.wstring()));
+		UObjectManager::Get().DestroyObject(Curve);
+		return bSaved;
 	}
 }
 
@@ -217,6 +263,16 @@ void FEditorContentBrowserWidget::SetIconSize(float Size)
 	BrowserContext.ContentSize = ImVec2(ClampedSize, ClampedSize);
 }
 
+void FEditorContentBrowserWidget::SetAssetClickHandler(std::function<bool(const FContentItem&)> Handler)
+{
+	BrowserContext.OnAssetClicked = std::move(Handler);
+}
+
+void FEditorContentBrowserWidget::SetAssetDoubleClickHandler(std::function<bool(const FContentItem&)> Handler)
+{
+	BrowserContext.OnAssetDoubleClicked = std::move(Handler);
+}
+
 void FEditorContentBrowserWidget::LoadFromSettings()
 {
 	BrowserContext.CurrentPath = ResolveContentBrowserSettingsPath(FEditorSettings::Get().ContentBrowserPath);
@@ -236,6 +292,7 @@ void FEditorContentBrowserWidget::RefreshContent()
 	{
 		std::shared_ptr<ContentBrowserElement> element;
 		FString Extension = FPaths::ToUtf8(Content.Path.extension());
+		const std::wstring LowerExtension = ToLowerExtension(Content.Path);
 
 		if (Content.bIsDirectory)
 		{
@@ -263,12 +320,17 @@ void FEditorContentBrowserWidget::RefreshContent()
 			element = std::make_shared<MaterialElement>();
 			element.get()->SetIcon(ICons[Extension].Get());
 		}
-		else if (Content.Path.extension() == ".lua")
+		else if (LowerExtension == L".curve")
+		{
+			element = std::make_shared<CurveElement>();
+			element.get()->SetIcon(ICons["Default"].Get());
+		}
+		else if (LowerExtension == L".lua")
 		{
 			element = std::make_shared<LuaScriptElement>();
 			element.get()->SetIcon(ICons["Default"].Get());
 		}
-		else if (Content.Path.extension() == ".png" || Content.Path.extension() == ".PNG")
+		else if (LowerExtension == L".png")
 		{
 			element = std::make_shared<PNGElement>();
 			element.get()->SetIcon(FResourceManager::Get().FindLoadedTexture(FPaths::ToUtf8(Content.Path.lexically_relative(FPaths::RootDir()).generic_wstring())).Get());
@@ -358,6 +420,13 @@ void FEditorContentBrowserWidget::DrawContents()
 		if (ImGui::MenuItem("Create Lua Script"))
 		{
 			if (CreateLuaTemplateScript(std::filesystem::path(BrowserContext.CurrentPath)))
+			{
+				BrowserContext.bIsNeedRefresh = true;
+			}
+		}
+		if (ImGui::MenuItem("Create Curve"))
+		{
+			if (CreateDefaultCurveAsset(std::filesystem::path(BrowserContext.CurrentPath)))
 			{
 				BrowserContext.bIsNeedRefresh = true;
 			}

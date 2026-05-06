@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Camera/CameraModifier.h"
+#include "CameraModifier.h"
 #include "Math/Rotator.h"
 
 enum class ECameraShakePattern : uint32

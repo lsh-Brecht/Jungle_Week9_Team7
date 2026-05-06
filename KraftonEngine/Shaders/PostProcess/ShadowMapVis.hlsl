@@ -1,6 +1,5 @@
-#include "/Common/Functions.hlsli"
-#include "/Common/SystemSamplers.hlsli"
-#include "/Common/VertexLayouts.hlsli"
+#include "Common/Functions.hlsli"
+#include "Common/SystemSamplers.hlsli"
 
 // Mode: 0 = Linear (1-d)*Brightness, 1 = Pow pow(1-d, Exponent)
 cbuffer ShadowVisCB : register(b2)

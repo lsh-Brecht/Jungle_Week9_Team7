@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Object/Object.h"
 #include "Object/ObjectFactory.h"
 #include "Component/SceneComponent.h"
@@ -17,7 +17,7 @@ class UPrimitiveComponent;
 
 class AActor : public UObject
 {
-    friend struct FActorTickFunction;
+	friend struct FActorTickFunction;
 public:
 	DECLARE_CLASS(AActor, UObject)
 	AActor();
@@ -109,9 +109,9 @@ public:
 	const TArray<UPrimitiveComponent*>& GetPrimitiveComponents() const;
 	bool IsQueuedForPartitionUpdate() const { return bQueuedForPartitionUpdate; }
 	void SetQueuedForPartitionUpdate(bool bQueued) { bQueuedForPartitionUpdate = bQueued; }
-	
+
 	FActorTickFunction PrimaryActorTick;
-	
+
 	bool IsOverlappingActor(const AActor* Other) const;
 	bool HasTag(const FString& Tag) const;
 	void AddTag(const FString& Tag);
@@ -122,8 +122,8 @@ public:
 
 
 protected:
-	virtual void TickActor( float DeltaSeconds, ELevelTick TickType, FActorTickFunction& ThisTickFunction );
-	
+	virtual void TickActor(float DeltaSeconds, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+
 	void MarkPickingDirty();
 
 	USceneComponent* RootComponent = nullptr;

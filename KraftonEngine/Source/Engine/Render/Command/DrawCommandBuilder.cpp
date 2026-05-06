@@ -35,8 +35,6 @@ void FDrawCommandBuilder::Create(ID3D11Device* InDevice, ID3D11DeviceContext* In
 	OutlineCB.Create(InDevice, sizeof(FOutlinePostProcessConstants));
 	SceneDepthCB.Create(InDevice, sizeof(FSceneDepthPConstants));
 	FXAACB.Create(InDevice, sizeof(FFXAAConstants));
-	VignetteCB.Create(InDevice, sizeof(FVignettePostProcessConstants));
-	FadeCB.Create(InDevice, sizeof(FFadePostProcessConstants));
 }
 
 void FDrawCommandBuilder::Release()
@@ -55,8 +53,6 @@ void FDrawCommandBuilder::Release()
 	OutlineCB.Release();
 	SceneDepthCB.Release();
 	FXAACB.Release();
-	VignetteCB.Release();
-	FadeCB.Release();
 }
 
 // ============================================================
@@ -544,44 +540,6 @@ void FDrawCommandBuilder::BuildPostProcessCommands(const FFrameContext& Frame, c
 			FDrawCommand& Cmd = DrawCommandList.AddCommand();
 			Cmd.InitFullscreenTriangle(CullingShader, ERenderPass::PostProcess, PPRS);
 			Cmd.BuildSortKey(4);
-		}
-	}
-
-	// Vignette (UserBits=5 → LightCulling 뒤, Fade 앞)
-	if (Frame.RenderOptions.ShowFlags.bVignette)
-	{
-		FShader* VignetteShader = FShaderManager::Get().GetOrCreate(EShaderPath::Vignette);
-		if (VignetteShader)
-		{
-			FVignettePostProcessConstants VignetteData = {};
-			VignetteData.VignetteCenter     = Frame.PostProcess.VignetteCenter;
-			VignetteData.VignetteIntensity  = Frame.PostProcess.VignetteIntensity;
-			VignetteData.VignetteSmoothness = Frame.PostProcess.VignetteSmoothness;
-			VignetteData.VignetteColor      = Frame.PostProcess.VignetteColor;
-			VignetteCB.Update(Ctx, &VignetteData, sizeof(FVignettePostProcessConstants));
-
-			FDrawCommand& Cmd = DrawCommandList.AddCommand();
-			Cmd.InitFullscreenTriangle(VignetteShader, ERenderPass::PostProcess, PPRS);
-			Cmd.Bindings.PerShaderCB[0] = &VignetteCB;
-			Cmd.BuildSortKey(5);
-		}
-	}
-
-	// Fade (UserBits=6 → 모든 PostProcess 효과 위에 덮음)
-	if (Frame.RenderOptions.ShowFlags.bFade)
-	{
-		FShader* FadeShader = FShaderManager::Get().GetOrCreate(EShaderPath::Fade);
-		if (FadeShader)
-		{
-			FFadePostProcessConstants FadeData = {};
-			FadeData.FadeColor = Frame.PostProcess.FadeColor;
-			FadeData.FadeAlpha = Frame.PostProcess.FadeAlpha;
-			FadeCB.Update(Ctx, &FadeData, sizeof(FFadePostProcessConstants));
-
-			FDrawCommand& Cmd = DrawCommandList.AddCommand();
-			Cmd.InitFullscreenTriangle(FadeShader, ERenderPass::PostProcess, PPRS);
-			Cmd.Bindings.PerShaderCB[0] = &FadeCB;
-			Cmd.BuildSortKey(6);
 		}
 	}
 

@@ -38,7 +38,7 @@ public:
 
 	float GetAlpha() const { return Alpha; }
 	float GetAlphaInTime() const { return AlphaInTime; }
-	float GetAlphaOutTime() const{return AlphaOutTime;}
+	float GetAlphaOutTime() const { return AlphaOutTime; }
 	bool  IsDisabled() const { return bDisabled != 0; }
 	uint8 GetPriority() const { return Priority; }
 
