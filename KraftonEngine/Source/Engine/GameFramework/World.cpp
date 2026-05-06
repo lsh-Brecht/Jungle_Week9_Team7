@@ -17,6 +17,7 @@
 #include <algorithm>
 #include "Profiling/Stats.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Core/Log.h"
 
 IMPLEMENT_CLASS(UWorld, UObject)
 
@@ -505,6 +506,7 @@ void UWorld::UpdatePlayerCameraManagers(float DeltaTime)
 			{
 				SetViewCamera(OutputCamera);
 				SetActiveCamera(OutputCamera);
+				UE_LOG("[World] OutputCamera=%p", OutputCamera);
 			}
 		}
 	}

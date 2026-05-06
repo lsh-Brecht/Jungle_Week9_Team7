@@ -10,6 +10,7 @@
 #include "Object/FName.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
+#include "Core/Log.h"
 
 #include <algorithm>
 #include <cmath>
@@ -67,11 +68,13 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
+	UE_LOG("[CameraManager] Initialize");
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
 	SetActorTickEnabled(false);
 
+	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
 	EnsureOutputCamera();
 }
 void APlayerCameraManager::Serialize(FArchive& Ar)
@@ -170,11 +173,21 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	if (!OwnerController || !IsAliveObject(OwnerController))
+	{
+		return;
+	}
+
 	EnsureOutputCamera();
 	if (!OutputCameraComponent)
 	{
 		return;
 	}
+
+		UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+		AddCameraModifier(TestModifier);
+
+		UE_LOG("[CameraManager] Debug modifier added");
 
 	UCameraComponent* TargetCamera = bIsBlending
 		? (PendingCameraCached && IsAliveObject(PendingCameraCached) ? PendingCameraCached : ResolveCameraReference(PendingCameraRef))
@@ -516,6 +529,7 @@ void APlayerCameraManager::EnsureOutputCamera()
 
 void APlayerCameraManager::AddCameraModifier(UCameraModifier* Modifier)
 {
+	UE_LOG("[CameraManager] AddCameraModifier: %p", Modifier);
 	if (!Modifier || !IsAliveObject(Modifier))
 	{
 		return;
@@ -584,6 +598,8 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 	{
 		return;
 	}
+
+	UE_LOG("[CameraManager] ApplyCameraModifiers Count=%d", static_cast<int32>(ModifierList.size()));
 
 	CleanupCameraModifiers();
 	SortCameraModifiers();
