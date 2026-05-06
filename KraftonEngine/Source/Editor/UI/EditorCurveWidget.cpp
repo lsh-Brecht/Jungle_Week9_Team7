@@ -1,5 +1,7 @@
 #include "UI/EditorCurveWidget.h"
 
+#include "Serialization/CurveSaveManager.h"
+
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_internal.h"
@@ -150,6 +152,7 @@ namespace ImGui
 		{
 			std::memcpy(P, Presets[static_cast<int>(P[4])].Points, sizeof(float) * 4);
 		}
+		const bool bPresetChanged = bReload;
 
 		const ImGuiStyle& Style = GetStyle();
 		ImDrawList* DrawList = GetWindowDrawList();
@@ -160,6 +163,7 @@ namespace ImGui
 		}
 
 		bool bChanged = SliderFloat4(Label, P, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_None);
+		bChanged |= bPresetChanged;
 		bool bHovered = IsItemActive() || IsItemHovered();
 		Dummy(ImVec2(0.0f, 3.0f));
 
@@ -286,6 +290,62 @@ void FEditorCurveWidget::Initialize(UEditorEngine* InEditorEngine)
 	FEditorWidget::Initialize(InEditorEngine);
 }
 
+bool FEditorCurveWidget::OpenCurveAsset(const FString& CurvePath)
+{
+	CurrentCurvePath = CurvePath;
+	bHasOpenCurve = !CurrentCurvePath.empty();
+
+	FCurveAsset Curve = FCurveSaveManager::MakeDefaultBezier();
+	FString Error;
+	if (bHasOpenCurve && FCurveSaveManager::LoadFromFile(CurrentCurvePath, Curve, &Error))
+	{
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			BezierPoints[Index] = Curve.ControlPoints[Index];
+		}
+		BezierPoints[4] = static_cast<float>(Curve.PresetIndex);
+		StatusMessage = "Loaded: " + CurrentCurvePath;
+		bDirty = false;
+		return true;
+	}
+
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		BezierPoints[Index] = Curve.ControlPoints[Index];
+	}
+	BezierPoints[4] = static_cast<float>(Curve.PresetIndex);
+	StatusMessage = Error.empty() ? "Curve load failed." : ("Curve load failed: " + Error);
+	bDirty = bHasOpenCurve;
+	return false;
+}
+
+bool FEditorCurveWidget::SaveCurrentCurve()
+{
+	if (!bHasOpenCurve || CurrentCurvePath.empty())
+	{
+		StatusMessage = "No curve file is open.";
+		return false;
+	}
+
+	FCurveAsset Curve;
+	Curve.Version = FCurveSaveManager::CurrentVersion;
+	Curve.PresetIndex = static_cast<int32>(BezierPoints[4]);
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		Curve.ControlPoints[Index] = BezierPoints[Index];
+	}
+
+	if (!FCurveSaveManager::SaveToFile(Curve, CurrentCurvePath))
+	{
+		StatusMessage = "Curve save failed: " + CurrentCurvePath;
+		return false;
+	}
+
+	StatusMessage = "Saved: " + CurrentCurvePath;
+	bDirty = false;
+	return true;
+}
+
 void FEditorCurveWidget::Render(float DeltaTime)
 {
 	(void)DeltaTime;
@@ -297,6 +357,43 @@ void FEditorCurveWidget::Render(float DeltaTime)
 		return;
 	}
 
-	ImGui::Bezier("Bezier", BezierPoints);
+	if (bHasOpenCurve)
+	{
+		ImGui::TextUnformatted(CurrentCurvePath.c_str());
+		if (bDirty)
+		{
+			ImGui::SameLine();
+			ImGui::TextUnformatted("*");
+		}
+	}
+	else
+	{
+		ImGui::TextDisabled("No curve file open");
+	}
+
+	if (!bHasOpenCurve)
+	{
+		ImGui::BeginDisabled();
+	}
+	if (ImGui::Button("Save"))
+	{
+		SaveCurrentCurve();
+	}
+	if (!bHasOpenCurve)
+	{
+		ImGui::EndDisabled();
+	}
+
+	if (!StatusMessage.empty())
+	{
+		ImGui::SameLine();
+		ImGui::TextUnformatted(StatusMessage.c_str());
+	}
+
+	ImGui::Separator();
+	if (ImGui::Bezier("Bezier", BezierPoints))
+	{
+		bDirty = true;
+	}
 	ImGui::End();
 }

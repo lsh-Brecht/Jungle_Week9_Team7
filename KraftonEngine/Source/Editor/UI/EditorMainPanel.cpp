@@ -107,6 +107,12 @@ void FEditorMainPanel::SaveToSettings() const
 	ContentBrowserWidget.SaveToSettings();
 }
 
+bool FEditorMainPanel::OpenCurveAsset(const FString& CurvePath)
+{
+	FEditorSettings::Get().UI.bCurve = true;
+	return CurveWidget.OpenCurveAsset(CurvePath);
+}
+
 void FEditorMainPanel::Render(float DeltaTime)
 {
 	ImGui_ImplDX11_NewFrame();
