@@ -23,7 +23,6 @@ public:
 	// 파생 클래스(UCameraFadeModifier 등)가 InOutView를 변형. 반환값은 chain 계속 여부 (true=다음 modifier 적용).
 	virtual bool ModifyCamera(float DeltaTime, FCameraView& InOutView);
 
-	//D
 	void EnableModifier();
 	void DisableModifier(bool bRemoveAfterFadeOut);
 

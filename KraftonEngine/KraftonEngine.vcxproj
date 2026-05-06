@@ -343,6 +343,7 @@
     <ClCompile Include="Source\Editor\Viewport\FLevelViewportLayout.cpp" />
     <ClCompile Include="Source\Engine\Camera\CameraFadeModifier.cpp" />
     <ClCompile Include="Source\Engine\Camera\CameraModifier.cpp" />
+      <ClCompile Include="Source\Engine\Camera\CameraShakeModifier.cpp"/>
     <ClCompile Include="Source\Engine\Camera\PlayerCameraManager.cpp" />
     <ClCompile Include="Source\Engine\Collision\ConvexVolume.cpp" />
     <ClCompile Include="Source\Engine\Collision\MeshTriangleBVH.cpp" />
@@ -384,6 +385,7 @@
     <ClCompile Include="Source\Engine\Component\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SceneComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\Script\LuaScriptComponent.cpp" />
+      <ClCompile Include="Source\Engine\Component\SpringArmComponent.cpp"/>
     <ClCompile Include="Source\Engine\Component\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\SubUVComponent.cpp" />
     <ClCompile Include="Source\Engine\Component\TextRenderComponent.cpp" />
@@ -392,6 +394,7 @@
     <ClCompile Include="Source\Engine\Core\Notification.cpp" />
     <ClCompile Include="Source\Engine\Core\ProjectSettings.cpp" />
     <ClCompile Include="Source\Engine\Core\TickFunction.cpp" />
+    <ClCompile Include="Source\Engine\Core\Time\EngineTimeManager.cpp" />
     <ClCompile Include="Source\Engine\Debug\DebugDrawQueue.cpp" />
     <ClCompile Include="Source\Engine\Debug\DrawDebugHelpers.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\AActor.cpp" />
@@ -411,6 +414,7 @@
     <ClCompile Include="Source\Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Source\Engine\Materials\Material.cpp" />
     <ClCompile Include="Source\Engine\Materials\MaterialManager.cpp" />
+      <ClCompile Include="Source\Engine\Math\MathUtils.cpp"/>
     <ClCompile Include="Source\Engine\Math\Matrix.cpp" />
     <ClCompile Include="Source\Engine\Math\Quat.cpp" />
     <ClCompile Include="Source\Engine\Math\Rotator.cpp" />
@@ -588,6 +592,7 @@
     <ClInclude Include="Source\Editor\Viewport\LevelEditorViewportClient.h" />
     <ClInclude Include="Source\Engine\Camera\CameraFadeModifier.h" />
     <ClInclude Include="Source\Engine\Camera\CameraModifier.h" />
+      <ClInclude Include="Source\Engine\Camera\CameraShakeModifier.h"/>
     <ClInclude Include="Source\Engine\Camera\CameraTypes.h" />
     <ClInclude Include="Source\Engine\Camera\PlayerCameraManager.h" />
     <ClInclude Include="Source\Engine\Collision\ConvexVolume.h" />
@@ -633,6 +638,7 @@
     <ClInclude Include="Source\Engine\Component\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Component\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Component\Script\LuaScriptComponent.h" />
+      <ClInclude Include="Source\Engine\Component\SpringArmComponent.h"/>
     <ClInclude Include="Source\Engine\Component\StaticMeshComponent.h" />
     <ClInclude Include="Source\Engine\Component\SubUVComponent.h" />
     <ClInclude Include="Source\Engine\Component\TextRenderComponent.h" />
@@ -649,6 +655,7 @@
     <ClInclude Include="Source\Engine\Core\ResourceTypes.h" />
     <ClInclude Include="Source\Engine\Core\Singleton.h" />
     <ClInclude Include="Source\Engine\Core\TickFunction.h" />
+    <ClInclude Include="Source\Engine\Core\Time\EngineTimeManager.h" />
     <ClInclude Include="Source\Engine\Debug\DebugDrawQueue.h" />
     <ClInclude Include="Source\Engine\Debug\DrawDebugHelpers.h" />
     <ClInclude Include="Source\Engine\GameFramework\AActor.h" />

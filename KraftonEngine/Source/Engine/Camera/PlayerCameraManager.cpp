@@ -1,4 +1,4 @@
-﻿#include "Camera/PlayerCameraManager.h"
+#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cmath>
+
+#include "Camera/CameraShakeModifier.h"
 
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
@@ -69,7 +71,8 @@ namespace
 
 void APlayerCameraManager::Initialize(APlayerController* InOwner)
 {
-	UE_LOG("[CameraManager] Initialize");
+	//UE_LOG("[CameraManager] Initialize");
+	
 	OwnerController = InOwner;
 	SetSerializeToScene(false);
 	bNeedsTick = false;
@@ -173,6 +176,15 @@ UCameraComponent* APlayerCameraManager::GetOutputCameraIfValid() const
 
 void APlayerCameraManager::UpdateCamera(float DeltaTime)
 {
+	//if (!bDebugModifierAdded)
+	//{
+	//	UCameraModifier* TestModifier = UObjectManager::Get().CreateObject<UCameraModifier>(this);
+	//	AddCameraModifier(TestModifier);
+	//	bDebugModifierAdded = true;
+
+	//	UE_LOG("[CameraManager] Debug modifier added");
+	//}
+
 	if (!OwnerController || !IsAliveObject(OwnerController))
 	{
 		return;
@@ -395,6 +407,38 @@ void APlayerCameraManager::ClearCameraReferencesForComponent(const UActorCompone
 	{
 		OutputCameraComponent = nullptr;
 	}
+}
+UCameraShakeModifier* APlayerCameraManager::StartCameraShake(const FCameraShakeParams& Params)
+{
+	if (Params.bSingleInstance)
+	{
+		for (UCameraModifier* Modifier : ModifierList)
+		{
+			UCameraShakeModifier* ExistingShake = Cast<UCameraShakeModifier>(Modifier);
+			if (!ExistingShake || !IsAliveObject(ExistingShake))
+			{
+				continue;
+			}
+			
+			if (!ExistingShake->IsPendingRemove())
+			{
+				ExistingShake->StartShake(Params);
+				return ExistingShake;
+			}
+		}
+	}
+	
+	UCameraShakeModifier* NewShake = UObjectManager::Get().CreateObject<UCameraShakeModifier>(this);
+	if (!NewShake)
+	{
+		return nullptr;
+	}
+	
+	NewShake->SetPriority(128);
+	NewShake->StartShake(Params);
+	
+	AddCameraModifier(NewShake);
+	return NewShake;
 }
 
 UCameraComponent* APlayerCameraManager::ResolveCameraReference(const FCameraComponentReference& Ref) const
@@ -644,6 +688,7 @@ void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& In
 	CleanupCameraModifiers();
 	SortCameraModifiers();
 
+	//여기서 순회하면서 modifier 적용
 	for (UCameraModifier* Modifier : ModifierList)
 	{
 		if (!Modifier || !IsAliveObject(Modifier))

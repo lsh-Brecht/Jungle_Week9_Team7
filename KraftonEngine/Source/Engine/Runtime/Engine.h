@@ -15,6 +15,8 @@
 #endif
 #include <windows.h>
 
+#include "Core/Time/EngineTimeManager.h"
+
 class FWindowsWindow;
 class FTimer;
 class UCameraComponent;
@@ -69,6 +71,9 @@ public:
 	FRuntimeModuleManager& GetRuntimeModules() { return RuntimeModules; }
 	const FRuntimeModuleManager& GetRuntimeModules() const { return RuntimeModules; }
 
+	FEngineTimeManager& GetTimeManager() { return TimeManager; }
+	const FEngineTimeManager& GetTimeManager() const { return TimeManager; }
+
 	// Game Viewport Client — PIE/Standalone 용
 	void SetGameViewportClient(UGameViewportClient* InClient) { GameViewportClient = InClient; }
 	UGameViewportClient* GetGameViewportClient() const { return GameViewportClient; }
@@ -91,6 +96,7 @@ protected:
 	FRenderer Renderer;
 	FTaskScheduler TaskScheduler;
 	FRuntimeModuleManager RuntimeModules;
+	FEngineTimeManager TimeManager;
 
 private:
 	std::unique_ptr<IRenderPipeline> RenderPipeline;
