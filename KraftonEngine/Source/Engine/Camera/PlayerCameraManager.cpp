@@ -1,4 +1,4 @@
-#include "Camera/PlayerCameraManager.h"
+﻿#include "Camera/PlayerCameraManager.h"
 
 #include "Camera/CameraFadeModifier.h"
 #include "Camera/CameraModifier.h"
@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include "Camera/CameraShakeModifier.h"
+#include "Camera/CameraVignetteModifier.h"
 
 IMPLEMENT_CLASS(APlayerCameraManager, AActor)
 
@@ -659,6 +660,7 @@ void APlayerCameraManager::ClearCameraModifiers()
 
 	ModifierList.clear();
 	FadeModifier = nullptr;
+	VignetteModifier = nullptr;
 }
 
 UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
@@ -677,10 +679,32 @@ UCameraFadeModifier* APlayerCameraManager::EnsureFadeModifier()
 	return FadeModifier;
 }
 
+UVignetteModifier* APlayerCameraManager::EnsureVignetteModifier()
+{
+	if (VignetteModifier && IsAliveObject(VignetteModifier)
+		&& std::find(ModifierList.begin(), ModifierList.end(), VignetteModifier) != ModifierList.end())
+	{
+		return VignetteModifier;
+	}
+
+	VignetteModifier = UObjectManager::Get().CreateObject<UVignetteModifier>(this);
+	if (VignetteModifier)
+	{
+		// Vignette는 보통 Fade보다 아래에 위치하도록 우선순위 조정 (낮을수록 나중에 적용되나 현재 sort 로직 확인 필요)
+		// 현재 SortCameraModifiers는 PriorityA > PriorityB 순으로 정렬 (큰 값이 먼저 적용됨)
+		// 렌더링 순서상 Fade가 마지막에 덮어야 하므로, Fade의 우선순위가 더 낮아야 함 (작은 값이 뒤에 옴)
+		// 하지만 modifier chain은 누적 방식이므로 나중에 적용되는 것이 덮어씀.
+		VignetteModifier->SetPriority(64);
+		AddCameraModifier(VignetteModifier);
+	}
+	return VignetteModifier;
+}
+
 void APlayerCameraManager::StartFadeIn(float Duration, float TargetAlpha, const FVector& Color)
 {
 	if (UCameraFadeModifier* Mod = EnsureFadeModifier())
 	{
+		Mod->SetPriority(128); // Fade가 더 나중에 적용되어 Vignette를 덮도록 높은 우선순위 (수정: chain 순서 확인)
 		Mod->StartFadeIn(Duration, TargetAlpha, Color);
 	}
 }
@@ -692,6 +716,23 @@ void APlayerCameraManager::StartFadeOut(float Duration)
 		FadeModifier->StartFadeOut(Duration);
 	}
 }
+
+void APlayerCameraManager::StartVignette(float Intensity, const FVector& Color, float Duration, float Smoothness)
+{
+	if (UVignetteModifier* Mod = EnsureVignetteModifier())
+	{
+		Mod->StartVignette(Intensity, Color, Duration, Smoothness);
+	}
+}
+
+void APlayerCameraManager::StopVignette(float Duration)
+{
+	if (VignetteModifier && IsAliveObject(VignetteModifier))
+	{
+		VignetteModifier->StopVignette(Duration);
+	}
+}
+
 
 void APlayerCameraManager::ApplyCameraModifiers(float DeltaTime, FCameraView& InOutView)
 {
