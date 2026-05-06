@@ -335,6 +335,11 @@ local function ResetPostProcessEffect()
             Player.controller:StartFadeOut(0.0)
         end
     end
+
+    -- [연출] 부활 시 닭으로 메쉬 복구
+    if Player.ownerObject ~= nil and Player.ownerObject.SetStaticMesh ~= nil then
+        Player.ownerObject:SetStaticMesh("Data/Chicken/Chicken.obj")
+    end
     
     Log("[FX] PostProcess Effects Reset (Vignette=1.0, Fade=0.0)")
 end
@@ -992,6 +997,11 @@ function OnOverlap(otherActor)
     Player.deathTimer = 2.0
     Player.fadeStarted = false
     Player.vignetteStarted = false
+    
+    -- [연출] 사망 시 KFC 박스로 메쉬 변경
+    if Player.ownerObject ~= nil and Player.ownerObject.SetStaticMesh ~= nil then
+        Player.ownerObject:SetStaticMesh("Data/Chicken/KFC.obj")
+    end
     
     if State ~= nil then
         State.IsDying = true
